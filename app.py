@@ -15,11 +15,11 @@ import time
 from PIL import Image
 
 def obter_agora_brasil():
-    """Retorna datetime atual de Brasília."""
+    """Retorna datetime atual oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (FORÇAR TEMA CLARO ABSOLUTO)
+# 1. CONFIGURAÇÃO DA PÁGINA E DESIGN SYSTEM CORPORATIVO (PURE LIGHT)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - Gestão de Frota",
@@ -30,83 +30,122 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* Desativa menus e botões padrão do Streamlit */
+        /* =========================================================
+           1. RESET E OVERRIDE GLOBAL (TEMA CLARO CORPORATIVO)
+           ========================================================= */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="stDecoration"], [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
-        /* 1. FUNDO GERAL DA PÁGINA */
+        /* Fundo da Página e Cores Globais */
         html, body, [data-testid="stAppViewContainer"], .stApp {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
         }
 
-        /* 2. LABELS E TEXTOS */
-        p, span, label, h1, h2, h3, h4, div {
+        /* Tipografia Global */
+        h1, h2, h3, h4, h5, p, span, label, div {
             color: #0F172A !important;
         }
         .stWidgetLabel p, label p {
             color: #334155 !important;
             font-weight: 600 !important;
             font-size: 0.90rem !important;
+            margin-bottom: 4px !important;
         }
 
-        /* 3. FORMULÁRIO E CARTÕES */
+        /* Barra Lateral (Sidebar) em Tema Claro */
+        section[data-testid="stSidebar"] {
+            background-color: #FFFFFF !important;
+            border-right: 1px solid #E2E8F0 !important;
+        }
+        section[data-testid="stSidebar"] * {
+            color: #1E293B !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button {
+            background: #F1F5F9 !important;
+            color: #475569 !important;
+            -webkit-text-fill-color: #475569 !important;
+            border: 1px solid #CBD5E1 !important;
+            box-shadow: none !important;
+            height: 42px !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button:hover {
+            background: #E2E8F0 !important;
+            color: #0F172A !important;
+            -webkit-text-fill-color: #0F172A !important;
+        }
+
+        /* =========================================================
+           2. COMPONENTES VISUAIS (CARDS & CONTAINERS)
+           ========================================================= */
+        .corporate-header {
+            background: #FFFFFF !important;
+            padding: 24px 20px !important;
+            border-radius: 14px !important;
+            text-align: center !important;
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+            margin-bottom: 1.5rem !important;
+        }
+        .corporate-title {
+            font-size: 1.40rem !important;
+            font-weight: 700 !important;
+            color: #0F172A !important;
+            margin: 8px 0 2px 0 !important;
+            letter-spacing: -0.02em !important;
+        }
+        .corporate-subtitle {
+            font-size: 0.90rem !important;
+            color: #64748B !important;
+            margin: 0 !important;
+            font-weight: 500 !important;
+        }
+
+        /* Container do Formulário */
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E2E8F0 !important;
             border-radius: 14px !important;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
-            padding: 24px !important;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+            padding: 26px !important;
         }
-        .header-card {
-            background: #FFFFFF !important;
-            padding: 22px !important;
-            border-radius: 14px !important;
-            text-align: center !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
-            margin-bottom: 1.5rem !important;
-        }
-        .header-title {
-            font-size: 1.45rem !important;
-            font-weight: 700 !important;
-            color: #0F172A !important;
-            margin-top: 8px !important;
-            margin-bottom: 2px !important;
-        }
-        .header-subtitle {
-            font-size: 0.90rem !important;
-            color: #64748B !important;
-            margin: 0 !important;
-        }
-        .card-info {
-            background-color: #FFFFFF !important;
+
+        /* Card de Informação Selecionada */
+        .card-vehicle-info {
+            background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
             border-left: 4px solid #2563EB !important;
             padding: 14px 16px !important;
             border-radius: 10px !important;
-            margin: 12px 0 !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+            margin: 14px 0 !important;
             color: #334155 !important;
             line-height: 1.6 !important;
+            font-size: 0.92rem !important;
         }
-        .card-status-running {
+
+        /* Card de Viagem em Execução */
+        .card-active-trip {
             background-color: #EFF6FF !important;
             border: 1px solid #BFDBFE !important;
             padding: 16px !important;
             border-radius: 12px !important;
-            margin-bottom: 1.2rem !important;
+            margin-bottom: 1.3rem !important;
             color: #1E3A8A !important;
             line-height: 1.65 !important;
+            font-size: 0.93rem !important;
         }
-        .card-status-running b, .card-status-running span {
+        .card-active-trip b {
             color: #1E3A8A !important;
         }
 
-        /* 4. FORÇAR TEMA CLARO EM TODAS AS CAIXAS DE ENTRADA (BASEWEB) */
+        /* =========================================================
+           3. OVERRIDE TOTAL DE INPUTS, SELETOR, DATA E HORA
+           ========================================================= */
+        /* Força fundo branco e borda suave em todas as caixas */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -116,34 +155,53 @@ st.markdown("""
         div[data-testid="stTimeInput"] > div,
         div[data-testid="stNumberInput"] > div {
             background-color: #FFFFFF !important;
-            border-color: #CBD5E1 !important;
+            border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 8px !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+            transition: all 0.2s ease !important;
         }
 
-        /* Inputs reais de digitação */
+        /* Foco com anel azul moderno */
+        div[data-baseweb="input"]:focus-within,
+        div[data-baseweb="select"]:focus-within {
+            border-color: #2563EB !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+        }
+
+        /* Campos de digitação internos */
         input[type="text"], 
         input[type="number"], 
         input[type="password"],
         input {
             background-color: #FFFFFF !important;
             color: #0F172A !important;
-            border: none !important;
             -webkit-text-fill-color: #0F172A !important;
+            border: none !important;
+            font-size: 0.94rem !important;
+            font-weight: 500 !important;
         }
         input::placeholder {
             color: #94A3B8 !important;
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* 5. BOTÕES DE + E - DO KM INICIAL / KM FINAL (NUMBER INPUT) */
+        /* Ícones dentro dos campos (relógio, calendário, busca) */
+        svg {
+            fill: #475569 !important;
+        }
+
+        /* =========================================================
+           4. BOTÕES DE INCREMENTO (+ / -) DO NUMBER INPUT
+           ========================================================= */
         div[data-testid="stNumberInputStepDown"],
         div[data-testid="stNumberInputStepUp"] {
-            background-color: #F1F5F9 !important;
+            background-color: #F8FAFC !important;
             border: 1px solid #CBD5E1 !important;
-            color: #0F172A !important;
             border-radius: 6px !important;
+            color: #0F172A !important;
             margin: 2px !important;
+            transition: background 0.15s ease !important;
         }
         div[data-testid="stNumberInputStepDown"]:hover,
         div[data-testid="stNumberInputStepUp"]:hover {
@@ -155,7 +213,9 @@ st.markdown("""
             stroke: #0F172A !important;
         }
 
-        /* 6. CALENDÁRIO / POPOVER / DROPDOWN CLARO */
+        /* =========================================================
+           5. CALENDÁRIO (DATEPICKER) E MENUS DROPDOWN CLAROS
+           ========================================================= */
         div[data-baseweb="popover"],
         div[data-baseweb="calendar"],
         div[data-baseweb="menu"],
@@ -163,7 +223,7 @@ st.markdown("""
             background-color: #FFFFFF !important;
             color: #0F172A !important;
             border: 1px solid #CBD5E1 !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
             border-radius: 10px !important;
         }
         div[data-baseweb="calendar"] * {
@@ -173,6 +233,7 @@ st.markdown("""
         div[data-baseweb="calendar"] [aria-selected="true"] {
             background-color: #2563EB !important;
             color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
             border-radius: 50% !important;
         }
         div[data-baseweb="calendar"] button:hover {
@@ -188,7 +249,9 @@ st.markdown("""
             color: #2563EB !important;
         }
 
-        /* 7. BOTÕES PRINCIPAIS (START INICIAL E START FINAL) - AZUL VIBRANTE CLARO */
+        /* =========================================================
+           6. BOTÕES CORPORATIVOS (START INICIAL E START FINAL)
+           ========================================================= */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
@@ -200,9 +263,10 @@ st.markdown("""
             height: 48px !important;
             font-size: 1rem !important;
             font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28) !important;
+            letter-spacing: 0.01em !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
             cursor: pointer !important;
-            transition: all 0.2s ease !important;
+            transition: all 0.2s ease-in-out !important;
         }
         div.stButton > button:first-child:hover,
         div[data-testid="stFormSubmitButton"] > button:hover {
@@ -211,38 +275,26 @@ st.markdown("""
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38) !important;
-        }
-
-        /* Barra Lateral */
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button {
-            background: #F1F5F9 !important;
-            color: #334155 !important;
-            -webkit-text-fill-color: #334155 !important;
-            box-shadow: none !important;
-            border: 1px solid #CBD5E1 !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 2. VARIÁVEIS GLOBAIS E LINKS
+# 2. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS E ENDPOINTS
 # -------------------------------------------------------------
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-GID_USUARIOS = "426012097"       # Aba com Login / Condutores
-GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
-GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
+GID_USUARIOS = "426012097"       # Aba de Autenticação / Condutores
+GID_VEICULOS = "0"               # Aba da Frota
+GID_LANCAMENTOS = "379222602"    # Aba de Gravação dos Lançamentos
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO E CABEÇALHO
+# 3. SUPORTE A LOGOTIPO CORPORATIVO E CABEÇALHO
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
+    """Busca o arquivo de logotipo na pasta local com extensões comuns."""
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     nomes = ["Logotipo", "logotipo", "Logo", "logo"]
     for nome in nomes:
@@ -252,9 +304,9 @@ def obter_caminho_logotipo():
                 return caminho
     return None
 
-def renderizar_cabecalho(subtitulo="Gestão e Controle de Frota"):
+def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     caminho_logo = obter_caminho_logotipo()
-    st.markdown('<div class="header-card">', unsafe_allow_html=True)
+    st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
@@ -262,14 +314,14 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle de Frota"):
             with col_m:
                 st.image(logo_img, use_container_width=True)
         except Exception:
-            st.markdown('<div class="header-title">Master Café ☕</div>', unsafe_allow_html=True)
+            st.markdown('<div class="corporate-title">Master Café ☕</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="header-title">Master Café ☕</div>', unsafe_allow_html=True)
+        st.markdown('<div class="corporate-title">Master Café ☕</div>', unsafe_allow_html=True)
     
-    st.markdown(f'<p class="header-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
+    st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 4. GESTÃO DE PERSISTÊNCIA DA VIAGEM
+# 4. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA F5 / REFRESH)
 # -------------------------------------------------------------
 PASTA_SESSAO = "viagens_ativas"
 os.makedirs(PASTA_SESSAO, exist_ok=True)
@@ -304,7 +356,7 @@ def limpar_viagem_em_andamento(usuario):
             pass
 
 # -------------------------------------------------------------
-# 5. SUPORTE E LEITURA DA PLANILHA
+# 5. SINCRONIZAÇÃO COM A PLANILHA GOOGLE
 # -------------------------------------------------------------
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -347,8 +399,8 @@ def carregar_veiculos():
         try:
             df_raw = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
             if not df_raw.empty and len(df_raw.columns) >= 5:
-                col_veiculo = df_raw.columns[1]  # Coluna B
-                col_placa = df_raw.columns[4]    # Coluna E
+                col_veiculo = df_raw.columns[1]  # Coluna B: Modelo / Descrição
+                col_placa = df_raw.columns[4]    # Coluna E: Placa
 
                 df_veiculos = pd.DataFrame()
                 df_veiculos["placa"] = df_raw[col_placa].dropna().astype(str).str.strip().str.upper()
@@ -362,7 +414,7 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo"])
 
 def salvar_lancamento_frota(dados):
-    """Envia o lançamento para o Google Apps Script contornando redirecionamentos."""
+    """Envia o lançamento para o Google Apps Script contornando bloqueios de redirecionamento."""
     try:
         corpo = json.dumps(dados, ensure_ascii=False)
         headers = {
@@ -407,12 +459,12 @@ def salvar_lancamento_frota(dados):
 # 6. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    renderizar_cabecalho("Acesso de Condutores")
+    renderizar_cabecalho("Portal de Acesso do Condutor")
     
     with st.form("form_login"):
         st.subheader("Identificação do Condutor")
-        usuario_digitado = st.text_input("Usuário:").strip().lower()
-        senha_digitada = st.text_input("Senha:", type="password").strip()
+        usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
+        senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
         btn_login = st.form_submit_button("Entrar no Sistema")
         
         if btn_login:
@@ -472,14 +524,14 @@ def main():
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
         if st.session_state.get("viagem_ativa", False):
-            st.info("ℹ️ Viagem em andamento para este perfil.")
+            st.info("ℹ️ Viagem em andamento para este condutor.")
         if st.button("🚪 Cancelar e Sair"):
             limpar_viagem_em_andamento(usuario_atual)
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
 
-    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
+    renderizar_cabecalho("Registro de Saída e Retorno de Veículo")
 
     agora = obter_agora_brasil()
 
@@ -496,7 +548,7 @@ def main():
                 st.rerun()
             return
 
-        st.subheader("1. Selecione o Veículo")
+        st.subheader("1. Seleção do Veículo")
         
         opcoes = ["-- Selecione um veículo --"] + (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]).tolist()
         veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
@@ -510,7 +562,7 @@ def main():
             modelo = dados_veiculo["veiculo"]
 
             st.markdown(f"""
-                <div class="card-info">
+                <div class="card-vehicle-info">
                     <b>👤 Condutor:</b> {nome_condutor}<br>
                     <b>🚙 Veículo:</b> {modelo}<br>
                     <b>🔢 Placa:</b> {placa}
@@ -572,7 +624,7 @@ def main():
 
         st.subheader("Viagem em Andamento")
         st.markdown(f"""
-            <div class="card-status-running">
+            <div class="card-active-trip">
                 <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
                 <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
                 <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
