@@ -11,6 +11,7 @@ import os
 import unicodedata
 import requests
 import json
+import time
 
 def obter_agora_brasil():
     """Retorna datetime atual de Brasília."""
@@ -84,12 +85,16 @@ st.markdown("""
 # -------------------------------------------------------------
 # 2. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS E LINKS
 # -------------------------------------------------------------
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwQJfe1H2OHTAYGOPZhoOGRl8zazwK4SXf-RvKRMMkQhqJHbmyg4mHBT7AVRLubKOWzbQ/exec"
+# Link do Webhook atualizado
+WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
+
+# ID da Planilha de Gestão de Frota
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
+# GIDs das Abas
 GID_USUARIOS = "426012097"       # Aba com Login / Condutores
 GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
-GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
+GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os lançamentos de frota
 
 # -------------------------------------------------------------
 # 3. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA REFRESH / F5)
@@ -158,13 +163,13 @@ def carregar_usuarios():
         except Exception:
             continue
 
-    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor"}])
+    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor Master Café"}])
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
     """
     Carrega veículos da aba GID 0:
-    - Coluna B: Descrição / Nome do Veículo (Índice 1)
+    - Coluna B: Descrição / Modelo do Veículo (Índice 1)
     - Coluna E: Placa (Índice 4)
     """
     urls = [
@@ -190,14 +195,14 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo"])
 
 def salvar_lancamento_frota(dados):
-    """Envia o lançamento completo para o Webhook do Google Apps Script."""
+    """Envia o lançamento completo para o Webhook do Google Apps Script com tratamento robusto."""
     try:
         headers = {"Content-Type": "text/plain;charset=utf-8"}
-        corpo = json.dumps(dados)
+        corpo = json.dumps(dados, ensure_ascii=False)
 
         resposta = requests.post(
             WEBHOOK_URL,
-            data=corpo,
+            data=corpo.encode('utf-8'),
             headers=headers,
             timeout=30,
             allow_redirects=True
@@ -207,14 +212,17 @@ def salvar_lancamento_frota(dados):
             try:
                 ret = resposta.json()
                 if ret.get("status") == "success":
-                    return True, "Registro de frota salvo com sucesso!"
+                    return True, "Registro salvo com sucesso na planilha!"
                 elif ret.get("status") == "error":
-                    return False, f"Aviso do Apps Script: {ret.get('message')}"
+                    return False, f"Erro retornado pelo Apps Script: {ret.get('message')}"
             except Exception:
-                pass
-            return True, "Lançamento registrado na planilha Google."
+                if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
+                    return True, "Registro salvo na planilha!"
+                return True, "Lançamento processado com sucesso!"
         else:
-            return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:150]}"
+            return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:200]}"
+    except requests.exceptions.Timeout:
+        return False, "Tempo limite esgotado ao tentar salvar na planilha (Timeout)."
     except Exception as e:
         return False, f"Falha na comunicação: {str(e)}"
 
@@ -255,7 +263,7 @@ def tela_login(df_usuarios):
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por parâmetro da URL se recarregou
+    # Recupera sessão por parâmetro da URL em caso de refresh
     if not st.session_state.get("autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -273,7 +281,7 @@ def main():
     usuario_atual = st.session_state.get("usuario_logado")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
 
-    # Verifica se há viagem em andamento (recuperação de refresh)
+    # Verifica se há viagem ativa salva em disco
     if "viagem_ativa" not in st.session_state:
         viagem_recuperada = carregar_viagem_em_andamento(usuario_atual)
         if viagem_recuperada:
@@ -286,7 +294,7 @@ def main():
     # Menu Lateral
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
-        if st.session_state["viagem_ativa"]:
+        if st.session_state.get("viagem_ativa", False):
             st.warning("⚠️ Há uma viagem em andamento para este login.")
         if st.button("🚪 Cancelar e Sair"):
             limpar_viagem_em_andamento(usuario_atual)
@@ -301,23 +309,23 @@ def main():
     # =========================================================================
     # ETAPA 1: SELEÇÃO DO VEÍCULO E START INICIAL (SAÍDA)
     # =========================================================================
-    if not st.session_state["viagem_ativa"]:
+    if not st.session_state.get("viagem_ativa", False):
         df_veiculos = carregar_veiculos()
 
         if df_veiculos.empty:
             st.error("Nenhum veículo disponível na base. Verifique a planilha.")
-            if st.button("🔄 Recarregar Base"):
+            if st.button("🔄 Recarregar Veículos"):
                 st.cache_data.clear()
                 st.rerun()
             return
 
         st.subheader("1. Selecione o Veículo")
         
-        # Opções com placeholder inicial vazio para só exibir o restante após escolher
+        # O placeholder inicial vazio força a escolha antes de exibir os outros campos
         opcoes = ["-- Selecione um veículo --"] + (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]).tolist()
         veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
 
-        # Os outros campos só aparecem depois que o veículo é escolhido
+        # Só exibe os campos após a escolha do veículo
         if veiculo_escolhido != "-- Selecione um veículo --":
             dados_veiculo = df_veiculos[
                 (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]) == veiculo_escolhido
@@ -368,7 +376,7 @@ def main():
                 salvar_viagem_em_andamento(usuario_atual, dados_partida)
                 st.session_state["viagem_ativa"] = True
                 st.session_state["dados_viagem"] = dados_partida
-                st.success("✅ Start Inicial registrado! Viagem iniciada com sucesso.")
+                st.success("✅ Start Inicial registrado com sucesso! Viagem em andamento.")
                 st.rerun()
 
     # =========================================================================
@@ -414,7 +422,7 @@ def main():
         if btn_start_final:
             if km_fim < dados_ativos.get("km_inicial", 0):
                 st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
-                return
+                st.stop()
 
             km_percorrido = int(km_fim - dados_ativos.get("km_inicial", 0))
 
@@ -434,10 +442,10 @@ def main():
                 "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
             }
 
-            with st.spinner("Gravando registro e finalizando sessão..."):
+            with st.spinner("Gravando lançamento na planilha e finalizando..."):
                 sucesso, msg = salvar_lancamento_frota(payload_completo)
 
-            # Grava no backup local CSV
+            # Backup local em CSV para garantia
             try:
                 arquivo_backup = "historico_frotas.csv"
                 df_hist = pd.DataFrame([payload_completo])
@@ -450,20 +458,17 @@ def main():
             except Exception:
                 pass
 
-            # Limpa o arquivo de sessão da viagem em andamento
-            limpar_viagem_em_andamento(usuario_atual)
-
-            # Limpa todo o estado da sessão (dados limpos para o próximo login)
-            st.session_state.clear()
-            st.query_params.clear()
-
             if sucesso:
+                limpar_viagem_em_andamento(usuario_atual)
+                st.session_state.clear()
+                st.query_params.clear()
                 st.success("✅ Viagem concluída e registrada com sucesso na planilha!")
+                st.balloons()
+                time.sleep(2)
+                st.rerun()
             else:
-                st.warning(f"⚠️ {msg} (Os dados foram preservados no backup local).")
-
-            st.info("Sessão finalizada. Redirecionando para a tela de login...")
-            st.rerun()
+                st.error(f"❌ {msg}")
+                st.warning("Os dados foram mantidos na tela para você tentar novamente.")
 
 if __name__ == "__main__":
     main()
