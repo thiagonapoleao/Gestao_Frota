@@ -12,13 +12,14 @@ import unicodedata
 import requests
 import json
 import time
+from PIL import Image
 
 def obter_agora_brasil():
     """Retorna datetime atual de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E ESTILO VISUAL (DARK MODE)
+# 1. CONFIGURAÇÃO DA PÁGINA E ESTILO VISUAL (LIGHT THEME MODERNO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - Gestão de Frota",
@@ -29,6 +30,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+        /* Oculta botões e menus nativos desnecessários */
         #MainMenu {visibility: visible !important;}
         footer {visibility: hidden; display: none !important;}
         .stDeployButton {display: none !important;}
@@ -36,48 +38,98 @@ st.markdown("""
         [data-testid="stDecoration"] {display: none !important;}
         [data-testid="manage-app-button"] {display: none !important;}
 
+        /* Tema Claro Moderno */
         .stApp {
-            background-color: #0F172A;
-            color: #F8FAFC;
+            background-color: #F8FAFC;
+            color: #1E293B;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         }
-        .main-header {
+
+        /* Cartão de Cabeçalho */
+        .header-container {
+            background: #FFFFFF;
+            padding: 24px;
+            border-radius: 16px;
             text-align: center;
-            padding: 14px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #1E3A8A, #0D6EFD);
-            color: white;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+            border: 1px solid #E2E8F0;
             margin-bottom: 1.5rem;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
-        .status-box {
-            background-color: #1E293B;
-            border: 1px solid #334155;
-            padding: 14px;
-            border-radius: 8px;
-            margin-bottom: 1.2rem;
-            color: #F8FAFC;
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0F172A;
+            margin: 6px 0 2px 0;
+        }
+        .header-subtitle {
+            font-size: 0.92rem;
+            color: #64748B;
+            margin: 0;
+        }
+
+        /* Cartões de Status e Informações */
+        .info-card {
+            background-color: #FFFFFF;
+            border-left: 4px solid #2563EB;
+            padding: 16px;
+            border-radius: 12px;
+            margin: 12px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+            border-top: 1px solid #F1F5F9;
+            border-right: 1px solid #F1F5F9;
+            border-bottom: 1px solid #F1F5F9;
+            color: #334155;
             line-height: 1.6;
         }
-        .info-card {
-            background-color: #1E293B;
-            border-left: 4px solid #0D6EFD;
-            padding: 12px 14px;
-            border-radius: 4px 8px 8px 4px;
-            margin: 12px 0;
-            color: #E2E8F0;
+        .status-box {
+            background-color: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 1.2rem;
+            color: #1E3A8A;
+            line-height: 1.6;
         }
+
+        /* Formulários e Containers */
+        [data-testid="stForm"] {
+            background-color: #FFFFFF;
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        /* Inputs de Texto e Caixas de Seleção */
+        .stTextInput input, .stDateInput input, .stTimeInput input, .stNumberInput input {
+            background-color: #F8FAFC !important;
+            border: 1px solid #CBD5E1 !important;
+            color: #0F172A !important;
+            border-radius: 8px !important;
+        }
+        .stTextInput input:focus, .stDateInput input:focus, .stTimeInput input:focus, .stNumberInput input:focus {
+            border-color: #2563EB !important;
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+        }
+
+        /* Botão Primário Moderno */
         div.stButton > button:first-child {
             width: 100%;
-            border-radius: 8px;
+            border-radius: 10px;
             height: 48px;
-            font-weight: bold;
-            background-color: #0D6EFD;
-            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            color: #FFFFFF;
             border: none;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+            transition: all 0.2s ease-in-out;
         }
         div.stButton > button:first-child:hover {
-            background-color: #0b5ed7;
-            color: white;
+            background: linear-gradient(135deg, #1D4ED8, #1E40AF);
+            color: #FFFFFF;
+            box-shadow: 0 6px 14px rgba(37, 99, 235, 0.35);
+            transform: translateY(-1px);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -88,13 +140,43 @@ st.markdown("""
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-# GIDs das Abas
 GID_USUARIOS = "426012097"       # Aba com Login / Condutores
 GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
 GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
 
 # -------------------------------------------------------------
-# 3. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA REFRESH / F5)
+# 3. SUPORTE A LOGOTIPO E IMAGENS
+# -------------------------------------------------------------
+def obter_caminho_logotipo():
+    """Localiza o arquivo do logotipo com qualquer extensão compatível na mesma pasta."""
+    extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
+    nomes = ["Logotipo", "logotipo", "Logo", "logo"]
+    for nome in nomes:
+        for ext in extensoes:
+            caminho = f"{nome}{ext}"
+            if os.path.exists(caminho) and not os.path.isdir(caminho):
+                return caminho
+    return None
+
+def renderizar_cabecalho(subtitulo="Gestão e Controle de Frota"):
+    """Exibe o cabeçalho estilizado em tema claro com o Logotipo se existente."""
+    caminho_logo = obter_caminho_logotipo()
+    st.markdown('<div class="header-container">', unsafe_allow_html=True)
+    if caminho_logo:
+        try:
+            logo_img = Image.open(caminho_logo)
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                st.image(logo_img, use_container_width=True)
+        except Exception:
+            st.markdown('<div class="header-title">Master Café ☕</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="header-title">Master Café ☕</div>', unsafe_allow_html=True)
+    
+    st.markdown(f'<p class="header-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
+
+# -------------------------------------------------------------
+# 4. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA REFRESH / F5)
 # -------------------------------------------------------------
 PASTA_SESSAO = "viagens_ativas"
 os.makedirs(PASTA_SESSAO, exist_ok=True)
@@ -129,7 +211,7 @@ def limpar_viagem_em_andamento(usuario):
             pass
 
 # -------------------------------------------------------------
-# 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
+# 5. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
 # -------------------------------------------------------------
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -193,8 +275,8 @@ def carregar_veiculos():
 
 def salvar_lancamento_frota(dados):
     """
-    Envia o lançamento para o Google Apps Script contornando
-    bloqueios de redirecionamento 302/403 comuns do Google.
+    Envia o lançamento para o Google Apps Script via POST contornando
+    bloqueios de redirecionamento 302/403.
     """
     try:
         corpo = json.dumps(dados, ensure_ascii=False)
@@ -240,13 +322,13 @@ def salvar_lancamento_frota(dados):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 6. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    st.markdown('<div class="main-header"><h2>Master Café ☕</h2><p>Controle de Gestão de Frota</p></div>', unsafe_allow_html=True)
+    renderizar_cabecalho("Portal de Acesso do Condutor")
     
     with st.form("form_login"):
-        st.subheader("Condutor")
+        st.subheader("Identificação do Condutor")
         usuario_digitado = st.text_input("Usuário:").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password").strip()
         btn_login = st.form_submit_button("Entrar no Sistema")
@@ -271,12 +353,12 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL
+# 7. APLICATIVO PRINCIPAL
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por parâmetro da URL se recarregou
+    # Recupera sessão por parâmetro da URL se a página recarregou
     if not st.session_state.get("autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -308,14 +390,14 @@ def main():
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
         if st.session_state.get("viagem_ativa", False):
-            st.warning("⚠️ Há uma viagem em andamento para este login.")
+            st.warning("⚠️ Há uma viagem em andamento.")
         if st.button("🚪 Cancelar e Sair"):
             limpar_viagem_em_andamento(usuario_atual)
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
 
-    st.markdown('<div class="main-header"><h2>Master Café ☕</h2><p>Controle de Gestão de Frota</p></div>', unsafe_allow_html=True)
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
 
     agora = obter_agora_brasil()
 
@@ -334,7 +416,6 @@ def main():
 
         st.subheader("1. Selecione o Veículo")
         
-        # O placeholder inicial vazio força a escolha antes de exibir os outros campos
         opcoes = ["-- Selecione um veículo --"] + (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]).tolist()
         veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
 
@@ -389,7 +470,7 @@ def main():
                 salvar_viagem_em_andamento(usuario_atual, dados_partida)
                 st.session_state["viagem_ativa"] = True
                 st.session_state["dados_viagem"] = dados_partida
-                st.success("✅ Start Inicial registrado com sucesso! Viagem em andamento.")
+                st.success("✅ Start Inicial registrado! Viagem em andamento.")
                 st.rerun()
 
     # =========================================================================
@@ -458,7 +539,7 @@ def main():
             with st.spinner("Gravando lançamento na planilha e finalizando..."):
                 sucesso, msg = salvar_lancamento_frota(payload_completo)
 
-            # Backup local em CSV para garantia
+            # Backup local em CSV como segurança
             try:
                 arquivo_backup = "historico_frotas.csv"
                 df_hist = pd.DataFrame([payload_completo])
