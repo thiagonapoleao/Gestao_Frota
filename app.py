@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timezone, timedelta, date, time
+from datetime import datetime, timezone, timedelta
 try:
     from zoneinfo import ZoneInfo
     FUSO_BRASIL = ZoneInfo("America/Sao_Paulo")
@@ -48,6 +48,15 @@ st.markdown("""
             margin-bottom: 1.5rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
         }
+        .status-box {
+            background-color: #1E293B;
+            border: 1px solid #334155;
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 1.2rem;
+            color: #F8FAFC;
+            line-height: 1.6;
+        }
         .info-card {
             background-color: #1E293B;
             border-left: 4px solid #0D6EFD;
@@ -75,19 +84,50 @@ st.markdown("""
 # -------------------------------------------------------------
 # 2. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS E LINKS
 # -------------------------------------------------------------
-# Insira a URL do seu Webhook do Google Apps Script configurado para a nova planilha
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwQJfe1H2OHTAYGOPZhoOGRl8zazwK4SXf-RvKRMMkQhqJHbmyg4mHBT7AVRLubKOWzbQ/exec"
-
-# ID da Planilha de Gestão de Frota
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-# GIDs das Abas
 GID_USUARIOS = "426012097"       # Aba com Login / Condutores
 GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
 GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
 
 # -------------------------------------------------------------
-# 3. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
+# 3. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA REFRESH / F5)
+# -------------------------------------------------------------
+PASTA_SESSAO = "viagens_ativas"
+os.makedirs(PASTA_SESSAO, exist_ok=True)
+
+def caminho_arquivo_viagem(usuario):
+    user_sanitizado = "".join(c for c in str(usuario) if c.isalnum() or c in "_-")
+    return os.path.join(PASTA_SESSAO, f"viagem_{user_sanitizado}.json")
+
+def salvar_viagem_em_andamento(usuario, dados):
+    try:
+        with open(caminho_arquivo_viagem(usuario), "w", encoding="utf-8") as f:
+            json.dump(dados, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
+
+def carregar_viagem_em_andamento(usuario):
+    caminho = caminho_arquivo_viagem(usuario)
+    if os.path.exists(caminho):
+        try:
+            with open(caminho, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return None
+    return None
+
+def limpar_viagem_em_andamento(usuario):
+    caminho = caminho_arquivo_viagem(usuario)
+    if os.path.exists(caminho):
+        try:
+            os.remove(caminho)
+        except Exception:
+            pass
+
+# -------------------------------------------------------------
+# 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
 # -------------------------------------------------------------
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -97,7 +137,6 @@ def normalizar_texto(texto):
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
-    """Carrega os logins e condutores a partir da aba GID 426012097."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
@@ -119,8 +158,7 @@ def carregar_usuarios():
         except Exception:
             continue
 
-    # Fallback de teste
-    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor Master Café"}])
+    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor"}])
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
@@ -137,7 +175,6 @@ def carregar_veiculos():
         try:
             df_raw = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
             if not df_raw.empty and len(df_raw.columns) >= 5:
-                # Localiza as colunas B e E pelo índice posicional ou cabeçalho
                 col_veiculo = df_raw.columns[1]  # Coluna B
                 col_placa = df_raw.columns[4]    # Coluna E
 
@@ -145,7 +182,6 @@ def carregar_veiculos():
                 df_veiculos["placa"] = df_raw[col_placa].dropna().astype(str).str.strip().str.upper()
                 df_veiculos["veiculo"] = df_raw[col_veiculo].fillna("Não informado").astype(str).str.strip()
                 
-                # Remove placas vazias ou inválidas
                 df_veiculos = df_veiculos[df_veiculos["placa"].str.len() >= 5].drop_duplicates(subset=["placa"])
                 return df_veiculos
         except Exception:
@@ -154,7 +190,7 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo"])
 
 def salvar_lancamento_frota(dados):
-    """Envia os dados de frota para o Google Apps Script Webhook."""
+    """Envia o lançamento completo para o Webhook do Google Apps Script."""
     try:
         headers = {"Content-Type": "text/plain;charset=utf-8"}
         corpo = json.dumps(dados)
@@ -183,20 +219,20 @@ def salvar_lancamento_frota(dados):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 4. TELA DE LOGIN
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     st.markdown('<div class="main-header"><h2>Master Café ☕</h2><p>Controle de Gestão de Frota</p></div>', unsafe_allow_html=True)
     
     with st.form("form_login"):
-        st.subheader("Identificação do Condutor")
+        st.subheader("Condutor")
         usuario_digitado = st.text_input("Usuário:").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password").strip()
         btn_login = st.form_submit_button("Entrar no Sistema")
         
         if btn_login:
             if df_usuarios.empty:
-                st.error("Não foi possível carregar a lista de usuários da planilha.")
+                st.error("Não foi possível carregar a lista de condutores da planilha.")
                 return
 
             usuario_valido = df_usuarios[
@@ -214,12 +250,12 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 5. APLICATIVO PRINCIPAL
+# 6. APLICATIVO PRINCIPAL
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por parâmetro de URL se recarregou
+    # Recupera sessão por parâmetro da URL se recarregou
     if not st.session_state.get("autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -234,126 +270,200 @@ def main():
         tela_login(df_usuarios)
         return
 
+    usuario_atual = st.session_state.get("usuario_logado")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
 
-    # Menu lateral
+    # Verifica se há viagem em andamento (recuperação de refresh)
+    if "viagem_ativa" not in st.session_state:
+        viagem_recuperada = carregar_viagem_em_andamento(usuario_atual)
+        if viagem_recuperada:
+            st.session_state["viagem_ativa"] = True
+            st.session_state["dados_viagem"] = viagem_recuperada
+        else:
+            st.session_state["viagem_ativa"] = False
+            st.session_state["dados_viagem"] = {}
+
+    # Menu Lateral
     with st.sidebar:
-        st.write(f"🚗 **Condutor Autenticado:**\n### {nome_condutor}")
-        if st.button("🚪 Sair do Sistema"):
+        st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
+        if st.session_state["viagem_ativa"]:
+            st.warning("⚠️ Há uma viagem em andamento para este login.")
+        if st.button("🚪 Cancelar e Sair"):
+            limpar_viagem_em_andamento(usuario_atual)
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
 
-    st.markdown('<div class="main-header"><h2>Master Café ☕</h2><p>Registro de Saída e Retorno de Veículo</p></div>', unsafe_allow_html=True)
-
-    df_veiculos = carregar_veiculos()
-
-    if df_veiculos.empty:
-        st.warning("Nenhum veículo encontrado na aba de frotas. Verifique a planilha ou recarregue.")
-        if st.button("🔄 Recarregar Veículos"):
-            st.cache_data.clear()
-            st.rerun()
-        return
-
-    # Mapeamento para o Selectbox: mostra "Placa - Nome do Veículo"
-    df_veiculos["rotulo"] = df_veiculos["placa"] + " - " + df_veiculos["veiculo"]
-    opcoes_veiculos = df_veiculos["rotulo"].tolist()
+    st.markdown('<div class="main-header"><h2>Master Café ☕</h2><p>Controle de Gestão de Frota</p></div>', unsafe_allow_html=True)
 
     agora = obter_agora_brasil()
 
-    with st.form("form_gestao_frota"):
-        st.subheader("1. Veículo e Condutor")
-        
-        # Condutor vinculado automaticamente ao Login
-        condutor_selecionado = st.text_input("Condutor:", value=nome_condutor, disabled=True)
+    # =========================================================================
+    # ETAPA 1: SELEÇÃO DO VEÍCULO E START INICIAL (SAÍDA)
+    # =========================================================================
+    if not st.session_state["viagem_ativa"]:
+        df_veiculos = carregar_veiculos()
 
-        veiculo_sel_rotulo = st.selectbox("Selecione o Veículo:", options=opcoes_veiculos)
-        
-        # Recupera a placa e veículo exatos
-        dados_veiculo_linha = df_veiculos[df_veiculos["rotulo"] == veiculo_sel_rotulo].iloc[0]
-        placa_selecionada = dados_veiculo_linha["placa"]
-        veiculo_selecionado = dados_veiculo_linha["veiculo"]
+        if df_veiculos.empty:
+            st.error("Nenhum veículo disponível na base. Verifique a planilha.")
+            if st.button("🔄 Recarregar Base"):
+                st.cache_data.clear()
+                st.rerun()
+            return
 
+        st.subheader("1. Selecione o Veículo")
+        
+        # Opções com placeholder inicial vazio para só exibir o restante após escolher
+        opcoes = ["-- Selecione um veículo --"] + (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]).tolist()
+        veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
+
+        # Os outros campos só aparecem depois que o veículo é escolhido
+        if veiculo_escolhido != "-- Selecione um veículo --":
+            dados_veiculo = df_veiculos[
+                (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]) == veiculo_escolhido
+            ].iloc[0]
+            placa = dados_veiculo["placa"]
+            modelo = dados_veiculo["veiculo"]
+
+            st.markdown(f"""
+                <div class="info-card">
+                    <b>👤 Condutor:</b> {nome_condutor}<br>
+                    <b>🚙 Veículo:</b> {modelo}<br>
+                    <b>🔢 Placa:</b> {placa}
+                </div>
+            """, unsafe_allow_html=True)
+
+            st.subheader("2. Start Inicial (Saída do Veículo)")
+            with st.form("form_start_inicial"):
+                col_d, col_h = st.columns(2)
+                with col_d:
+                    data_ini = st.date_input("Data Inicial:", value=agora.date(), format="DD/MM/YYYY")
+                with col_h:
+                    hora_ini = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
+
+                km_ini = st.number_input("Km Inicial:", min_value=0.0, step=1.0, format="%.0f", key="km_ini_input")
+                destino_ini = st.text_input("Destino / Rota planejada:", placeholder="Ex: Clientes Araraquara, São Carlos...")
+
+                btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)")
+
+            if btn_start_inicial:
+                if km_ini <= 0:
+                    st.error("⚠️ Informe o Km Inicial do veículo.")
+                    return
+                if not destino_ini.strip():
+                    st.error("⚠️ Informe o Destino da viagem.")
+                    return
+
+                dados_partida = {
+                    "condutor": nome_condutor,
+                    "usuario": usuario_atual,
+                    "placa": placa,
+                    "veiculo": modelo,
+                    "data_inicial": data_ini.strftime("%d/%m/%Y"),
+                    "horario_inicial": hora_ini.strftime("%H:%M:%S"),
+                    "km_inicial": int(km_ini),
+                    "destino": destino_ini.strip()
+                }
+
+                salvar_viagem_em_andamento(usuario_atual, dados_partida)
+                st.session_state["viagem_ativa"] = True
+                st.session_state["dados_viagem"] = dados_partida
+                st.success("✅ Start Inicial registrado! Viagem iniciada com sucesso.")
+                st.rerun()
+
+    # =========================================================================
+    # ETAPA 2: START FINAL (RETORNO E FINALIZAÇÃO DO LOGIN)
+    # =========================================================================
+    else:
+        dados_ativos = st.session_state["dados_viagem"]
+
+        st.subheader("Viagem em Andamento")
         st.markdown(f"""
-            <div class="info-card">
-                <b>🚙 Veículo:</b> {veiculo_selecionado}<br>
-                <b>🔢 Placa:</b> {placa_selecionada}<br>
-                <b>👤 Condutor:</b> {nome_condutor}
+            <div class="status-box">
+                <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
+                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
+                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
+                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
+                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
             </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("2. Saída (Início)")
-        col_di, col_hi = st.columns(2)
-        with col_di:
-            data_inicial = st.date_input("Data Inicial:", value=agora.date(), format="DD/MM/YYYY")
-        with col_hi:
-            horario_inicial = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
+        st.subheader("Start Final (Retorno do Veículo)")
+        with st.form("form_start_final"):
+            col_df, col_hf = st.columns(2)
+            with col_df:
+                data_fim = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
+            with col_hf:
+                hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-        km_inicial = st.number_input("Km Inicial:", min_value=0.0, step=1.0, format="%.0f")
-
-        st.subheader("3. Retorno (Fim) e Destino")
-        col_df, col_hf = st.columns(2)
-        with col_df:
-            data_final = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
-        with col_hf:
-            horario_final = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
-
-        km_final = st.number_input("Km Final:", min_value=0.0, step=1.0, format="%.0f")
-
-        destino = st.text_input("Destino / Rota percorrida:", placeholder="Ex: Clientes Araraquara, São Carlos, Manutenção...")
-
-        btn_salvar = st.form_submit_button("💾 Gravar Registro de Frota")
-
-    if btn_salvar:
-        # Validações básicas
-        if km_final > 0 and km_final < km_inicial:
-            st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
-            return
-
-        if not destino.strip():
-            st.error("⚠️ Por favor, informe o Destino.")
-            return
-
-        km_percorrido = (km_final - km_inicial) if km_final >= km_inicial else 0
-
-        # Estrutura do payload para enviar para a aba GID 379222602
-        payload = {
-            "gid_destino": GID_LANCAMENTOS,
-            "data_inicial": data_inicial.strftime("%d/%m/%Y"),
-            "horario_inicial": horario_inicial.strftime("%H:%M:%S"),
-            "km_inicial": int(km_inicial),
-            "data_final": data_final.strftime("%d/%m/%Y"),
-            "horario_final": horario_final.strftime("%H:%M:%S"),
-            "km_final": int(km_final),
-            "km_percorrido": int(km_percorrido),
-            "condutor": nome_condutor,
-            "placa": placa_selecionada,
-            "veiculo": veiculo_selecionado,
-            "destino": destino.strip(),
-            "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
-        }
-
-        with st.spinner("Salvando lançamento na planilha..."):
-            sucesso, msg = salvar_lancamento_frota(payload)
-
-        # Backup local em CSV
-        try:
-            arquivo_backup = "historico_frotas.csv"
-            df_hist = pd.DataFrame([payload])
-            df_hist.to_csv(
-                arquivo_backup,
-                mode="a",
-                header=not os.path.exists(arquivo_backup),
-                index=False
+            km_fim = st.number_input(
+                "Km Final:", 
+                min_value=float(dados_ativos.get("km_inicial", 0)), 
+                step=1.0, 
+                format="%.0f", 
+                key="km_fim_input"
             )
-        except Exception:
-            pass
 
-        if sucesso:
-            st.success(f"✅ Lançamento gravado com sucesso na aba de registros!")
-            st.info(f"Distância percorrida calculada: **{km_percorrido:,.0f} km**")
-        else:
-            st.warning(f"⚠️ {msg} (Os dados foram preservados no backup local).")
+            destino_atualizado = st.text_input(
+                "Destino / Rota realizada:", 
+                value=dados_ativos.get("destino", "")
+            )
+
+            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
+
+        if btn_start_final:
+            if km_fim < dados_ativos.get("km_inicial", 0):
+                st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
+                return
+
+            km_percorrido = int(km_fim - dados_ativos.get("km_inicial", 0))
+
+            payload_completo = {
+                "gid_destino": GID_LANCAMENTOS,
+                "data_inicial": dados_ativos.get("data_inicial"),
+                "horario_inicial": dados_ativos.get("horario_inicial"),
+                "km_inicial": dados_ativos.get("km_inicial"),
+                "data_final": data_fim.strftime("%d/%m/%Y"),
+                "horario_final": hora_fim.strftime("%H:%M:%S"),
+                "km_final": int(km_fim),
+                "condutor": dados_ativos.get("condutor"),
+                "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino"),
+                "placa": dados_ativos.get("placa"),
+                "veiculo": dados_ativos.get("veiculo"),
+                "km_percorrido": km_percorrido,
+                "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
+            }
+
+            with st.spinner("Gravando registro e finalizando sessão..."):
+                sucesso, msg = salvar_lancamento_frota(payload_completo)
+
+            # Grava no backup local CSV
+            try:
+                arquivo_backup = "historico_frotas.csv"
+                df_hist = pd.DataFrame([payload_completo])
+                df_hist.to_csv(
+                    arquivo_backup,
+                    mode="a",
+                    header=not os.path.exists(arquivo_backup),
+                    index=False
+                )
+            except Exception:
+                pass
+
+            # Limpa o arquivo de sessão da viagem em andamento
+            limpar_viagem_em_andamento(usuario_atual)
+
+            # Limpa todo o estado da sessão (dados limpos para o próximo login)
+            st.session_state.clear()
+            st.query_params.clear()
+
+            if sucesso:
+                st.success("✅ Viagem concluída e registrada com sucesso na planilha!")
+            else:
+                st.warning(f"⚠️ {msg} (Os dados foram preservados no backup local).")
+
+            st.info("Sessão finalizada. Redirecionando para a tela de login...")
+            st.rerun()
 
 if __name__ == "__main__":
     main()
