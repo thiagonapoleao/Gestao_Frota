@@ -85,16 +85,13 @@ st.markdown("""
 # -------------------------------------------------------------
 # 2. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS E LINKS
 # -------------------------------------------------------------
-# Link do Webhook atualizado
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
-
-# ID da Planilha de Gestão de Frota
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
 # GIDs das Abas
 GID_USUARIOS = "426012097"       # Aba com Login / Condutores
 GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
-GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os lançamentos de frota
+GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
 
 # -------------------------------------------------------------
 # 3. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA REFRESH / F5)
@@ -163,7 +160,7 @@ def carregar_usuarios():
         except Exception:
             continue
 
-    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor Master Café"}])
+    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor"}])
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
@@ -195,18 +192,25 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo"])
 
 def salvar_lancamento_frota(dados):
-    """Envia o lançamento completo para o Webhook do Google Apps Script com tratamento robusto."""
+    """
+    Envia o lançamento para o Google Apps Script contornando
+    bloqueios de redirecionamento 302/403 comuns do Google.
+    """
     try:
-        headers = {"Content-Type": "text/plain;charset=utf-8"}
         corpo = json.dumps(dados, ensure_ascii=False)
+        headers = {
+            "Content-Type": "text/plain;charset=utf-8",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+        }
 
-        resposta = requests.post(
-            WEBHOOK_URL,
-            data=corpo.encode('utf-8'),
-            headers=headers,
-            timeout=30,
-            allow_redirects=True
-        )
+        with requests.Session() as session:
+            resposta = session.post(
+                WEBHOOK_URL,
+                data=corpo.encode("utf-8"),
+                headers=headers,
+                timeout=35,
+                allow_redirects=True
+            )
 
         if resposta.status_code == 200:
             try:
@@ -214,13 +218,22 @@ def salvar_lancamento_frota(dados):
                 if ret.get("status") == "success":
                     return True, "Registro salvo com sucesso na planilha!"
                 elif ret.get("status") == "error":
-                    return False, f"Erro retornado pelo Apps Script: {ret.get('message')}"
+                    return False, f"Aviso do Apps Script: {ret.get('message')}"
             except Exception:
-                if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
-                    return True, "Registro salvo na planilha!"
-                return True, "Lançamento processado com sucesso!"
+                pass
+
+            if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
+                return True, "Registro salvo na planilha!"
+            return True, "Lançamento registrado com sucesso!"
+
+        elif resposta.status_code == 403:
+            return False, (
+                "Erro HTTP 403 (Acesso Negado): No Apps Script, vá em 'Implantar' > "
+                "'Gerenciar implantações' e confirme se 'Quem tem acesso' está como 'Qualquer pessoa'."
+            )
         else:
-            return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:200]}"
+            return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
+
     except requests.exceptions.Timeout:
         return False, "Tempo limite esgotado ao tentar salvar na planilha (Timeout)."
     except Exception as e:
@@ -263,7 +276,7 @@ def tela_login(df_usuarios):
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por parâmetro da URL em caso de refresh
+    # Recupera sessão por parâmetro da URL se recarregou
     if not st.session_state.get("autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
