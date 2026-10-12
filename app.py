@@ -19,7 +19,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E DESIGN SYSTEM CORPORATIVO (PURE LIGHT)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS COM OVERRIDE EM TODA A DOM
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - Gestão de Frota",
@@ -28,10 +28,11 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
+# Injeção de CSS forçando tema claro absoluto em nós raiz e portais
 st.markdown("""
     <style>
         /* =========================================================
-           1. RESET E OVERRIDE GLOBAL (TEMA CLARO CORPORATIVO)
+           1. SUPRESSÃO DE MENUS E PADRONIZAÇÃO DE RAIZ (HTML / BODY)
            ========================================================= */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="stDecoration"], [data-testid="manage-app-button"] {
@@ -39,15 +40,19 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* Fundo da Página e Cores Globais */
-        html, body, [data-testid="stAppViewContainer"], .stApp {
+        :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+            color-scheme: light !important; /* FORÇA O NAVEGADOR A RENDERIZAR CONTROLES NATIVOS EM MODO CLARO */
         }
 
-        /* Tipografia Global */
-        h1, h2, h3, h4, h5, p, span, label, div {
+        .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+            background-color: #F8FAFC !important;
+            color: #0F172A !important;
+        }
+
+        /* Força todos os textos para tom escuro legível sobre branco */
+        h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
         .stWidgetLabel p, label p {
@@ -57,30 +62,8 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
-        /* Barra Lateral (Sidebar) em Tema Claro */
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
-        }
-        section[data-testid="stSidebar"] * {
-            color: #1E293B !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button {
-            background: #F1F5F9 !important;
-            color: #475569 !important;
-            -webkit-text-fill-color: #475569 !important;
-            border: 1px solid #CBD5E1 !important;
-            box-shadow: none !important;
-            height: 42px !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button:hover {
-            background: #E2E8F0 !important;
-            color: #0F172A !important;
-            -webkit-text-fill-color: #0F172A !important;
-        }
-
         /* =========================================================
-           2. COMPONENTES VISUAIS (CARDS & CONTAINERS)
+           2. CARTÕES E CONTAINERS VISUAIS
            ========================================================= */
         .corporate-header {
             background: #FFFFFF !important;
@@ -105,7 +88,6 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Container do Formulário */
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E2E8F0 !important;
@@ -114,7 +96,6 @@ st.markdown("""
             padding: 26px !important;
         }
 
-        /* Card de Informação Selecionada */
         .card-vehicle-info {
             background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
@@ -127,7 +108,6 @@ st.markdown("""
             font-size: 0.92rem !important;
         }
 
-        /* Card de Viagem em Execução */
         .card-active-trip {
             background-color: #EFF6FF !important;
             border: 1px solid #BFDBFE !important;
@@ -143,9 +123,8 @@ st.markdown("""
         }
 
         /* =========================================================
-           3. OVERRIDE TOTAL DE INPUTS, SELETOR, DATA E HORA
+           3. TODAS AS CAIXAS DE ENTRADA (DATA, HORA, TEXTO, NÚMERO)
            ========================================================= */
-        /* Força fundo branco e borda suave em todas as caixas */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -153,23 +132,23 @@ st.markdown("""
         div[data-testid="stTextInput"] > div,
         div[data-testid="stDateInput"] > div,
         div[data-testid="stTimeInput"] > div,
-        div[data-testid="stNumberInput"] > div {
+        div[data-testid="stNumberInput"] > div,
+        div[data-testid="stNumberInputContainer"] {
             background-color: #FFFFFF !important;
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 8px !important;
             box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
-            transition: all 0.2s ease !important;
         }
 
-        /* Foco com anel azul moderno */
         div[data-baseweb="input"]:focus-within,
-        div[data-baseweb="select"]:focus-within {
+        div[data-baseweb="select"]:focus-within,
+        div[data-testid="stNumberInputContainer"]:focus-within {
             border-color: #2563EB !important;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
         }
 
-        /* Campos de digitação internos */
+        /* Inputs reais de digitação */
         input[type="text"], 
         input[type="number"], 
         input[type="password"],
@@ -186,22 +165,16 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Ícones dentro dos campos (relógio, calendário, busca) */
-        svg {
-            fill: #475569 !important;
-        }
-
         /* =========================================================
-           4. BOTÕES DE INCREMENTO (+ / -) DO NUMBER INPUT
+           4. BOTOES + E - DO KM INICIAL E KM FINAL (NUMBER INPUT)
            ========================================================= */
         div[data-testid="stNumberInputStepDown"],
         div[data-testid="stNumberInputStepUp"] {
-            background-color: #F8FAFC !important;
+            background-color: #F1F5F9 !important;
             border: 1px solid #CBD5E1 !important;
             border-radius: 6px !important;
             color: #0F172A !important;
             margin: 2px !important;
-            transition: background 0.15s ease !important;
         }
         div[data-testid="stNumberInputStepDown"]:hover,
         div[data-testid="stNumberInputStepUp"]:hover {
@@ -214,20 +187,32 @@ st.markdown("""
         }
 
         /* =========================================================
-           5. CALENDÁRIO (DATEPICKER) E MENUS DROPDOWN CLAROS
+           5. CALENDÁRIO COMPLETO, POPOVER E PORTAIS DO BASEWEB
            ========================================================= */
+        /* Força nó raiz de portal */
+        [data-testid="stPortal"],
         div[data-baseweb="popover"],
         div[data-baseweb="calendar"],
         div[data-baseweb="menu"],
-        ul[role="listbox"] {
+        ul[role="listbox"],
+        div[role="dialog"] {
             background-color: #FFFFFF !important;
             color: #0F172A !important;
             border: 1px solid #CBD5E1 !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
             border-radius: 10px !important;
         }
+
+        /* Células, dias e cabeçalhos do calendário */
         div[data-baseweb="calendar"] * {
             background-color: transparent !important;
+            color: #0F172A !important;
+            -webkit-text-fill-color: #0F172A !important;
+        }
+        div[data-baseweb="calendar"] div[role="row"] > div {
+            background-color: #FFFFFF !important;
+        }
+        div[data-baseweb="calendar"] div[role="gridcell"] {
             color: #0F172A !important;
         }
         div[data-baseweb="calendar"] [aria-selected="true"] {
@@ -240,17 +225,21 @@ st.markdown("""
             background-color: #EFF6FF !important;
             color: #2563EB !important;
         }
+
+        /* Dropdowns / Itens selecionáveis */
         li[role="option"] {
             background-color: #FFFFFF !important;
             color: #0F172A !important;
+            -webkit-text-fill-color: #0F172A !important;
         }
         li[role="option"]:hover, li[aria-selected="true"] {
             background-color: #EFF6FF !important;
             color: #2563EB !important;
+            -webkit-text-fill-color: #2563EB !important;
         }
 
         /* =========================================================
-           6. BOTÕES CORPORATIVOS (START INICIAL E START FINAL)
+           6. BOTÕES PRINCIPAIS (START INICIAL E START FINAL)
            ========================================================= */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
@@ -263,7 +252,6 @@ st.markdown("""
             height: 48px !important;
             font-size: 1rem !important;
             font-weight: 600 !important;
-            letter-spacing: 0.01em !important;
             box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
@@ -277,6 +265,19 @@ st.markdown("""
             transform: translateY(-1px) !important;
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
         }
+
+        /* Barra Lateral */
+        section[data-testid="stSidebar"] {
+            background-color: #FFFFFF !important;
+            border-right: 1px solid #E2E8F0 !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button {
+            background: #F1F5F9 !important;
+            color: #334155 !important;
+            -webkit-text-fill-color: #334155 !important;
+            box-shadow: none !important;
+            border: 1px solid #CBD5E1 !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -286,15 +287,14 @@ st.markdown("""
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-GID_USUARIOS = "426012097"       # Aba de Autenticação / Condutores
-GID_VEICULOS = "0"               # Aba da Frota
-GID_LANCAMENTOS = "379222602"    # Aba de Gravação dos Lançamentos
+GID_USUARIOS = "426012097"       # Aba com Login / Condutores
+GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
+GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
 
 # -------------------------------------------------------------
 # 3. SUPORTE A LOGOTIPO CORPORATIVO E CABEÇALHO
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
-    """Busca o arquivo de logotipo na pasta local com extensões comuns."""
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     nomes = ["Logotipo", "logotipo", "Logo", "logo"]
     for nome in nomes:
@@ -414,7 +414,6 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo"])
 
 def salvar_lancamento_frota(dados):
-    """Envia o lançamento para o Google Apps Script contornando bloqueios de redirecionamento."""
     try:
         corpo = json.dumps(dados, ensure_ascii=False)
         headers = {
