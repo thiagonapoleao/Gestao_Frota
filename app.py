@@ -8,6 +8,7 @@ except Exception:
     FUSO_BRASIL = timezone(timedelta(hours=-3))
 
 import os
+import re
 import unicodedata
 import requests
 import json
@@ -19,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS COM OVERRIDE EM TODA A DOM
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (100% TEMA CLARO CORPORATIVO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - Gestão de Frota",
@@ -28,12 +29,8 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# Injeção de CSS forçando tema claro absoluto em nós raiz e portais
 st.markdown("""
     <style>
-        /* =========================================================
-           1. SUPRESSÃO DE MENUS E PADRONIZAÇÃO DE RAIZ (HTML / BODY)
-           ========================================================= */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="stDecoration"], [data-testid="manage-app-button"] {
             display: none !important;
@@ -43,7 +40,7 @@ st.markdown("""
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
-            color-scheme: light !important; /* FORÇA O NAVEGADOR A RENDERIZAR CONTROLES NATIVOS EM MODO CLARO */
+            color-scheme: light !important;
         }
 
         .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
@@ -51,7 +48,6 @@ st.markdown("""
             color: #0F172A !important;
         }
 
-        /* Força todos os textos para tom escuro legível sobre branco */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -62,9 +58,6 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
-        /* =========================================================
-           2. CARTÕES E CONTAINERS VISUAIS
-           ========================================================= */
         .corporate-header {
             background: #FFFFFF !important;
             padding: 24px 20px !important;
@@ -122,9 +115,7 @@ st.markdown("""
             color: #1E3A8A !important;
         }
 
-        /* =========================================================
-           3. TODAS AS CAIXAS DE ENTRADA (DATA, HORA, TEXTO, NÚMERO)
-           ========================================================= */
+        /* Inputs de formulário claros */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -148,7 +139,6 @@ st.markdown("""
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
         }
 
-        /* Inputs reais de digitação */
         input[type="text"], 
         input[type="number"], 
         input[type="password"],
@@ -165,9 +155,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* =========================================================
-           4. BOTOES + E - DO KM INICIAL E KM FINAL (NUMBER INPUT)
-           ========================================================= */
+        /* Botões de step (+ e -) */
         div[data-testid="stNumberInputStepDown"],
         div[data-testid="stNumberInputStepUp"] {
             background-color: #F1F5F9 !important;
@@ -186,10 +174,7 @@ st.markdown("""
             stroke: #0F172A !important;
         }
 
-        /* =========================================================
-           5. CALENDÁRIO COMPLETO, POPOVER E PORTAIS DO BASEWEB
-           ========================================================= */
-        /* Força nó raiz de portal */
+        /* Popovers, Calendários e Menus Dropdown */
         [data-testid="stPortal"],
         div[data-baseweb="popover"],
         div[data-baseweb="calendar"],
@@ -203,17 +188,10 @@ st.markdown("""
             border-radius: 10px !important;
         }
 
-        /* Células, dias e cabeçalhos do calendário */
         div[data-baseweb="calendar"] * {
             background-color: transparent !important;
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
-        }
-        div[data-baseweb="calendar"] div[role="row"] > div {
-            background-color: #FFFFFF !important;
-        }
-        div[data-baseweb="calendar"] div[role="gridcell"] {
-            color: #0F172A !important;
         }
         div[data-baseweb="calendar"] [aria-selected="true"] {
             background-color: #2563EB !important;
@@ -225,8 +203,6 @@ st.markdown("""
             background-color: #EFF6FF !important;
             color: #2563EB !important;
         }
-
-        /* Dropdowns / Itens selecionáveis */
         li[role="option"] {
             background-color: #FFFFFF !important;
             color: #0F172A !important;
@@ -238,9 +214,7 @@ st.markdown("""
             -webkit-text-fill-color: #2563EB !important;
         }
 
-        /* =========================================================
-           6. BOTÕES PRINCIPAIS (START INICIAL E START FINAL)
-           ========================================================= */
+        /* Botões Start Inicial e Final */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
@@ -266,7 +240,6 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
         }
 
-        /* Barra Lateral */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -282,17 +255,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 2. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS E ENDPOINTS
+# 2. VARIÁVEIS GLOBAIS E ENDPOINTS
 # -------------------------------------------------------------
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-GID_USUARIOS = "426012097"       # Aba com Login / Condutores
-GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
-GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
+GID_USUARIOS = "426012097"       # Aba Condutores / Logins
+GID_VEICULOS = "0"               # Aba Frota
+GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO CORPORATIVO E CABEÇALHO
+# 3. SUPORTE A LOGOTIPO CORPORATIVO
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
@@ -317,52 +290,20 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
             st.markdown('<div class="corporate-title">Master Café ☕</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="corporate-title">Master Café ☕</div>', unsafe_allow_html=True)
-    
     st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 4. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA F5 / REFRESH)
-# -------------------------------------------------------------
-PASTA_SESSAO = "viagens_ativas"
-os.makedirs(PASTA_SESSAO, exist_ok=True)
-
-def caminho_arquivo_viagem(usuario):
-    user_sanitizado = "".join(c for c in str(usuario) if c.isalnum() or c in "_-")
-    return os.path.join(PASTA_SESSAO, f"viagem_{user_sanitizado}.json")
-
-def salvar_viagem_em_andamento(usuario, dados):
-    try:
-        with open(caminho_arquivo_viagem(usuario), "w", encoding="utf-8") as f:
-            json.dump(dados, f, ensure_ascii=False, indent=2)
-    except Exception:
-        pass
-
-def carregar_viagem_em_andamento(usuario):
-    caminho = caminho_arquivo_viagem(usuario)
-    if os.path.exists(caminho):
-        try:
-            with open(caminho, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return None
-    return None
-
-def limpar_viagem_em_andamento(usuario):
-    caminho = caminho_arquivo_viagem(usuario)
-    if os.path.exists(caminho):
-        try:
-            os.remove(caminho)
-        except Exception:
-            pass
-
-# -------------------------------------------------------------
-# 5. SINCRONIZAÇÃO COM A PLANILHA GOOGLE
+# 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
 # -------------------------------------------------------------
 def normalizar_texto(texto):
     if not isinstance(texto, str):
         texto = str(texto)
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto.strip().lower()
+
+def limpar_placa(placa_str):
+    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
+    return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
@@ -386,7 +327,6 @@ def carregar_usuarios():
                 return df_res
         except Exception:
             continue
-
     return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor"}])
 
 @st.cache_data(ttl=30)
@@ -399,28 +339,72 @@ def carregar_veiculos():
         try:
             df_raw = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
             if not df_raw.empty and len(df_raw.columns) >= 5:
-                col_veiculo = df_raw.columns[1]  # Coluna B: Modelo / Descrição
-                col_placa = df_raw.columns[4]    # Coluna E: Placa
+                col_veiculo = df_raw.columns[1]
+                col_placa = df_raw.columns[4]
 
                 df_veiculos = pd.DataFrame()
                 df_veiculos["placa"] = df_raw[col_placa].dropna().astype(str).str.strip().str.upper()
                 df_veiculos["veiculo"] = df_raw[col_veiculo].fillna("Não informado").astype(str).str.strip()
-                
                 df_veiculos = df_veiculos[df_veiculos["placa"].str.len() >= 5].drop_duplicates(subset=["placa"])
                 return df_veiculos
         except Exception:
             continue
-
     return pd.DataFrame(columns=["placa", "veiculo"])
 
-def salvar_lancamento_frota(dados):
+def carregar_lancamentos_existentes():
+    """Lê em tempo real a aba de lançamentos (GID 379222602) para verificar bloqueios e gerar RV."""
+    urls = [
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
+    ]
+    for url in urls:
+        try:
+            df = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
+            if not df.empty:
+                return df
+        except Exception:
+            continue
+    return pd.DataFrame()
+
+def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
+    """
+    Gera o código RV no formato RV-PPPP-AAAA-XXXX
+    Calcula o próximo sequencial XXXX específico para a placa e ano na coluna M.
+    """
+    placa_limpa = limpar_placa(placa)
+    prefixo = f"RV-{placa_limpa}-{ano_atual}-"
+    maior_seq = 0
+
+    if not df_lancamentos.empty and len(df_lancamentos.columns) >= 13:
+        # Coluna M é a 13ª coluna (índice 12)
+        coluna_rv = df_lancamentos.iloc[:, 12].dropna().astype(str)
+        for val in coluna_rv:
+            val = val.strip().upper()
+            # Suporta leitura do formato novo RV-PPPP-AAAA-XXXX e retrocompatível com RV-PPPP_AAAA-XXXX
+            if val.startswith(prefixo) or val.startswith(f"RV-{placa_limpa}_{ano_atual}-"):
+                partes = val.split("-")
+                # Se formato RV-PPPP-AAAA-XXXX tem 4 partes
+                if len(partes) == 4 and partes[3].isdigit():
+                    num = int(partes[3])
+                    if num > maior_seq:
+                        maior_seq = num
+                # Se formato anterior RV-PPPP_AAAA-XXXX tem 3 partes
+                elif len(partes) == 3 and partes[2].isdigit():
+                    num = int(partes[2])
+                    if num > maior_seq:
+                        maior_seq = num
+
+    proximo_seq = maior_seq + 1
+    return f"{prefixo}{proximo_seq:04d}"
+
+def enviar_requisicao_apps_script(payload):
+    """Envia comandos para o Apps Script com timeout e fallback."""
     try:
-        corpo = json.dumps(dados, ensure_ascii=False)
+        corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
             "Content-Type": "text/plain;charset=utf-8",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
         }
-
         with requests.Session() as session:
             resposta = session.post(
                 WEBHOOK_URL,
@@ -429,37 +413,28 @@ def salvar_lancamento_frota(dados):
                 timeout=35,
                 allow_redirects=True
             )
-
         if resposta.status_code == 200:
             try:
                 ret = resposta.json()
                 if ret.get("status") == "success":
-                    return True, "Registro salvo com sucesso na planilha!"
-                elif ret.get("status") == "error":
-                    return False, f"Aviso do Apps Script: {ret.get('message')}"
+                    return True, ret.get("message", "Operação realizada!")
+                return False, ret.get("message", "Erro retornado pelo script.")
             except Exception:
-                pass
-
-            if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
-                return True, "Registro salvo na planilha!"
-            return True, "Lançamento registrado com sucesso!"
-
+                if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
+                    return True, "Operação realizada com sucesso!"
+                return True, "Registro atualizado!"
         elif resposta.status_code == 403:
-            return False, "Erro HTTP 403: No Apps Script, configure 'Quem tem acesso' para 'Qualquer pessoa'."
+            return False, "Erro 403: No Apps Script, configure 'Quem tem acesso' para 'Qualquer pessoa'."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
-
-    except requests.exceptions.Timeout:
-        return False, "Tempo limite esgotado ao tentar salvar na planilha (Timeout)."
     except Exception as e:
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 6. TELA DE LOGIN
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
-    
     with st.form("form_login"):
         st.subheader("Identificação do Condutor")
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
@@ -468,7 +443,7 @@ def tela_login(df_usuarios):
         
         if btn_login:
             if df_usuarios.empty:
-                st.error("Não foi possível carregar a lista de condutores da planilha.")
+                st.error("Não foi possível carregar os condutores da planilha.")
                 return
 
             usuario_valido = df_usuarios[
@@ -486,12 +461,11 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 7. APLICATIVO PRINCIPAL
+# 6. APLICATIVO PRINCIPAL (REGRAS DE TRAVA E PERSISTÊNCIA)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por parâmetro da URL se houver refresh
     if not st.session_state.get("autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -509,42 +483,145 @@ def main():
     usuario_atual = st.session_state.get("usuario_logado")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
 
-    # Verifica se há viagem ativa salva em disco
-    if "viagem_ativa" not in st.session_state:
-        viagem_recuperada = carregar_viagem_em_andamento(usuario_atual)
-        if viagem_recuperada:
-            st.session_state["viagem_ativa"] = True
-            st.session_state["dados_viagem"] = viagem_recuperada
-        else:
-            st.session_state["viagem_ativa"] = False
-            st.session_state["dados_viagem"] = {}
+    # Lê lançamentos para analisar status das viagens em tempo real
+    df_lanc = carregar_lancamentos_existentes()
+
+    # Mapeamento de viagens em aberto na planilha (onde Data Final / Coluna D ou Km Final / Coluna F está vazio)
+    viagens_abertas_por_condutor = {}
+    veiculos_em_uso = {} # Placa limpa -> dict com condutor, RV, data, etc.
+
+    if not df_lanc.empty and len(df_lanc.columns) >= 13:
+        for _, row in df_lanc.iterrows():
+            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
+            cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+            placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
+            rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
+
+            # Se ainda não possui data final ou km final, a viagem está aberta
+            if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
+                info_aberta = {
+                    "rv": rv_row,
+                    "condutor": cond_row,
+                    "placa": placa_row,
+                    "veiculo": str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else "",
+                    "data_inicial": str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else "",
+                    "horario_inicial": str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "",
+                    "km_inicial": str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "0",
+                    "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
+                }
+                
+                # Registra o veículo ocupado
+                placa_k = limpar_placa(placa_row)
+                if placa_k:
+                    veiculos_em_uso[placa_k] = info_aberta
+
+                # Registra condutor com viagem pendente
+                if cond_row:
+                    viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
+
+    # Verifica se este condutor já tem viagem aberta pendente
+    condutor_chave = normalizar_texto(nome_condutor)
+    viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # Menu Lateral
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
-        if st.session_state.get("viagem_ativa", False):
-            st.info("ℹ️ Viagem em andamento para este condutor.")
-        if st.button("🚪 Cancelar e Sair"):
-            limpar_viagem_em_andamento(usuario_atual)
+        if viagem_pendente_condutor:
+            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
+        if st.button("🚪 Sair do Sistema"):
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
 
-    renderizar_cabecalho("Registro de Saída e Retorno de Veículo")
-
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
+    ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # ETAPA 1: SELEÇÃO DO VEÍCULO E START INICIAL (SAÍDA)
+    # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FORÇA O START FINAL)
     # =========================================================================
-    if not st.session_state.get("viagem_ativa", False):
+    if viagem_pendente_condutor is not None:
+        dados_ativos = viagem_pendente_condutor
+
+        st.warning("⚠️ **Você possui uma viagem em andamento aberta na planilha!** Finalize o retorno para liberar novos lançamentos.")
+        st.markdown(f"""
+            <div class="card-active-trip">
+                <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
+                <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
+                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
+                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
+                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
+                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.subheader("Start Final (Retorno do Veículo)")
+        with st.form("form_start_final"):
+            col_df, col_hf = st.columns(2)
+            with col_df:
+                data_fim = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
+            with col_hf:
+                hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
+
+            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
+            km_fim = st.number_input(
+                "Km Final:", 
+                value=None, 
+                placeholder="Digite o Km Final...", 
+                min_value=km_inicial_val, 
+                step=1.0, 
+                format="%.0f", 
+                key="km_fim_input"
+            )
+
+            destino_atualizado = st.text_input(
+                "Destino / Rota realizada:", 
+                value=dados_ativos.get("destino", "")
+            )
+
+            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
+
+        if btn_start_final:
+            if km_fim is None:
+                st.error("⚠️ Por favor, preencha o Km Final.")
+                return
+            if km_fim < km_inicial_val:
+                st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
+                return
+
+            km_percorrido = int(km_fim - km_inicial_val)
+
+            payload_finalizar = {
+                "acao": "finalizar",
+                "gid_destino": GID_LANCAMENTOS,
+                "rv": dados_ativos.get("rv"),
+                "data_final": data_fim.strftime("%d/%m/%Y"),
+                "horario_final": hora_fim.strftime("%H:%M:%S"),
+                "km_final": int(km_fim),
+                "km_percorrido": km_percorrido,
+                "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
+            }
+
+            with st.spinner("Atualizando e concluindo a viagem na planilha..."):
+                sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
+
+            if sucesso:
+                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
+                st.balloons()
+                st.cache_data.clear()
+                time.sleep(2)
+                st.rerun()
+            else:
+                st.error(f"❌ Falha ao finalizar na planilha: {msg}")
+
+    # =========================================================================
+    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (PODE ESCOLHER VEÍCULO E INICIAR VIAGEM)
+    # =========================================================================
+    else:
         df_veiculos = carregar_veiculos()
-
         if df_veiculos.empty:
             st.error("Nenhum veículo disponível na base. Verifique a planilha.")
-            if st.button("🔄 Recarregar Veículos"):
-                st.cache_data.clear()
-                st.rerun()
             return
 
         st.subheader("1. Seleção do Veículo")
@@ -552,16 +629,27 @@ def main():
         opcoes = ["-- Selecione um veículo --"] + (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]).tolist()
         veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
 
-        # Só exibe os campos após a escolha do veículo
         if veiculo_escolhido != "-- Selecione um veículo --":
             dados_veiculo = df_veiculos[
                 (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]) == veiculo_escolhido
             ].iloc[0]
             placa = dados_veiculo["placa"]
             modelo = dados_veiculo["veiculo"]
+            placa_limpa = limpar_placa(placa)
+
+            # Trava do Veículo
+            if placa_limpa in veiculos_em_uso:
+                ocupante = veiculos_em_uso[placa_limpa]
+                st.error(f"🚫 **Veículo Indisponível!** O veículo de placa **{placa}** já está em viagem aberta iniciada por **{ocupante['condutor']}** em {ocupante['data_inicial']} às {ocupante['horario_inicial']}.")
+                st.info(f"Código da viagem aberta em andamento: **{ocupante['rv']}**. Escolha outro veículo ou aguarde a finalização.")
+                return
+
+            # Veículo liberado: Gera código RV no formato RV-PPPP-AAAA-XXXX
+            codigo_rv_previsto = gerar_proximo_rv(df_lanc, placa, ano_atual)
 
             st.markdown(f"""
                 <div class="card-vehicle-info">
+                    <b>🎫 Registro de Viagem:</b> {codigo_rv_previsto}<br>
                     <b>👤 Condutor:</b> {nome_condutor}<br>
                     <b>🚙 Veículo:</b> {modelo}<br>
                     <b>🔢 Placa:</b> {placa}
@@ -576,7 +664,6 @@ def main():
                 with col_h:
                     hora_ini = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
 
-                # Campo sem valor inicial pré-preenchido
                 km_ini = st.number_input(
                     "Km Inicial:", 
                     value=None, 
@@ -598,7 +685,10 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
-                dados_partida = {
+                payload_iniciar = {
+                    "acao": "iniciar",
+                    "gid_destino": GID_LANCAMENTOS,
+                    "rv": codigo_rv_previsto,
                     "condutor": nome_condutor,
                     "usuario": usuario_atual,
                     "placa": placa,
@@ -606,112 +696,20 @@ def main():
                     "data_inicial": data_ini.strftime("%d/%m/%Y"),
                     "horario_inicial": hora_ini.strftime("%H:%M:%S"),
                     "km_inicial": int(km_ini),
-                    "destino": destino_ini.strip()
+                    "destino": destino_ini.strip(),
+                    "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
                 }
 
-                salvar_viagem_em_andamento(usuario_atual, dados_partida)
-                st.session_state["viagem_ativa"] = True
-                st.session_state["dados_viagem"] = dados_partida
-                st.success("✅ Start Inicial registrado com sucesso! Viagem em andamento.")
-                st.rerun()
+                with st.spinner(f"Gravando início da viagem ({codigo_rv_previsto}) na planilha..."):
+                    sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
-    # =========================================================================
-    # ETAPA 2: START FINAL (RETORNO E FINALIZAÇÃO DO LOGIN)
-    # =========================================================================
-    else:
-        dados_ativos = st.session_state["dados_viagem"]
-
-        st.subheader("Viagem em Andamento")
-        st.markdown(f"""
-            <div class="card-active-trip">
-                <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
-                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
-                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
-                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
-            </div>
-        """, unsafe_allow_html=True)
-
-        st.subheader("Start Final (Retorno do Veículo)")
-        with st.form("form_start_final"):
-            col_df, col_hf = st.columns(2)
-            with col_df:
-                data_fim = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
-            with col_hf:
-                hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
-
-            # Campo sem valor inicial pré-preenchido
-            km_fim = st.number_input(
-                "Km Final:", 
-                value=None, 
-                placeholder="Digite o Km Final...", 
-                min_value=float(dados_ativos.get("km_inicial", 0)), 
-                step=1.0, 
-                format="%.0f", 
-                key="km_fim_input"
-            )
-
-            destino_atualizado = st.text_input(
-                "Destino / Rota realizada:", 
-                value=dados_ativos.get("destino", "")
-            )
-
-            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
-
-        if btn_start_final:
-            if km_fim is None:
-                st.error("⚠️ Por favor, digite o Km Final do veículo.")
-                return
-
-            if km_fim < dados_ativos.get("km_inicial", 0):
-                st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
-                return
-
-            km_percorrido = int(km_fim - dados_ativos.get("km_inicial", 0))
-
-            payload_completo = {
-                "gid_destino": GID_LANCAMENTOS,
-                "data_inicial": dados_ativos.get("data_inicial"),
-                "horario_inicial": dados_ativos.get("horario_inicial"),
-                "km_inicial": dados_ativos.get("km_inicial"),
-                "data_final": data_fim.strftime("%d/%m/%Y"),
-                "horario_final": hora_fim.strftime("%H:%M:%S"),
-                "km_final": int(km_fim),
-                "condutor": dados_ativos.get("condutor"),
-                "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino"),
-                "placa": dados_ativos.get("placa"),
-                "veiculo": dados_ativos.get("veiculo"),
-                "km_percorrido": km_percorrido,
-                "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
-            }
-
-            with st.spinner("Gravando registro e finalizando..."):
-                sucesso, msg = salvar_lancamento_frota(payload_completo)
-
-            # Backup local em CSV
-            try:
-                arquivo_backup = "historico_frotas.csv"
-                df_hist = pd.DataFrame([payload_completo])
-                df_hist.to_csv(
-                    arquivo_backup,
-                    mode="a",
-                    header=not os.path.exists(arquivo_backup),
-                    index=False
-                )
-            except Exception:
-                pass
-
-            if sucesso:
-                limpar_viagem_em_andamento(usuario_atual)
-                st.session_state.clear()
-                st.query_params.clear()
-                st.success("✅ Viagem concluída e registrada com sucesso na planilha!")
-                st.balloons()
-                time.sleep(2)
-                st.rerun()
-            else:
-                st.error(f"❌ {msg}")
-                st.warning("Os dados foram mantidos na tela para você tentar novamente.")
+                if sucesso:
+                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
+                    st.cache_data.clear()
+                    time.sleep(1.5)
+                    st.rerun()
+                else:
+                    st.error(f"❌ Falha ao iniciar viagem na planilha: {msg}")
 
 if __name__ == "__main__":
     main()
