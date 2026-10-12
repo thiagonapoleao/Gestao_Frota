@@ -19,7 +19,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E DESIGN SYSTEM (LIGHT THEME ULTRA-CLEAN)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (FORÇAR TEMA CLARO ABSOLUTO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - Gestão de Frota",
@@ -30,242 +30,219 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* ========================================================
-           RESET E VARIÁVEIS DO SISTEMA DE DESIGN (LIGHT SYSTEM)
-           ======================================================== */
-        :root {
-            --bg-canvas: #F8FAFC;
-            --bg-card: #FFFFFF;
-            --border-light: #E2E8F0;
-            --border-input: #CBD5E1;
-            --text-title: #0F172A;
-            --text-body: #334155;
-            --text-muted: #64748B;
-            --primary: #2563EB;
-            --primary-hover: #1D4ED8;
-            --primary-light: #EFF6FF;
-            --primary-border: #BFDBFE;
-            --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 2px rgba(15, 23, 42, 0.03);
-            --shadow-card: 0 4px 12px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
-            --radius-md: 10px;
-            --radius-lg: 14px;
-        }
-
-        /* Oculta marca d'água e menus do Streamlit Cloud */
+        /* Desativa menus e botões padrão do Streamlit */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="stDecoration"], [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
-        /* Fundo global da aplicação */
-        .stApp {
-            background-color: var(--bg-canvas) !important;
-            color: var(--text-body) !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+        /* 1. FUNDO GERAL DA PÁGINA */
+        html, body, [data-testid="stAppViewContainer"], .stApp {
+            background-color: #F8FAFC !important;
+            color: #0F172A !important;
         }
 
-        /* Sidebar Limpa */
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid var(--border-light) !important;
+        /* 2. LABELS E TEXTOS */
+        p, span, label, h1, h2, h3, h4, div {
+            color: #0F172A !important;
         }
-        section[data-testid="stSidebar"] * {
-            color: var(--text-body) !important;
-        }
-
-        /* ========================================================
-           CONTAINERS, CABEÇALHOS E CARTÕES
-           ======================================================== */
-        .header-card {
-            background: var(--bg-card);
-            padding: 24px;
-            border-radius: var(--radius-lg);
-            text-align: center;
-            border: 1px solid var(--border-light);
-            box-shadow: var(--shadow-card);
-            margin-bottom: 1.5rem;
-        }
-        .header-title {
-            font-size: 1.45rem;
-            font-weight: 700;
-            color: var(--text-title);
-            margin-top: 8px;
-            margin-bottom: 2px;
-            letter-spacing: -0.02em;
-        }
-        .header-subtitle {
-            font-size: 0.90rem;
-            color: var(--text-muted);
-            margin: 0;
-            font-weight: 500;
-        }
-
-        /* Informações e Status */
-        .card-info {
-            background-color: #FFFFFF;
-            border: 1px solid var(--border-light);
-            border-left: 4px solid var(--primary);
-            padding: 16px 18px;
-            border-radius: var(--radius-md);
-            margin: 14px 0;
-            box-shadow: var(--shadow-subtle);
-            color: var(--text-body);
-            line-height: 1.6;
-            font-size: 0.93rem;
-        }
-        .card-status-running {
-            background-color: var(--primary-light);
-            border: 1px solid var(--primary-border);
-            padding: 16px 18px;
-            border-radius: var(--radius-md);
-            margin-bottom: 1.2rem;
-            color: #1E3A8A;
-            line-height: 1.65;
-            font-size: 0.93rem;
-        }
-
-        /* Container de Formulário */
-        [data-testid="stForm"] {
-            background-color: var(--bg-card) !important;
-            border: 1px solid var(--border-light) !important;
-            border-radius: var(--radius-lg) !important;
-            box-shadow: var(--shadow-card) !important;
-            padding: 26px !important;
-        }
-
-        /* Títulos e Subtítulos */
-        h1, h2, h3, h4 {
-            color: var(--text-title) !important;
-            font-weight: 700 !important;
-            letter-spacing: -0.02em !important;
-        }
-
-        /* Labels dos campos */
-        label, .stWidgetLabel p {
+        .stWidgetLabel p, label p {
             color: #334155 !important;
             font-weight: 600 !important;
-            font-size: 0.88rem !important;
-            margin-bottom: 4px !important;
+            font-size: 0.90rem !important;
         }
 
-        /* ========================================================
-           INPUTS: TEXTO, NÚMERO, DATA, HORA E CALENDÁRIO
-           ======================================================== */
-        /* Estilização universal de caixas de entrada */
-        .stTextInput input, 
-        .stNumberInput input, 
-        .stDateInput input, 
-        .stTimeInput input {
+        /* 3. FORMULÁRIO E CARTÕES */
+        [data-testid="stForm"] {
             background-color: #FFFFFF !important;
-            border: 1px solid var(--border-input) !important;
-            color: var(--text-title) !important;
-            border-radius: var(--radius-md) !important;
-            font-size: 0.94rem !important;
-            box-shadow: var(--shadow-subtle) !important;
-            transition: all 0.2s ease !important;
-            padding: 8px 12px !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+            padding: 24px !important;
+        }
+        .header-card {
+            background: #FFFFFF !important;
+            padding: 22px !important;
+            border-radius: 14px !important;
+            text-align: center !important;
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04) !important;
+            margin-bottom: 1.5rem !important;
+        }
+        .header-title {
+            font-size: 1.45rem !important;
+            font-weight: 700 !important;
+            color: #0F172A !important;
+            margin-top: 8px !important;
+            margin-bottom: 2px !important;
+        }
+        .header-subtitle {
+            font-size: 0.90rem !important;
+            color: #64748B !important;
+            margin: 0 !important;
+        }
+        .card-info {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            border-left: 4px solid #2563EB !important;
+            padding: 14px 16px !important;
+            border-radius: 10px !important;
+            margin: 12px 0 !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+            color: #334155 !important;
+            line-height: 1.6 !important;
+        }
+        .card-status-running {
+            background-color: #EFF6FF !important;
+            border: 1px solid #BFDBFE !important;
+            padding: 16px !important;
+            border-radius: 12px !important;
+            margin-bottom: 1.2rem !important;
+            color: #1E3A8A !important;
+            line-height: 1.65 !important;
+        }
+        .card-status-running b, .card-status-running span {
+            color: #1E3A8A !important;
         }
 
-        /* Efeito de foco */
-        .stTextInput input:focus, 
-        .stNumberInput input:focus, 
-        .stDateInput input:focus, 
-        .stTimeInput input:focus {
-            border-color: var(--primary) !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
-            outline: none !important;
+        /* 4. FORÇAR TEMA CLARO EM TODAS AS CAIXAS DE ENTRADA (BASEWEB) */
+        div[data-baseweb="input"],
+        div[data-baseweb="base-input"],
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] > div,
+        div[data-testid="stTextInput"] > div,
+        div[data-testid="stDateInput"] > div,
+        div[data-testid="stTimeInput"] > div,
+        div[data-testid="stNumberInput"] > div {
+            background-color: #FFFFFF !important;
+            border-color: #CBD5E1 !important;
+            color: #0F172A !important;
+            border-radius: 8px !important;
         }
 
-        /* Selectbox e Dropdown (Listas) */
-        div[data-baseweb="select"] > div {
+        /* Inputs reais de digitação */
+        input[type="text"], 
+        input[type="number"], 
+        input[type="password"],
+        input {
             background-color: #FFFFFF !important;
-            border: 1px solid var(--border-input) !important;
-            border-radius: var(--radius-md) !important;
-            color: var(--text-title) !important;
-            box-shadow: var(--shadow-subtle) !important;
+            color: #0F172A !important;
+            border: none !important;
+            -webkit-text-fill-color: #0F172A !important;
         }
-        div[data-baseweb="popover"], div[data-baseweb="menu"], ul[role="listbox"] {
-            background-color: #FFFFFF !important;
-            border: 1px solid var(--border-light) !important;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08) !important;
-            border-radius: var(--radius-md) !important;
-        }
-        li[role="option"] {
-            color: var(--text-title) !important;
-            background-color: #FFFFFF !important;
-        }
-        li[role="option"]:hover, li[aria-selected="true"] {
-            background-color: var(--primary-light) !important;
-            color: var(--primary) !important;
+        input::placeholder {
+            color: #94A3B8 !important;
+            -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Popover do Calendário (Datepicker) */
-        div[data-baseweb="calendar"] {
+        /* 5. BOTÕES DE + E - DO KM INICIAL / KM FINAL (NUMBER INPUT) */
+        div[data-testid="stNumberInputStepDown"],
+        div[data-testid="stNumberInputStepUp"] {
+            background-color: #F1F5F9 !important;
+            border: 1px solid #CBD5E1 !important;
+            color: #0F172A !important;
+            border-radius: 6px !important;
+            margin: 2px !important;
+        }
+        div[data-testid="stNumberInputStepDown"]:hover,
+        div[data-testid="stNumberInputStepUp"]:hover {
+            background-color: #E2E8F0 !important;
+        }
+        div[data-testid="stNumberInputStepDown"] svg,
+        div[data-testid="stNumberInputStepUp"] svg {
+            fill: #0F172A !important;
+            stroke: #0F172A !important;
+        }
+
+        /* 6. CALENDÁRIO / POPOVER / DROPDOWN CLARO */
+        div[data-baseweb="popover"],
+        div[data-baseweb="calendar"],
+        div[data-baseweb="menu"],
+        ul[role="listbox"] {
             background-color: #FFFFFF !important;
-            color: var(--text-title) !important;
+            color: #0F172A !important;
+            border: 1px solid #CBD5E1 !important;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+            border-radius: 10px !important;
         }
         div[data-baseweb="calendar"] * {
-            color: var(--text-title) !important;
+            background-color: transparent !important;
+            color: #0F172A !important;
+        }
+        div[data-baseweb="calendar"] [aria-selected="true"] {
+            background-color: #2563EB !important;
+            color: #FFFFFF !important;
+            border-radius: 50% !important;
         }
         div[data-baseweb="calendar"] button:hover {
-            background-color: var(--primary-light) !important;
+            background-color: #EFF6FF !important;
+            color: #2563EB !important;
+        }
+        li[role="option"] {
+            background-color: #FFFFFF !important;
+            color: #0F172A !important;
+        }
+        li[role="option"]:hover, li[aria-selected="true"] {
+            background-color: #EFF6FF !important;
+            color: #2563EB !important;
         }
 
-        /* ========================================================
-           BOTÕES MODERNOS
-           ======================================================== */
-        div.stButton > button {
-            width: 100% !important;
-            border-radius: var(--radius-md) !important;
-            height: 48px !important;
-            font-size: 0.95rem !important;
-            font-weight: 600 !important;
+        /* 7. BOTÕES PRINCIPAIS (START INICIAL E START FINAL) - AZUL VIBRANTE CLARO */
+        div.stButton > button:first-child,
+        div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+            background-color: #2563EB !important;
             color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
             border: none !important;
-            box-shadow: 0 3px 10px rgba(37, 99, 235, 0.22) !important;
-            transition: all 0.2s ease-in-out !important;
+            border-radius: 10px !important;
+            height: 48px !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28) !important;
             cursor: pointer !important;
+            transition: all 0.2s ease !important;
         }
-        div.stButton > button:hover {
+        div.stButton > button:first-child:hover,
+        div[data-testid="stFormSubmitButton"] > button:hover {
             background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
-            box-shadow: 0 5px 14px rgba(37, 99, 235, 0.32) !important;
+            background-color: #1D4ED8 !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
             transform: translateY(-1px) !important;
-        }
-        div.stButton > button:active {
-            transform: translateY(0px) !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38) !important;
         }
 
-        /* Botão secundário na barra lateral */
+        /* Barra Lateral */
+        section[data-testid="stSidebar"] {
+            background-color: #FFFFFF !important;
+            border-right: 1px solid #E2E8F0 !important;
+        }
         section[data-testid="stSidebar"] div.stButton > button {
             background: #F1F5F9 !important;
-            color: #475569 !important;
+            color: #334155 !important;
+            -webkit-text-fill-color: #334155 !important;
             box-shadow: none !important;
-            border: 1px solid var(--border-light) !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button:hover {
-            background: #E2E8F0 !important;
-            color: #1E293B !important;
+            border: 1px solid #CBD5E1 !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 2. DEFINIÇÃO DAS VARIÁVEIS GLOBAIS E LINKS
+# 2. VARIÁVEIS GLOBAIS E LINKS
 # -------------------------------------------------------------
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
 GID_USUARIOS = "426012097"       # Aba com Login / Condutores
 GID_VEICULOS = "0"               # Aba com a lista de veículos da frota
-GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os lançamentos de frota
+GID_LANCAMENTOS = "379222602"    # Aba onde serão gravados os registros de frota
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO E CABEÇALHO MODERNO
+# 3. SUPORTE A LOGOTIPO E CABEÇALHO
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
-    """Localiza o arquivo do logotipo com qualquer extensão compatível na mesma pasta."""
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     nomes = ["Logotipo", "logotipo", "Logo", "logo"]
     for nome in nomes:
@@ -276,7 +253,6 @@ def obter_caminho_logotipo():
     return None
 
 def renderizar_cabecalho(subtitulo="Gestão e Controle de Frota"):
-    """Exibe o cabeçalho estilizado em tema claro com o Logotipo se existente."""
     caminho_logo = obter_caminho_logotipo()
     st.markdown('<div class="header-card">', unsafe_allow_html=True)
     if caminho_logo:
@@ -293,7 +269,7 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle de Frota"):
     st.markdown(f'<p class="header-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 4. GESTÃO DE PERSISTÊNCIA DA VIAGEM (CONTRA REFRESH / F5)
+# 4. GESTÃO DE PERSISTÊNCIA DA VIAGEM
 # -------------------------------------------------------------
 PASTA_SESSAO = "viagens_ativas"
 os.makedirs(PASTA_SESSAO, exist_ok=True)
@@ -328,7 +304,7 @@ def limpar_viagem_em_andamento(usuario):
             pass
 
 # -------------------------------------------------------------
-# 5. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
+# 5. SUPORTE E LEITURA DA PLANILHA
 # -------------------------------------------------------------
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -549,17 +525,26 @@ def main():
                 with col_h:
                     hora_ini = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
 
-                km_ini = st.number_input("Km Inicial:", min_value=0.0, step=1.0, format="%.0f", key="km_ini_input")
+                # Campo sem valor inicial pré-preenchido
+                km_ini = st.number_input(
+                    "Km Inicial:", 
+                    value=None, 
+                    placeholder="Digite o Km Inicial...", 
+                    min_value=0.0, 
+                    step=1.0, 
+                    format="%.0f", 
+                    key="km_ini_input"
+                )
                 destino_ini = st.text_input("Destino / Rota planejada:", placeholder="Ex: Rota Araraquara, São Carlos...")
 
                 btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)")
 
             if btn_start_inicial:
-                if km_ini <= 0:
-                    st.error("⚠️ Informe o Km Inicial do veículo.")
+                if km_ini is None or km_ini <= 0:
+                    st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
                     return
                 if not destino_ini.strip():
-                    st.error("⚠️ Informe o Destino da viagem.")
+                    st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
                 dados_partida = {
@@ -604,8 +589,11 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
+            # Campo sem valor inicial pré-preenchido
             km_fim = st.number_input(
                 "Km Final:", 
+                value=None, 
+                placeholder="Digite o Km Final...", 
                 min_value=float(dados_ativos.get("km_inicial", 0)), 
                 step=1.0, 
                 format="%.0f", 
@@ -620,9 +608,13 @@ def main():
             btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
 
         if btn_start_final:
+            if km_fim is None:
+                st.error("⚠️ Por favor, digite o Km Final do veículo.")
+                return
+
             if km_fim < dados_ativos.get("km_inicial", 0):
                 st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
-                st.stop()
+                return
 
             km_percorrido = int(km_fim - dados_ativos.get("km_inicial", 0))
 
@@ -645,7 +637,7 @@ def main():
             with st.spinner("Gravando registro e finalizando..."):
                 sucesso, msg = salvar_lancamento_frota(payload_completo)
 
-            # Backup local em CSV para garantia
+            # Backup local em CSV
             try:
                 arquivo_backup = "historico_frotas.csv"
                 df_hist = pd.DataFrame([payload_completo])
