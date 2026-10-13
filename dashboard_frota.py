@@ -18,10 +18,10 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM ESPAÇO NO TOPO E LOGO COMPACTO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (EXECUTIVE LIGHT)
 # -------------------------------------------------------------
 st.set_page_config(
-    page_title="Master Café - BI Gestão de Frota",
+    page_title="Painel de Frotas",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -29,7 +29,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA COMPLETAMENTE QUALQUER ELEMENTO / VÃO EM BRANCO NO TOPO */
+        /* 1. ELIMINA COMPLETAMENTE O ESPAÇO EM BRANCO NO TOPO */
         header[data-testid="stHeader"],
         [data-testid="stHeader"],
         div[data-testid="stDecoration"],
@@ -43,7 +43,6 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* Cola o conteúdo direto no topo absoluto da tela */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
@@ -90,7 +89,27 @@ st.markdown("""
             color: #1E293B !important;
         }
 
-        /* Banner de Cabeçalho com Logo no Canto Superior */
+        /* Menu de Navegação na Barra Lateral */
+        div[data-testid="stRadio"] > label {
+            display: none !important;
+        }
+        div[data-testid="stRadio"] > div {
+            gap: 6px !important;
+        }
+        div[data-testid="stRadio"] > div > label {
+            background-color: #F8FAFC !important;
+            border: 1px solid #E2E8F0 !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            transition: all 0.2s ease !important;
+        }
+        div[data-testid="stRadio"] > div > label:hover {
+            background-color: #EFF6FF !important;
+            border-color: #BFDBFE !important;
+        }
+
+        /* Banner de Cabeçalho com Logo Compacto */
         .dash-header-container {
             background: #FFFFFF;
             padding: 16px 24px;
@@ -234,8 +253,8 @@ def obter_caminho_logotipo():
 
 def renderizar_cabecalho_com_logo(subtitulo="Monitoramento em Tempo Real de Viagens e Quilometragem"):
     """
-    Renderiza o cabeçalho executivo no topo absoluto da página
-    com o logotipo redimensionado de forma compacta no canto superior esquerdo.
+    Renderiza o cabeçalho executivo no topo da página com 'Painel de Frotas'
+    (sem 'Master Café' no texto) e logotipo compacto à esquerda.
     """
     caminho_logo = obter_caminho_logotipo()
     agora = obter_agora_brasil()
@@ -247,17 +266,16 @@ def renderizar_cabecalho_com_logo(subtitulo="Monitoramento em Tempo Real de Viag
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
-                # Logo compacto no canto superior esquerdo (largura máxima 140px)
                 st.image(logo_img, width=140)
             except Exception:
                 st.markdown("### ☕")
         else:
-            st.markdown("### ☕ **Master Café**")
+            st.markdown("### ☕")
 
     with c_texto:
         st.markdown(f"""
             <div style="padding-left: 8px;">
-                <div class="dash-title">Master Café - Painel de Frotas</div>
+                <div class="dash-title">Painel de Frotas</div>
                 <div class="dash-subtitle">{subtitulo}</div>
             </div>
         """, unsafe_allow_html=True)
@@ -384,11 +402,11 @@ def tela_login(df_usuarios):
                 logo_img = Image.open(caminho_logo)
                 st.image(logo_img, width=160)
             except Exception:
-                st.markdown("<h2 style='text-align:center;'>Master Café ☕</h2>", unsafe_allow_html=True)
+                st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
         else:
-            st.markdown("<h2 style='text-align:center;'>Master Café ☕</h2>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
 
-        st.markdown("<p style='text-align:center; color:#64748B; font-weight:500;'>Acesso ao Dashboard Executivo de Frotas</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#64748B; font-weight:500;'>Acesso ao Painel de Frotas</p>", unsafe_allow_html=True)
 
         with st.form("form_login_dash"):
             usuario_digitado = st.text_input("Usuário Gestor:", placeholder="Digite seu usuário").strip().lower()
@@ -425,6 +443,7 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
+    # SIDEBAR COM NAVEGAÇÃO ENTRE AS PÁGINAS
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -432,18 +451,18 @@ def main():
                 logo_img = Image.open(caminho_logo)
                 st.image(logo_img, width=150)
             except Exception:
-                st.markdown("### ☕ **Master Café**")
+                st.markdown("### ☕")
         else:
-            st.markdown("### ☕ **Master Café**")
+            st.markdown("### ☕")
 
         st.markdown(f"👤 **Gestor Conectado:**\n**{nome_gestor}**")
 
         st.markdown("---")
-        st.markdown("#### 📌 **Navegação**")
+        st.markdown("#### 📌 **Módulos do Sistema**")
         pagina = st.radio(
-            "Selecione o Módulo:",
+            "Navegação:",
             options=["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"],
-            label_visibility="collapsed"
+            index=0
         )
         st.markdown("---")
 
@@ -469,7 +488,6 @@ def main():
     # PÁGINA 1: VISÃO GERAL & KPIS
     # =========================================================================
     if pagina == "📊 Visão Geral & KPIs":
-        # 1. CABEÇALHO COM LOGO REDIMENSIONADO NO CANTO SUPERIOR (SEM ESPAÇO ACIMA)
         renderizar_cabecalho_com_logo("Visão Geral, Controle de Veículos em Trânsito e Indicadores")
 
         total_viagens = len(df_base)
@@ -481,7 +499,7 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
-        # 2. BLOCO DE KPIS
+        # 1. BLOCO DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -533,7 +551,7 @@ def main():
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 3. VEÍCULOS EM ABERTO NO TOPO (AUDITORIA EM TEMPO REAL)
+        # 2. VEÍCULOS EM ABERTO NO TOPO (AUDITORIA EM TEMPO REAL)
         # =====================================================================
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
@@ -564,7 +582,7 @@ def main():
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 4. GRÁFICOS ACUMULATIVOS
+        # 3. GRÁFICOS ACUMULATIVOS
         # =====================================================================
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
@@ -614,7 +632,7 @@ def main():
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 5. CARROS UTILIZADOS NO DIA (HOJE)
+        # 4. CARROS UTILIZADOS NO DIA (HOJE)
         # =====================================================================
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
@@ -673,7 +691,7 @@ def main():
             )
 
     # =========================================================================
-    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
+    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS (PÁGINA DEDICADA DE PESQUISA)
     # =========================================================================
     elif pagina == "🔍 Consulta & Filtros Avançados":
         renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
@@ -777,10 +795,11 @@ def main():
             st.download_button(
                 label="📥 Exportar Dados Filtrados (CSV / Excel)",
                 data=csv_data,
-                file_name=f"relatorio_frota_mastercafe_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                file_name=f"relatorio_frota_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
                 mime="text/csv"
             )
 
+        # MATRIZ CRUZADA (PIVOT TABLE)
         df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
         if not df_conc_consulta.empty:
             with st.expander("📊 **Visualizar Matriz Cruzada: Km por Veículo e por Condutor**"):
