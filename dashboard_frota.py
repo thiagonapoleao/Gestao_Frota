@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (EXECUTIVE LIGHT)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR BLINDADA E VISÍVEL)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -29,27 +29,40 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* Elimina o topo em branco fantasma */
-        header[data-testid="stHeader"],
-        [data-testid="stHeader"],
-        div[data-testid="stDecoration"],
-        [data-testid="stDecoration"],
-        div[data-testid="stToolbar"] {
-            display: none !important;
-            height: 0px !important;
-            max-height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            visibility: hidden !important;
+        /* 1. MANTÉM A SIDEBAR SEMPRE FIXA, ABERTA E VISÍVEL */
+        section[data-testid="stSidebar"] {
+            display: block !important;
+            visibility: visible !important;
+            width: 280px !important;
+            min-width: 280px !important;
+            background-color: #FFFFFF !important;
+            border-right: 1px solid #E2E8F0 !important;
+            transform: none !important; /* Desativa retração no desktop */
+        }
+        section[data-testid="stSidebar"] * {
+            color: #1E293B !important;
         }
 
+        /* Garante que o botão de abrir a sidebar (se fechar no celular) fique visível */
+        [data-testid="collapsedControl"] {
+            display: flex !important;
+            visibility: visible !important;
+            color: #0F172A !important;
+            top: 10px !important;
+            left: 10px !important;
+        }
+
+        /* Reduz o vão superior sem quebrar a barra de ferramentas */
         .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container,
-        div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.5rem !important;
+        div[data-testid="stAppViewContainer"] > .main > .block-container {
+            padding-top: 1rem !important;
             padding-bottom: 2rem !important;
-            margin-top: 0px !important;
             max-width: 96% !important;
+        }
+
+        header[data-testid="stHeader"] {
+            background-color: transparent !important;
+            height: 2rem !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -58,7 +71,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* Força Tema Claro Nativo */
+        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -80,33 +93,25 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Sidebar Executiva */
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
+        /* Botões de rádio da barra lateral destacados */
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+            gap: 8px !important;
         }
-        section[data-testid="stSidebar"] * {
-            color: #1E293B !important;
-        }
-
-        /* Menu de Navegação na Sidebar */
-        div[data-testid="stRadio"] > label {
-            display: none !important;
-        }
-        div[data-testid="stRadio"] > div {
-            gap: 6px !important;
-        }
-        div[data-testid="stRadio"] > div > label {
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label {
             background-color: #F8FAFC !important;
-            border: 1px solid #E2E8F0 !important;
+            border: 1px solid #CBD5E1 !important;
             padding: 10px 14px !important;
             border-radius: 8px !important;
             cursor: pointer !important;
-            transition: all 0.2s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            font-weight: 600 !important;
+            color: #0F172A !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
         }
-        div[data-testid="stRadio"] > div > label:hover {
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:hover {
             background-color: #EFF6FF !important;
-            border-color: #BFDBFE !important;
+            border-color: #2563EB !important;
         }
 
         /* Cabeçalho Compacto */
@@ -397,7 +402,7 @@ def carregar_dados_viagens():
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN COM GRAVAÇÃO NA URL
+# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -433,7 +438,6 @@ def tela_login(df_usuarios):
                     st.session_state["dash_autenticado"] = True
                     st.session_state["dash_usuario"] = usuario_digitado
                     st.session_state["dash_nome"] = usuario_valido.iloc[0]["nome"]
-                    # Grava o login nos parâmetros da URL para resistir ao F5
                     st.query_params["u"] = usuario_digitado
                     st.rerun()
                 else:
@@ -445,7 +449,7 @@ def tela_login(df_usuarios):
 def main():
     df_usuarios = carregar_usuarios()
 
-    # RESTAURAÇÃO DE SESSÃO AUTOMÁTICA EM CASO DE RECARREGAMENTO / F5
+    # Recupera sessão por URL caso o navegador recarregue (F5)
     if not st.session_state.get("dash_autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -456,18 +460,19 @@ def main():
                 st.session_state["dash_usuario"] = usuario_url
                 st.session_state["dash_nome"] = usuario_valido.iloc[0]["nome"]
 
-    # Se ainda assim não estiver autenticado, exibe a tela de login
     if not st.session_state.get("dash_autenticado", False):
         tela_login(df_usuarios)
         return
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # Inicializa estado da página se ainda não existir
-    if "pagina_selecionada" not in st.session_state:
-        st.session_state["pagina_selecionada"] = "📊 Visão Geral & KPIs"
+    # Módulos disponíveis
+    opcoes_menu = ["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"]
 
-    # BARRA LATERAL COM SELETOR DE PÁGINAS
+    if "pagina_selecionada" not in st.session_state:
+        st.session_state["pagina_selecionada"] = opcoes_menu[0]
+
+    # BARRA LATERAL (MENU GARANTIDO)
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -480,23 +485,19 @@ def main():
             st.markdown("### ☕")
 
         st.markdown(f"👤 **Gestor Conectado:**\n**{nome_gestor}**")
-
         st.markdown("---")
-        st.markdown("#### 📌 **Módulos do Sistema**")
 
-        opcoes_menu = ["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"]
-        idx_atual = opcoes_menu.index(st.session_state["pagina_selecionada"]) if st.session_state["pagina_selecionada"] in opcoes_menu else 0
-        
-        pagina = st.radio(
+        st.markdown("#### 📌 **Navegação**")
+        idx_selecionado = opcoes_menu.index(st.session_state["pagina_selecionada"]) if st.session_state["pagina_selecionada"] in opcoes_menu else 0
+        pagina_sidebar = st.radio(
             "Selecione o módulo:",
             options=opcoes_menu,
-            index=idx_atual,
-            key="radio_nav"
+            index=idx_selecionado,
+            key="radio_nav_sidebar"
         )
-        st.session_state["pagina_selecionada"] = pagina
+        st.session_state["pagina_selecionada"] = pagina_sidebar
 
         st.markdown("---")
-
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             if st.button("🔄 Atualizar"):
@@ -505,7 +506,7 @@ def main():
         with col_btn2:
             if st.button("🚪 Sair"):
                 st.session_state.clear()
-                st.query_params.clear()  # Limpa o parâmetro da URL ao deslogar
+                st.query_params.clear()
                 st.rerun()
 
     df_base = carregar_dados_viagens()
