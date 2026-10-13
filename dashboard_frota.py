@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (EXECUTIVE LIGHT)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM ESPAÇO NO TOPO E LOGO COMPACTO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - BI Gestão de Frota",
@@ -29,26 +29,37 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+        /* 1. ELIMINA COMPLETAMENTE QUALQUER ELEMENTO / VÃO EM BRANCO NO TOPO */
         header[data-testid="stHeader"],
-        [data-testid="stHeader"] {
+        [data-testid="stHeader"],
+        div[data-testid="stDecoration"],
+        [data-testid="stDecoration"],
+        div[data-testid="stToolbar"] {
             display: none !important;
             height: 0px !important;
+            max-height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
             visibility: hidden !important;
         }
 
+        /* Cola o conteúdo direto no topo absoluto da tela */
         .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 1rem !important;
+        div[data-testid="stAppViewContainer"] > .main > .block-container,
+        div[data-testid="stAppViewBlockContainer"] {
+            padding-top: 0.5rem !important;
             padding-bottom: 2rem !important;
-            max-width: 95% !important;
+            margin-top: 0px !important;
+            max-width: 96% !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="stDecoration"], [data-testid="manage-app-button"] {
+        [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
+        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -70,6 +81,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
+        /* Barra Lateral */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -78,40 +90,31 @@ st.markdown("""
             color: #1E293B !important;
         }
 
-        .dash-header {
+        /* Banner de Cabeçalho com Logo no Canto Superior */
+        .dash-header-container {
             background: #FFFFFF;
-            padding: 22px 28px;
-            border-radius: 14px;
+            padding: 16px 24px;
+            border-radius: 12px;
             border: 1px solid #E2E8F0;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.2rem;
+            margin-top: 0px;
         }
+
         .dash-title {
-            font-size: 1.55rem;
+            font-size: 1.45rem;
             font-weight: 800;
             color: #0F172A;
             margin: 0;
             letter-spacing: -0.02em;
         }
         .dash-subtitle {
-            font-size: 0.90rem;
+            font-size: 0.88rem;
             color: #64748B;
-            margin: 4px 0 0 0;
+            margin: 2px 0 0 0;
         }
 
-        .logo-card-container {
-            background: #FFFFFF;
-            padding: 20px 24px;
-            border-radius: 14px;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
-            margin-bottom: 1.5rem;
-            text-align: center;
-        }
-
+        /* Cards de KPI Executivos */
         .kpi-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -229,21 +232,45 @@ def obter_caminho_logotipo():
                 return caminho
     return None
 
-def renderizar_logo_pagina_inicial():
+def renderizar_cabecalho_com_logo(subtitulo="Monitoramento em Tempo Real de Viagens e Quilometragem"):
+    """
+    Renderiza o cabeçalho executivo no topo absoluto da página
+    com o logotipo redimensionado de forma compacta no canto superior esquerdo.
+    """
     caminho_logo = obter_caminho_logotipo()
-    st.markdown('<div class="logo-card-container">', unsafe_allow_html=True)
-    if caminho_logo:
-        try:
-            logo_img = Image.open(caminho_logo)
-            col1, col2, col3 = st.columns([1.5, 2, 1.5])
-            with col2:
-                st.image(logo_img, use_container_width=True)
-        except Exception:
-            st.markdown("<h2 style='margin:0;'>Master Café ☕</h2>", unsafe_allow_html=True)
-    else:
-        st.markdown("<h2 style='margin:0;'>Master Café ☕</h2>", unsafe_allow_html=True)
-    
-    st.markdown("<p style='color:#64748B; margin-top:6px; font-weight:500;'>Painel Executivo & BI de Gestão de Frota</p></div>", unsafe_allow_html=True)
+    agora = obter_agora_brasil()
+
+    st.markdown('<div class="dash-header-container">', unsafe_allow_html=True)
+    c_logo, c_texto, c_hora = st.columns([1.2, 5, 2.3])
+
+    with c_logo:
+        if caminho_logo:
+            try:
+                logo_img = Image.open(caminho_logo)
+                # Logo compacto no canto superior esquerdo (largura máxima 140px)
+                st.image(logo_img, width=140)
+            except Exception:
+                st.markdown("### ☕")
+        else:
+            st.markdown("### ☕ **Master Café**")
+
+    with c_texto:
+        st.markdown(f"""
+            <div style="padding-left: 8px;">
+                <div class="dash-title">Master Café - Painel de Frotas</div>
+                <div class="dash-subtitle">{subtitulo}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c_hora:
+        st.markdown(f"""
+            <div style="text-align: right; padding-top: 4px;">
+                <span style="font-size: 0.78rem; color: #64748B; font-weight: 600; text-transform: uppercase;">Sincronizado</span><br>
+                <span style="font-size: 0.92rem; font-weight: 700; color: #0F172A;">{agora.strftime("%d/%m/%Y às %H:%M:%S")}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -355,7 +382,7 @@ def tela_login(df_usuarios):
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
-                st.image(logo_img, use_container_width=True)
+                st.image(logo_img, width=160)
             except Exception:
                 st.markdown("<h2 style='text-align:center;'>Master Café ☕</h2>", unsafe_allow_html=True)
         else:
@@ -403,7 +430,7 @@ def main():
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
-                st.image(logo_img, use_container_width=True)
+                st.image(logo_img, width=150)
             except Exception:
                 st.markdown("### ☕ **Master Café**")
         else:
@@ -436,27 +463,14 @@ def main():
         st.warning("Nenhum registro de viagem encontrado na planilha.")
         return
 
-    agora = obter_agora_brasil()
-    hoje_brasil = agora.date()
+    hoje_brasil = obter_agora_brasil().date()
 
     # =========================================================================
     # PÁGINA 1: VISÃO GERAL & KPIS
     # =========================================================================
     if pagina == "📊 Visão Geral & KPIs":
-        renderizar_logo_pagina_inicial()
-
-        st.markdown(f"""
-            <div class="dash-header">
-                <div>
-                    <div class="dash-title">Visão Geral da Operação</div>
-                    <div class="dash-subtitle">Monitoramento em Tempo Real de Viagens e Indicadores de Quilometragem</div>
-                </div>
-                <div style="text-align: right;">
-                    <span style="font-size: 0.80rem; color: #64748B; font-weight: 600;">SINCRONIZADO EM</span><br>
-                    <span style="font-size: 0.95rem; font-weight: 700; color: #0F172A;">{agora.strftime("%d/%m/%Y às %H:%M:%S")}</span>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+        # 1. CABEÇALHO COM LOGO REDIMENSIONADO NO CANTO SUPERIOR (SEM ESPAÇO ACIMA)
+        renderizar_cabecalho_com_logo("Visão Geral, Controle de Veículos em Trânsito e Indicadores")
 
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
@@ -467,7 +481,7 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
-        # 1. BLOCO DE KPIS
+        # 2. BLOCO DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -519,7 +533,7 @@ def main():
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 2. VEÍCULOS EM ABERTO NO TOPO (AUDITORIA EM TEMPO REAL)
+        # 3. VEÍCULOS EM ABERTO NO TOPO (AUDITORIA EM TEMPO REAL)
         # =====================================================================
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
@@ -550,7 +564,7 @@ def main():
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 3. GRÁFICOS ACUMULATIVOS (SEM AS TABELAS DE DETALHAMENTO ABAIXO)
+        # 4. GRÁFICOS ACUMULATIVOS
         # =====================================================================
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
@@ -600,7 +614,7 @@ def main():
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 4. CARROS UTILIZADOS NO DIA (HOJE) - POSICIONADO ABAIXO DOS GRÁFICOS
+        # 5. CARROS UTILIZADOS NO DIA (HOJE)
         # =====================================================================
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
@@ -662,14 +676,7 @@ def main():
     # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
     # =========================================================================
     elif pagina == "🔍 Consulta & Filtros Avançados":
-        st.markdown(f"""
-            <div class="dash-header">
-                <div>
-                    <div class="dash-title">Consulta Analítica & Filtros Dinâmicos</div>
-                    <div class="dash-subtitle">Pesquisa Cruzada por Veículo, Condutor, Período e Status da Viagem</div>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
+        renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
 
         st.markdown("#### 🎯 **Parâmetros de Pesquisa**")
         with st.container():
