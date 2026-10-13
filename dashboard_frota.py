@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (EXECUTIVE LIGHT PURIFICADO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM ESPAÇO FANTASMA NO TOPO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - BI Gestão de Frota",
@@ -29,21 +29,35 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* Oculta menus nativos da nuvem Streamlit */
+        /* 1. REMOVE CABEÇALHO PADRÃO E O ESPAÇO EM BRANCO DO TOPO */
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"] {
+            display: none !important;
+            height: 0px !important;
+            visibility: hidden !important;
+        }
+
+        .block-container,
+        div[data-testid="stAppViewContainer"] > .main > .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 95% !important;
+        }
+
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="stDecoration"], [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
-        /* Força Tema Claro Nativo em toda a aplicação */
+        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
             color-scheme: light !important;
         }
 
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        .stApp, [data-testid="stAppViewContainer"] {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -58,7 +72,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Barra Lateral (Sidebar) */
+        /* Barra Lateral */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -95,7 +109,7 @@ st.markdown("""
         /* Card de Destaque da Logo */
         .logo-card-container {
             background: #FFFFFF;
-            padding: 24px;
+            padding: 20px 24px;
             border-radius: 14px;
             border: 1px solid #E2E8F0;
             box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
@@ -135,7 +149,6 @@ st.markdown("""
             margin: 0;
         }
 
-        /* Badges de Status Operacional */
         .badge-open {
             background-color: #FEF3C7;
             color: #92400E;
@@ -146,18 +159,7 @@ st.markdown("""
             display: inline-block;
             border: 1px solid #FDE68A;
         }
-        .badge-done {
-            background-color: #DEF7EC;
-            color: #03543F;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.76rem;
-            font-weight: 700;
-            display: inline-block;
-            border: 1px solid #BCF0DA;
-        }
 
-        /* Formulários e Inputs Claros */
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E2E8F0 !important;
@@ -182,7 +184,6 @@ st.markdown("""
             -webkit-text-fill-color: #0F172A !important;
         }
 
-        /* Botões */
         div.stButton > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             color: #FFFFFF !important;
@@ -208,8 +209,8 @@ st.markdown("""
 # 2. CONFIGURAÇÕES DA PLANILHA
 # -------------------------------------------------------------
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
-GID_LANCAMENTOS = "379222602"    # Aba dos registros de viagens (com a coluna M - RV)
-GID_USUARIOS = "426012097"       # Aba de logins autorizados
+GID_LANCAMENTOS = "379222602"
+GID_USUARIOS = "426012097"
 
 # -------------------------------------------------------------
 # 3. SUPORTE A LOGOTIPO
@@ -225,7 +226,6 @@ def obter_caminho_logotipo():
     return None
 
 def renderizar_logo_pagina_inicial():
-    """Renderiza a logo da Master Café com destaque e elegância na página inicial."""
     caminho_logo = obter_caminho_logotipo()
     st.markdown('<div class="logo-card-container">', unsafe_allow_html=True)
     if caminho_logo:
@@ -323,7 +323,6 @@ def carregar_dados_viagens():
     df["km_final_num"] = df["km_final"].apply(converter_numero)
     df["km_percorrido_num"] = df["km_percorrido"].apply(converter_numero)
 
-    # Recalcula km_percorrido se necessário
     mascara_recalc = df["km_percorrido_num"].isna() & df["km_inicial_num"].notna() & df["km_final_num"].notna()
     df.loc[mascara_recalc, "km_percorrido_num"] = df.loc[mascara_recalc, "km_final_num"] - df.loc[mascara_recalc, "km_inicial_num"]
     df["km_percorrido_num"] = df["km_percorrido_num"].apply(lambda x: max(x, 0) if pd.notna(x) else np.nan)
@@ -384,7 +383,7 @@ def tela_login(df_usuarios):
                     st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO DO DASHBOARD (COM PAGINAÇÃO SEPARADA)
+# 6. APLICATIVO DO DASHBOARD
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -395,7 +394,7 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # SIDEBAR: CONTROLE DE NAVEGAÇÃO E SESSÃO
+    # SIDEBAR
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -409,7 +408,6 @@ def main():
 
         st.markdown(f"👤 **Gestor Conectado:**\n**{nome_gestor}**")
 
-        # NAVEGAÇÃO ENTRE PÁGINAS
         st.markdown("---")
         st.markdown("#### 📌 **Navegação**")
         pagina = st.radio(
@@ -429,7 +427,6 @@ def main():
                 st.session_state.clear()
                 st.rerun()
 
-    # Carrega dados atualizados das viagens
     df_base = carregar_dados_viagens()
 
     if df_base.empty:
@@ -439,10 +436,9 @@ def main():
     agora = obter_agora_brasil()
 
     # =========================================================================
-    # PÁGINA 1: VISÃO GERAL & KPIS (COM A LOGO DA MASTER CAFÉ DESTACADA)
+    # PÁGINA 1: VISÃO GERAL & KPIS
     # =========================================================================
     if pagina == "📊 Visão Geral & KPIs":
-        # LOGO MASTER CAFÉ NA PÁGINA INICIAL
         renderizar_logo_pagina_inicial()
 
         st.markdown(f"""
@@ -458,7 +454,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # KPIS GERAIS
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
         total_em_aberto = len(viagens_abertas_df)
@@ -547,7 +542,7 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # GRÁFICOS OPERACIONAIS
+        # GRÁFICOS
         st.markdown("### 📈 **Eficiência e Quilometragem da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -580,7 +575,7 @@ def main():
                 st.caption("Sem dados suficientes para calcular totais.")
 
     # =========================================================================
-    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS (PÁGINA EXCLUSIVA DE PESQUISA)
+    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
     # =========================================================================
     elif pagina == "🔍 Consulta & Filtros Avançados":
         st.markdown(f"""
@@ -592,7 +587,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # FILTROS DINÂMICOS CONCENTRADOS NO TOPO DA PÁGINA
         st.markdown("#### 🎯 **Parâmetros de Pesquisa**")
         with st.container():
             f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.5, 1.5, 1.3])
@@ -627,7 +621,6 @@ def main():
                     format="DD/MM/YYYY"
                 )
 
-        # APLICAÇÃO DOS FILTROS
         df_consulta = df_base.copy()
 
         if status_sel != "Todos":
@@ -648,7 +641,6 @@ def main():
 
         st.markdown("---")
 
-        # RESUMO DOS RESULTADOS DA PESQUISA
         qtd_res = len(df_consulta)
         km_res = df_consulta[df_consulta["status"] == "Concluída"]["km_percorrido_num"].sum()
 
@@ -690,7 +682,6 @@ def main():
                 }
             )
 
-            # EXPORTAÇÃO CSV
             csv_data = df_grid.to_csv(index=False, sep=";").encode("utf-8-sig")
             st.download_button(
                 label="📥 Exportar Dados Filtrados (CSV / Excel)",
@@ -699,7 +690,6 @@ def main():
                 mime="text/csv"
             )
 
-        # MATRIZ DINÂMICA CRUZADA (PIVOT TABLE)
         df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
         if not df_conc_consulta.empty:
             with st.expander("📊 **Visualizar Matriz Cruzada: Km por Veículo e por Condutor**"):
