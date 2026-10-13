@@ -29,7 +29,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* Desativa menus e botões padrão da nuvem Streamlit */
+        /* Oculta menus nativos da nuvem Streamlit */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="stDecoration"], [data-testid="manage-app-button"] {
             display: none !important;
@@ -58,7 +58,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Barra Lateral (Sidebar) Executiva */
+        /* Barra Lateral (Sidebar) */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -90,6 +90,17 @@ st.markdown("""
             font-size: 0.90rem;
             color: #64748B;
             margin: 4px 0 0 0;
+        }
+
+        /* Card de Destaque da Logo */
+        .logo-card-container {
+            background: #FFFFFF;
+            padding: 24px;
+            border-radius: 14px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04);
+            margin-bottom: 1.5rem;
+            text-align: center;
         }
 
         /* Cards de KPI Executivos */
@@ -171,7 +182,7 @@ st.markdown("""
             -webkit-text-fill-color: #0F172A !important;
         }
 
-        /* Botões Primários */
+        /* Botões */
         div.stButton > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             color: #FFFFFF !important;
@@ -213,6 +224,23 @@ def obter_caminho_logotipo():
                 return caminho
     return None
 
+def renderizar_logo_pagina_inicial():
+    """Renderiza a logo da Master Café com destaque e elegância na página inicial."""
+    caminho_logo = obter_caminho_logotipo()
+    st.markdown('<div class="logo-card-container">', unsafe_allow_html=True)
+    if caminho_logo:
+        try:
+            logo_img = Image.open(caminho_logo)
+            col1, col2, col3 = st.columns([1.5, 2, 1.5])
+            with col2:
+                st.image(logo_img, use_container_width=True)
+        except Exception:
+            st.markdown("<h2 style='margin:0;'>Master Café ☕</h2>", unsafe_allow_html=True)
+    else:
+        st.markdown("<h2 style='margin:0;'>Master Café ☕</h2>", unsafe_allow_html=True)
+    
+    st.markdown("<p style='color:#64748B; margin-top:6px; font-weight:500;'>Painel Executivo & BI de Gestão de Frota</p></div>", unsafe_allow_html=True)
+
 def normalizar_texto(texto):
     if not isinstance(texto, str):
         texto = str(texto)
@@ -248,14 +276,6 @@ def carregar_usuarios():
 
 @st.cache_data(ttl=30)
 def carregar_dados_viagens():
-    """
-    Carrega e normaliza os lançamentos da aba GID 379222602:
-    Colunas:
-    A: Data Inicial | B: Horario Inicial | C: Km Inicial
-    D: Data Final   | E: Horario Final   | F: Km Final
-    G: Condutor     | H: Destino         | I: Placa
-    J: Veiculo      | K: Km Percorrido   | L: Data Registro | M: RV
-    """
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
@@ -287,7 +307,6 @@ def carregar_dados_viagens():
         else:
             df[nome] = ""
 
-    # Normalizações
     df["placa"] = df["placa"].str.upper()
     df["condutor"] = df["condutor"].str.strip()
     df["veiculo"] = df["veiculo"].str.strip()
@@ -304,26 +323,27 @@ def carregar_dados_viagens():
     df["km_final_num"] = df["km_final"].apply(converter_numero)
     df["km_percorrido_num"] = df["km_percorrido"].apply(converter_numero)
 
-    # Recalcula km_percorrido caso esteja pendente na planilha
+    # Recalcula km_percorrido se necessário
     mascara_recalc = df["km_percorrido_num"].isna() & df["km_inicial_num"].notna() & df["km_final_num"].notna()
     df.loc[mascara_recalc, "km_percorrido_num"] = df.loc[mascara_recalc, "km_final_num"] - df.loc[mascara_recalc, "km_inicial_num"]
     df["km_percorrido_num"] = df["km_percorrido_num"].apply(lambda x: max(x, 0) if pd.notna(x) else np.nan)
 
-    # Tratamento de datas
     df["data_ini_dt"] = pd.to_datetime(df["data_inicial"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
     df["data_fim_dt"] = pd.to_datetime(df["data_final"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
 
-    # Definição do Status da Viagem
     def definir_status(row):
         tem_fim = (row["data_final"] != "" and row["data_final"].lower() != "nan") or (pd.notna(row["km_final_num"]) and row["km_final_num"] > 0)
         return "Concluída" if tem_fim else "Em Aberto"
 
     df["status"] = df.apply(definir_status, axis=1)
+    df["rotulo_veiculo"] = df.apply(
+        lambda r: f"{r['placa']} - {r['veiculo']}" if r['veiculo'] else r['placa'], axis=1
+    )
 
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE AUTENTICAÇÃO GERENCIAL
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -364,7 +384,7 @@ def tela_login(df_usuarios):
                     st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO DO DASHBOARD PRINCIPAL
+# 6. APLICATIVO DO DASHBOARD (COM PAGINAÇÃO SEPARADA)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -375,7 +395,7 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # SIDEBAR: LOGO, USUÁRIO E FILTROS DINÂMICOS
+    # SIDEBAR: CONTROLE DE NAVEGAÇÃO E SESSÃO
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -388,7 +408,17 @@ def main():
             st.markdown("### ☕ **Master Café**")
 
         st.markdown(f"👤 **Gestor Conectado:**\n**{nome_gestor}**")
-        
+
+        # NAVEGAÇÃO ENTRE PÁGINAS
+        st.markdown("---")
+        st.markdown("#### 📌 **Navegação**")
+        pagina = st.radio(
+            "Selecione o Módulo:",
+            options=["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"],
+            label_visibility="collapsed"
+        )
+        st.markdown("---")
+
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             if st.button("🔄 Atualizar"):
@@ -399,258 +429,288 @@ def main():
                 st.session_state.clear()
                 st.rerun()
 
-        st.divider()
-        st.markdown("#### 🎯 **Filtros Dinâmicos**")
-
-    # Carrega dados das viagens
+    # Carrega dados atualizados das viagens
     df_base = carregar_dados_viagens()
 
     if df_base.empty:
         st.warning("Nenhum registro de viagem encontrado na planilha.")
         return
 
-    # COMPONENTES DE FILTRO NA SIDEBAR
-    with st.sidebar:
-        # 1. Filtro de Status
-        status_opcoes = ["Todos", "Em Aberto", "Concluída"]
-        status_selecionado = st.radio("Status da Viagem:", status_opcoes, horizontal=True)
-
-        # 2. Filtro de Veículos (Placa + Descrição)
-        df_base["rotulo_veiculo"] = df_base.apply(
-            lambda r: f"{r['placa']} - {r['veiculo']}" if r['veiculo'] else r['placa'], axis=1
-        )
-        lista_veiculos = sorted([v for v in df_base["rotulo_veiculo"].unique() if v])
-        veiculos_selecionados = st.multiselect(
-            "Filtrar por Veículo:",
-            options=lista_veiculos,
-            placeholder="Todos os veículos..."
-        )
-
-        # 3. Filtro de Condutores
-        lista_condutores = sorted([c for c in df_base["condutor"].unique() if c and c.lower() != "nan"])
-        condutores_selecionados = st.multiselect(
-            "Filtrar por Condutor:",
-            options=lista_condutores,
-            placeholder="Todos os condutores..."
-        )
-
-        # 4. Filtro de Período de Datas
-        datas_validas = df_base["data_ini_dt"].dropna()
-        min_data = datas_validas.min().date() if not datas_validas.empty else date.today() - timedelta(days=30)
-        max_data = datas_validas.max().date() if not datas_validas.empty else date.today()
-
-        periodo_selecionado = st.date_input(
-            "Período de Saída:",
-            value=(min_data, max_data),
-            format="DD/MM/YYYY"
-        )
-
-    # APLICAÇÃO DOS FILTROS
-    df_filtrado = df_base.copy()
-
-    if status_selecionado != "Todos":
-        df_filtrado = df_filtrado[df_filtrado["status"] == status_selecionado]
-
-    if veiculos_selecionados:
-        df_filtrado = df_filtrado[df_filtrado["rotulo_veiculo"].isin(veiculos_selecionados)]
-
-    if condutores_selecionados:
-        df_filtrado = df_filtrado[df_filtrado["condutor"].isin(condutores_selecionados)]
-
-    if isinstance(periodo_selecionado, (tuple, list)) and len(periodo_selecionado) == 2:
-        d_ini, d_fim = periodo_selecionado
-        df_filtrado = df_filtrado[
-            (df_filtrado["data_ini_dt"].dt.date >= d_ini) & 
-            (df_filtrado["data_ini_dt"].dt.date <= d_fim)
-        ]
-
-    # CABEÇALHO DO PAINEL
     agora = obter_agora_brasil()
-    st.markdown(f"""
-        <div class="dash-header">
-            <div>
-                <div class="dash-title">Painel Executivo de Gestão de Frota</div>
-                <div class="dash-subtitle">Auditoria em Tempo Real, Métricas de Quilometragem e Deslocamentos</div>
-            </div>
-            <div style="text-align: right;">
-                <span style="font-size: 0.80rem; color: #64748B; font-weight: 600;">SINCRONIZADO EM</span><br>
-                <span style="font-size: 0.95rem; font-weight: 700; color: #0F172A;">{agora.strftime("%d/%m/%Y às %H:%M:%S")}</span>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
 
-    # KPIS PRINCIPAIS
-    total_viagens = len(df_filtrado)
-    viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
-    total_em_aberto = len(viagens_abertas_df)
+    # =========================================================================
+    # PÁGINA 1: VISÃO GERAL & KPIS (COM A LOGO DA MASTER CAFÉ DESTACADA)
+    # =========================================================================
+    if pagina == "📊 Visão Geral & KPIs":
+        # LOGO MASTER CAFÉ NA PÁGINA INICIAL
+        renderizar_logo_pagina_inicial()
 
-    viagens_concluidas = df_filtrado[df_filtrado["status"] == "Concluída"]
-    total_km_rodado = viagens_concluidas["km_percorrido_num"].sum()
-    media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
-    total_concluidas = len(viagens_concluidas)
-
-    kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
-    with kpi1:
         st.markdown(f"""
-            <div class="kpi-card" style="border-left: 4px solid #2563EB;">
-                <p class="kpi-title">Total de Viagens</p>
-                <p class="kpi-value">{total_viagens}</p>
-                <p class="kpi-caption">Registros no filtro</p>
+            <div class="dash-header">
+                <div>
+                    <div class="dash-title">Visão Geral da Operação</div>
+                    <div class="dash-subtitle">Monitoramento em Tempo Real de Viagens e Indicadores de Quilometragem</div>
+                </div>
+                <div style="text-align: right;">
+                    <span style="font-size: 0.80rem; color: #64748B; font-weight: 600;">SINCRONIZADO EM</span><br>
+                    <span style="font-size: 0.95rem; font-weight: 700; color: #0F172A;">{agora.strftime("%d/%m/%Y às %H:%M:%S")}</span>
+                </div>
             </div>
         """, unsafe_allow_html=True)
 
-    with kpi2:
-        cor_aberto = "#F59E0B" if total_em_aberto > 0 else "#10B981"
-        st.markdown(f"""
-            <div class="kpi-card" style="border-left: 4px solid {cor_aberto};">
-                <p class="kpi-title">Veículos em Aberto</p>
-                <p class="kpi-value" style="color: {'#B45309' if total_em_aberto > 0 else '#065F46'};">{total_em_aberto}</p>
-                <p class="kpi-caption">Em trânsito agora</p>
-            </div>
-        """, unsafe_allow_html=True)
+        # KPIS GERAIS
+        total_viagens = len(df_base)
+        viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
+        total_em_aberto = len(viagens_abertas_df)
 
-    with kpi3:
-        st.markdown(f"""
-            <div class="kpi-card" style="border-left: 4px solid #10B981;">
-                <p class="kpi-title">Km Total Rodado</p>
-                <p class="kpi-value">{total_km_rodado:,.0f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
-                <p class="kpi-caption">Viagens finalizadas</p>
-            </div>
-        """, unsafe_allow_html=True)
+        viagens_concluidas = df_base[df_base["status"] == "Concluída"]
+        total_km_rodado = viagens_concluidas["km_percorrido_num"].sum()
+        media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
+        total_concluidas = len(viagens_concluidas)
 
-    with kpi4:
-        st.markdown(f"""
-            <div class="kpi-card" style="border-left: 4px solid #6366F1;">
-                <p class="kpi-title">Média Km / Viagem</p>
-                <p class="kpi-value">{media_km_geral:,.1f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
-                <p class="kpi-caption">Eficiência média</p>
-            </div>
-        """, unsafe_allow_html=True)
+        kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+        with kpi1:
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #2563EB;">
+                    <p class="kpi-title">Total de Viagens</p>
+                    <p class="kpi-value">{total_viagens}</p>
+                    <p class="kpi-caption">Histórico acumulado</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-    with kpi5:
-        perc_conc = (total_concluidas / total_viagens * 100) if total_viagens > 0 else 0
-        st.markdown(f"""
-            <div class="kpi-card" style="border-left: 4px solid #0EA5E9;">
-                <p class="kpi-title">Viagens Concluídas</p>
-                <p class="kpi-value">{total_concluidas}</p>
-                <p class="kpi-caption">{perc_conc:.0f}% do volume filtrado</p>
-            </div>
-        """, unsafe_allow_html=True)
+        with kpi2:
+            cor_aberto = "#F59E0B" if total_em_aberto > 0 else "#10B981"
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid {cor_aberto};">
+                    <p class="kpi-title">Veículos em Aberto</p>
+                    <p class="kpi-value" style="color: {'#B45309' if total_em_aberto > 0 else '#065F46'};">{total_em_aberto}</p>
+                    <p class="kpi-caption">Em trânsito agora</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+        with kpi3:
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #10B981;">
+                    <p class="kpi-title">Km Total Rodado</p>
+                    <p class="kpi-value">{total_km_rodado:,.0f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-caption">Viagens concluídas</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-    # SEÇÃO: VEÍCULOS EM ABERTO (AUDITORIA DE FROTA NA RUA)
-    st.markdown("### 🚨 **Monitoramento de Veículos em Aberto (Em Trânsito)**")
-    if viagens_abertas_df.empty:
-        st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
-    else:
-        grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
-        for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
-            col_target = grid_abertos[idx % 3]
-            with col_target:
-                st.markdown(f"""
-                    <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
-                            <span class="badge-open">EM TRÂNSITO</span>
-                        </div>
-                        <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
-                        <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
-                        <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
-                            <b>Condutor:</b> {v_aberta['condutor']}<br>
-                            <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
-                            <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
-                            <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
-                            <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
-                        </div>
-                    </div>
-                """, unsafe_allow_html=True)
+        with kpi4:
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #6366F1;">
+                    <p class="kpi-title">Média Km / Viagem</p>
+                    <p class="kpi-value">{media_km_geral:,.1f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-caption">Média por percurso</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+        with kpi5:
+            perc_conc = (total_concluidas / total_viagens * 100) if total_viagens > 0 else 0
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #0EA5E9;">
+                    <p class="kpi-title">Viagens Concluídas</p>
+                    <p class="kpi-value">{total_concluidas}</p>
+                    <p class="kpi-caption">{perc_conc:.0f}% de finalização</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-    # GRÁFICOS DE MÉDIA E TOTAL DE KM POR VEÍCULO
-    st.markdown("### 📈 **Indicadores de Quilometragem por Veículo**")
-    g_col1, g_col2 = st.columns(2)
+        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-    with g_col1:
-        st.markdown("##### 🚙 **Média de Km Rodado por Veículo**")
-        if not viagens_concluidas.empty:
-            df_media_veiculo = (
-                viagens_concluidas.groupby("placa")["km_percorrido_num"]
-                .mean()
-                .reset_index()
-                .rename(columns={"km_percorrido_num": "Média Km", "placa": "Placa"})
-                .sort_values(by="Média Km", ascending=False)
-            )
-            st.bar_chart(data=df_media_veiculo, x="Placa", y="Média Km", color="#2563EB", use_container_width=True)
+        # MONITORAMENTO DE VEÍCULOS EM ABERTO
+        st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
+        if viagens_abertas_df.empty:
+            st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
         else:
-            st.caption("Sem viagens concluídas no período para calcular médias.")
+            grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
+            for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
+                col_target = grid_abertos[idx % 3]
+                with col_target:
+                    st.markdown(f"""
+                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
+                                <span class="badge-open">EM TRÂNSITO</span>
+                            </div>
+                            <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
+                            <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
+                            <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
+                                <b>Condutor:</b> {v_aberta['condutor']}<br>
+                                <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
+                                <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
+                                <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
+                                <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-    with g_col2:
-        st.markdown("##### 🏆 **Km Total Rodado por Veículo**")
-        if not viagens_concluidas.empty:
-            df_total_veiculo = (
-                viagens_concluidas.groupby("placa")["km_percorrido_num"]
-                .sum()
-                .reset_index()
-                .rename(columns={"km_percorrido_num": "Total Km", "placa": "Placa"})
-                .sort_values(by="Total Km", ascending=False)
-            )
-            st.bar_chart(data=df_total_veiculo, x="Placa", y="Total Km", color="#059669", use_container_width=True)
+        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+
+        # GRÁFICOS OPERACIONAIS
+        st.markdown("### 📈 **Eficiência e Quilometragem da Frota**")
+        g_col1, g_col2 = st.columns(2)
+
+        with g_col1:
+            st.markdown("##### 🚙 **Média de Km Rodado por Veículo**")
+            if not viagens_concluidas.empty:
+                df_media_veiculo = (
+                    viagens_concluidas.groupby("placa")["km_percorrido_num"]
+                    .mean()
+                    .reset_index()
+                    .rename(columns={"km_percorrido_num": "Média Km", "placa": "Placa"})
+                    .sort_values(by="Média Km", ascending=False)
+                )
+                st.bar_chart(data=df_media_veiculo, x="Placa", y="Média Km", color="#2563EB", use_container_width=True)
+            else:
+                st.caption("Sem dados suficientes para calcular médias.")
+
+        with g_col2:
+            st.markdown("##### 🏆 **Km Total Rodado por Veículo**")
+            if not viagens_concluidas.empty:
+                df_total_veiculo = (
+                    viagens_concluidas.groupby("placa")["km_percorrido_num"]
+                    .sum()
+                    .reset_index()
+                    .rename(columns={"km_percorrido_num": "Total Km", "placa": "Placa"})
+                    .sort_values(by="Total Km", ascending=False)
+                )
+                st.bar_chart(data=df_total_veiculo, x="Placa", y="Total Km", color="#059669", use_container_width=True)
+            else:
+                st.caption("Sem dados suficientes para calcular totais.")
+
+    # =========================================================================
+    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS (PÁGINA EXCLUSIVA DE PESQUISA)
+    # =========================================================================
+    elif pagina == "🔍 Consulta & Filtros Avançados":
+        st.markdown(f"""
+            <div class="dash-header">
+                <div>
+                    <div class="dash-title">Consulta Analítica & Filtros Dinâmicos</div>
+                    <div class="dash-subtitle">Pesquisa Cruzada por Veículo, Condutor, Período e Status da Viagem</div>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # FILTROS DINÂMICOS CONCENTRADOS NO TOPO DA PÁGINA
+        st.markdown("#### 🎯 **Parâmetros de Pesquisa**")
+        with st.container():
+            f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.5, 1.5, 1.3])
+
+            with f_col1:
+                status_opcoes = ["Todos", "Em Aberto", "Concluída"]
+                status_sel = st.selectbox("Status da Viagem:", status_opcoes)
+
+            with f_col2:
+                lista_veiculos = sorted([v for v in df_base["rotulo_veiculo"].unique() if v])
+                veiculos_sel = st.multiselect(
+                    "Veículo(s):",
+                    options=lista_veiculos,
+                    placeholder="Selecione veículo(s)..."
+                )
+
+            with f_col3:
+                lista_condutores = sorted([c for c in df_base["condutor"].unique() if c and c.lower() != "nan"])
+                condutores_sel = st.multiselect(
+                    "Condutor(es):",
+                    options=lista_condutores,
+                    placeholder="Selecione condutor(es)..."
+                )
+
+            with f_col4:
+                datas_validas = df_base["data_ini_dt"].dropna()
+                min_d = datas_validas.min().date() if not datas_validas.empty else date.today() - timedelta(days=30)
+                max_d = datas_validas.max().date() if not datas_validas.empty else date.today()
+                periodo_sel = st.date_input(
+                    "Período de Saída:",
+                    value=(min_d, max_d),
+                    format="DD/MM/YYYY"
+                )
+
+        # APLICAÇÃO DOS FILTROS
+        df_consulta = df_base.copy()
+
+        if status_sel != "Todos":
+            df_consulta = df_consulta[df_consulta["status"] == status_sel]
+
+        if veiculos_sel:
+            df_consulta = df_consulta[df_consulta["rotulo_veiculo"].isin(veiculos_sel)]
+
+        if condutores_sel:
+            df_consulta = df_consulta[df_consulta["condutor"].isin(condutores_sel)]
+
+        if isinstance(periodo_sel, (tuple, list)) and len(periodo_sel) == 2:
+            d_inicio, d_fim = periodo_sel
+            df_consulta = df_consulta[
+                (df_consulta["data_ini_dt"].dt.date >= d_inicio) & 
+                (df_consulta["data_ini_dt"].dt.date <= d_fim)
+            ]
+
+        st.markdown("---")
+
+        # RESUMO DOS RESULTADOS DA PESQUISA
+        qtd_res = len(df_consulta)
+        km_res = df_consulta[df_consulta["status"] == "Concluída"]["km_percorrido_num"].sum()
+
+        r_col1, r_col2, r_col3 = st.columns([1, 1, 3])
+        with r_col1:
+            st.metric("Viagens Encontradas", f"{qtd_res}")
+        with r_col2:
+            st.metric("Km Total do Período", f"{km_res:,.0f} km")
+
+        st.markdown("#### 📋 **Extrato Detalhado de Viagens**")
+
+        if df_consulta.empty:
+            st.info("Nenhuma viagem localizada com a combinação de filtros selecionada.")
         else:
-            st.caption("Sem viagens concluídas no período para calcular totais.")
+            df_grid = df_consulta[[
+                "rv", "status", "placa", "veiculo", "condutor",
+                "data_inicial", "horario_inicial", "km_inicial_num",
+                "data_final", "horario_final", "km_final_num", "km_percorrido_num", "destino"
+            ]].copy()
 
-    # TABELA DINÂMICA: EXTRATO ANALÍTICO (VEÍCULO X USUÁRIOS NAS DATAS)
-    st.markdown("### 📋 **Extrato de Viagens (Veículo $\\times$ Condutores $\\times$ Datas)**")
-    if df_filtrado.empty:
-        st.info("Nenhuma viagem atende aos filtros aplicados.")
-    else:
-        df_grid = df_filtrado[[
-            "rv", "status", "placa", "veiculo", "condutor",
-            "data_inicial", "horario_inicial", "km_inicial_num",
-            "data_final", "horario_final", "km_final_num", "km_percorrido_num", "destino"
-        ]].copy()
+            df_grid.columns = [
+                "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
+                "Data Saída", "Hora Saída", "Km Saída",
+                "Data Retorno", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
+            ]
 
-        df_grid.columns = [
-            "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
-            "Data Saída", "Hora Saída", "Km Saída",
-            "Data Retorno", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
-        ]
+            df_grid = df_grid.sort_values(by=["Status", "Data Saída"], ascending=[True, False])
 
-        df_grid = df_grid.sort_values(by=["Status", "Data Saída"], ascending=[True, False])
-
-        st.dataframe(
-            df_grid,
-            use_container_width=True,
-            hide_index=True,
-            column_config={
-                "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
-                "Status": st.column_config.TextColumn("Status", width="small"),
-                "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
-                "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
-                "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
-            }
-        )
-
-        csv_data = df_grid.to_csv(index=False, sep=";").encode("utf-8-sig")
-        st.download_button(
-            label="📥 Exportar Relatório em CSV / Excel",
-            data=csv_data,
-            file_name=f"relatorio_frota_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
-            mime="text/csv"
-        )
-
-    # MATRIZ DINÂMICA CRUZADA (PIVOT TABLE)
-    if not viagens_concluidas.empty:
-        with st.expander("📊 **Visualizar Matriz Cruzada: Km por Veículo e por Condutor**"):
-            pivot_km = viagens_concluidas.pivot_table(
-                index="veiculo",
-                columns="condutor",
-                values="km_percorrido_num",
-                aggfunc="sum",
-                fill_value=0
+            st.dataframe(
+                df_grid,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
+                    "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
+                    "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
+                }
             )
-            st.dataframe(pivot_km.style.format("{:,.0f} km"), use_container_width=True)
+
+            # EXPORTAÇÃO CSV
+            csv_data = df_grid.to_csv(index=False, sep=";").encode("utf-8-sig")
+            st.download_button(
+                label="📥 Exportar Dados Filtrados (CSV / Excel)",
+                data=csv_data,
+                file_name=f"relatorio_frota_mastercafe_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+
+        # MATRIZ DINÂMICA CRUZADA (PIVOT TABLE)
+        df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
+        if not df_conc_consulta.empty:
+            with st.expander("📊 **Visualizar Matriz Cruzada: Km por Veículo e por Condutor**"):
+                pivot_km = df_conc_consulta.pivot_table(
+                    index="veiculo",
+                    columns="condutor",
+                    values="km_percorrido_num",
+                    aggfunc="sum",
+                    fill_value=0
+                )
+                st.dataframe(pivot_km.style.format("{:,.0f} km"), use_container_width=True)
 
 if __name__ == "__main__":
     main()
