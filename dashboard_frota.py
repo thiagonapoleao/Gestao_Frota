@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (EXECUTIVE LIGHT)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (BARRA LATERAL SEMPRE VISÍVEL)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -29,35 +29,33 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* Elimina o topo em branco fantasma */
-        header[data-testid="stHeader"],
-        [data-testid="stHeader"],
-        div[data-testid="stDecoration"],
-        [data-testid="stDecoration"],
-        div[data-testid="stToolbar"] {
-            display: none !important;
-            height: 0px !important;
-            max-height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            visibility: hidden !important;
-        }
-
-        .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container,
-        div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.5rem !important;
-            padding-bottom: 2rem !important;
-            margin-top: 0px !important;
-            max-width: 96% !important;
-        }
-
+        /* 1. MANTÉM O BOTÃO DE ABRIR A BARRA LATERAL VISÍVEL E REMOVE APENAS VÃOS BRANCOS */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
+        /* Garante que o botão de abrir/fechar a barra lateral fique sempre acessível */
+        [data-testid="collapsedControl"] {
+            display: flex !important;
+            visibility: visible !important;
+            color: #0F172A !important;
+        }
+
+        header[data-testid="stHeader"] {
+            background-color: transparent !important;
+            height: 2.5rem !important;
+        }
+
+        .block-container,
+        div[data-testid="stAppViewContainer"] > .main > .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 96% !important;
+        }
+
+        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -79,36 +77,30 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Sidebar Executiva */
+        /* BARRA LATERAL SEMPRE FIXA E VISÍVEL */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
+            display: block !important;
+            visibility: visible !important;
         }
         section[data-testid="stSidebar"] * {
             color: #1E293B !important;
         }
 
-        /* Menu de Navegação na Sidebar */
-        div[data-testid="stRadio"] > label {
-            display: none !important;
-        }
-        div[data-testid="stRadio"] > div {
-            gap: 6px !important;
-        }
-        div[data-testid="stRadio"] > div > label {
-            background-color: #F8FAFC !important;
-            border: 1px solid #E2E8F0 !important;
-            padding: 10px 14px !important;
-            border-radius: 8px !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease !important;
-        }
-        div[data-testid="stRadio"] > div > label:hover {
-            background-color: #EFF6FF !important;
-            border-color: #BFDBFE !important;
+        /* Botões de Navegação Estilizados na Sidebar */
+        .sidebar-menu-btn {
+            display: block;
+            width: 100%;
+            padding: 10px 14px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            text-align: left;
         }
 
-        /* Cabeçalho Compacto */
+        /* Banner de Cabeçalho com Logo Compacto */
         .dash-header-container {
             background: #FFFFFF;
             padding: 16px 24px;
@@ -448,7 +440,11 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # BARRA LATERAL (NAVEGAÇÃO ENTRE AS PÁGINAS)
+    # Inicializa estado da página se ainda não existir
+    if "pagina_selecionada" not in st.session_state:
+        st.session_state["pagina_selecionada"] = "📊 Visão Geral & KPIs"
+
+    # BARRA LATERAL COM SELETOR DE PÁGINAS
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -464,11 +460,18 @@ def main():
 
         st.markdown("---")
         st.markdown("#### 📌 **Módulos do Sistema**")
+
+        opcoes_menu = ["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"]
+        idx_atual = opcoes_menu.index(st.session_state["pagina_selecionada"]) if st.session_state["pagina_selecionada"] in opcoes_menu else 0
+        
         pagina = st.radio(
-            "Navegação:",
-            options=["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"],
-            index=0
+            "Selecione o módulo:",
+            options=opcoes_menu,
+            index=idx_atual,
+            key="radio_nav"
         )
+        st.session_state["pagina_selecionada"] = pagina
+
         st.markdown("---")
 
         col_btn1, col_btn2 = st.columns(2)
@@ -492,7 +495,7 @@ def main():
     # =========================================================================
     # PÁGINA 1: VISÃO GERAL & KPIS
     # =========================================================================
-    if pagina == "📊 Visão Geral & KPIs":
+    if st.session_state["pagina_selecionada"] == "📊 Visão Geral & KPIs":
         renderizar_cabecalho_com_logo("Visão Geral, Controle de Veículos em Trânsito e Indicadores")
 
         total_viagens = len(df_base)
@@ -698,7 +701,7 @@ def main():
     # =========================================================================
     # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS (PÁGINA DEDICADA DE PESQUISA)
     # =========================================================================
-    elif pagina == "🔍 Consulta & Filtros Avançados":
+    elif st.session_state["pagina_selecionada"] == "🔍 Consulta & Filtros Avançados":
         renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
 
         # PAINEL DE FILTROS DINÂMICOS
@@ -763,7 +766,7 @@ def main():
         km_res = df_conc_consulta["km_percorrido_num"].sum()
         media_km_res = df_conc_consulta["km_percorrido_num"].mean() if not df_conc_consulta.empty else 0
 
-        r_col1, r_col2, r_col3, r_col4 = st.columns([1.2, 1.4, 1.4, 2])
+        r_col1, r_col2, r_col3 = st.columns([1.2, 1.4, 1.4])
         with r_col1:
             st.metric("Viagens Localizadas", f"{qtd_res}")
         with r_col2:
@@ -804,7 +807,6 @@ def main():
                 }
             )
 
-            # EXPORTAÇÃO CSV
             csv_data = df_grid.to_csv(index=False, sep=";").encode("utf-8-sig")
             st.download_button(
                 label="📥 Exportar Dados Filtrados (CSV / Excel)",
