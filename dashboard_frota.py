@@ -458,7 +458,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # KPIS
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
         total_em_aberto = len(viagens_abertas_df)
@@ -468,6 +467,7 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
+        # 1. BLOCO DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -516,10 +516,41 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # SEÇÃO 1: TABELA DINÂMICA DE CARROS USADOS NO DIA (PADRÃO HOJE)
+        # 2. VEÍCULOS EM ABERTO NO TOPO (AUDITORIA EM TEMPO REAL)
+        # =====================================================================
+        st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
+        if viagens_abertas_df.empty:
+            st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
+        else:
+            grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
+            for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
+                col_target = grid_abertos[idx % 3]
+                with col_target:
+                    st.markdown(f"""
+                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
+                                <span class="badge-open">EM TRÂNSITO</span>
+                            </div>
+                            <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
+                            <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
+                            <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
+                                <b>Condutor:</b> {v_aberta['condutor']}<br>
+                                <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
+                                <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
+                                <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
+                                <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+
+        # =====================================================================
+        # 3. CARROS UTILIZADOS NO DIA (HOJE)
         # =====================================================================
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
@@ -533,7 +564,7 @@ def main():
             )
         
         with c_dia_col2:
-            st.caption(f"Exibindo deslocamentos registrados com saída em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+            st.caption(f"Exibindo deslocamentos com saída registrada em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
 
         df_carros_dia = df_base[df_base["data_ini_dt"].dt.date == dia_selecionado].copy()
 
@@ -577,45 +608,16 @@ def main():
                 }
             )
 
-        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
-
-        # MONITORAMENTO DE VEÍCULOS EM ABERTO
-        st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
-        if viagens_abertas_df.empty:
-            st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
-        else:
-            grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
-            for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
-                col_target = grid_abertos[idx % 3]
-                with col_target:
-                    st.markdown(f"""
-                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
-                                <span class="badge-open">EM TRÂNSITO</span>
-                            </div>
-                            <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
-                            <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
-                            <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
-                                <b>Condutor:</b> {v_aberta['condutor']}<br>
-                                <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
-                                <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
-                                <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
-                                <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
-
-        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # SEÇÃO 2: GRÁFICOS ACUMULATIVOS COM VALORES VISÍVEIS
+        # 4. GRÁFICOS ACUMULATIVOS E TABELAS LOGO ABAIXO
         # =====================================================================
-        st.markdown("### 📈 **Quilometragem Acumulada da Frota (Valores Totais e Médias)**")
+        st.markdown("### 📈 **Quilometragem Acumulada da Frota (Gráficos e Detalhamento)**")
         g_col1, g_col2 = st.columns(2)
 
         with g_col1:
-            st.markdown("##### 🏆 **Km Total Acumulado por Veículo (com Valores)**")
+            st.markdown("##### 🏆 **Km Total Acumulado por Veículo**")
             if not viagens_concluidas.empty:
                 df_acumulado_veiculo = (
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
@@ -638,6 +640,7 @@ def main():
                     use_container_width=True
                 )
 
+                st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#64748B; margin-bottom:4px;'>📋 Dados Detalhados de Km Acumulado:</p>", unsafe_allow_html=True)
                 st.dataframe(
                     df_acumulado_veiculo,
                     use_container_width=True,
@@ -645,14 +648,14 @@ def main():
                     column_config={
                         "Placa": st.column_config.TextColumn("Placa do Veículo"),
                         "Km Total Acumulado": st.column_config.NumberColumn("Km Total Acumulado", format="%d km"),
-                        "Km Acumulado (%)": st.column_config.NumberColumn("Concentração (%)", format="%.1f%%"),
+                        "Km Acumulado (%)": st.column_config.NumberColumn("Concentração Acumulada", format="%.1f%%"),
                     }
                 )
             else:
                 st.caption("Sem dados suficientes para calcular valores acumulados.")
 
         with g_col2:
-            st.markdown("##### 🚙 **Média de Km por Veículo (com Valores)**")
+            st.markdown("##### 🚙 **Média de Km por Veículo**")
             if not viagens_concluidas.empty:
                 df_media_veiculo = (
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
@@ -670,6 +673,7 @@ def main():
                     use_container_width=True
                 )
 
+                st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#64748B; margin-bottom:4px;'>📋 Dados Detalhados de Média por Veículo:</p>", unsafe_allow_html=True)
                 st.dataframe(
                     df_media_veiculo,
                     use_container_width=True,
