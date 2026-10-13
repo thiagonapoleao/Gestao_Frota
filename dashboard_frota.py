@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM ESPAÇO FANTASMA NO TOPO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (EXECUTIVE LIGHT)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Master Café - BI Gestão de Frota",
@@ -29,7 +29,6 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. REMOVE CABEÇALHO PADRÃO E O ESPAÇO EM BRANCO DO TOPO */
         header[data-testid="stHeader"],
         [data-testid="stHeader"] {
             display: none !important;
@@ -50,7 +49,6 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -72,7 +70,6 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Barra Lateral */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -81,7 +78,6 @@ st.markdown("""
             color: #1E293B !important;
         }
 
-        /* Banner de Cabeçalho */
         .dash-header {
             background: #FFFFFF;
             padding: 22px 28px;
@@ -106,7 +102,6 @@ st.markdown("""
             margin: 4px 0 0 0;
         }
 
-        /* Card de Destaque da Logo */
         .logo-card-container {
             background: #FFFFFF;
             padding: 20px 24px;
@@ -117,7 +112,6 @@ st.markdown("""
             text-align: center;
         }
 
-        /* Cards de KPI Executivos */
         .kpi-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -158,6 +152,16 @@ st.markdown("""
             font-weight: 700;
             display: inline-block;
             border: 1px solid #FDE68A;
+        }
+        .badge-done {
+            background-color: #DEF7EC;
+            color: #03543F;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid #BCF0DA;
         }
 
         [data-testid="stForm"] {
@@ -394,7 +398,6 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # SIDEBAR
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -434,6 +437,7 @@ def main():
         return
 
     agora = obter_agora_brasil()
+    hoje_brasil = agora.date()
 
     # =========================================================================
     # PÁGINA 1: VISÃO GERAL & KPIS
@@ -454,6 +458,7 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
+        # KPIS
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
         total_em_aberto = len(viagens_abertas_df)
@@ -513,6 +518,67 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
+        # =====================================================================
+        # SEÇÃO 1: TABELA DINÂMICA DE CARROS USADOS NO DIA (PADRÃO HOJE)
+        # =====================================================================
+        st.markdown("### 📅 **Carros Utilizados no Dia**")
+        
+        c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
+        with c_dia_col1:
+            dia_selecionado = st.date_input(
+                "Filtrar data de operação:",
+                value=hoje_brasil,
+                format="DD/MM/YYYY",
+                key="filtro_dia_atual"
+            )
+        
+        with c_dia_col2:
+            st.caption(f"Exibindo deslocamentos registrados com saída em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+
+        df_carros_dia = df_base[df_base["data_ini_dt"].dt.date == dia_selecionado].copy()
+
+        if df_carros_dia.empty:
+            st.info(f"ℹ️ Nenhum registro de veículo em atividade na data de **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+        else:
+            qtd_carros_dia = df_carros_dia["placa"].nunique()
+            km_dia_total = df_carros_dia[df_carros_dia["status"] == "Concluída"]["km_percorrido_num"].sum()
+
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
+            with m2:
+                st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
+            with m3:
+                st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
+
+            df_tabela_dia = df_carros_dia[[
+                "rv", "status", "placa", "veiculo", "condutor",
+                "horario_inicial", "km_inicial_num", "horario_final", "km_final_num",
+                "km_percorrido_num", "destino"
+            ]].copy()
+
+            df_tabela_dia.columns = [
+                "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
+                "Hora Saída", "Km Saída", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
+            ]
+
+            df_tabela_dia = df_tabela_dia.sort_values(by=["Status", "Hora Saída"], ascending=[True, False])
+
+            st.dataframe(
+                df_tabela_dia,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
+                    "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
+                    "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
+                }
+            )
+
+        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+
         # MONITORAMENTO DE VEÍCULOS EM ABERTO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
@@ -542,37 +608,80 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # GRÁFICOS
-        st.markdown("### 📈 **Eficiência e Quilometragem da Frota**")
+        # =====================================================================
+        # SEÇÃO 2: GRÁFICOS ACUMULATIVOS COM VALORES VISÍVEIS
+        # =====================================================================
+        st.markdown("### 📈 **Quilometragem Acumulada da Frota (Valores Totais e Médias)**")
         g_col1, g_col2 = st.columns(2)
 
         with g_col1:
-            st.markdown("##### 🚙 **Média de Km Rodado por Veículo**")
+            st.markdown("##### 🏆 **Km Total Acumulado por Veículo (com Valores)**")
             if not viagens_concluidas.empty:
-                df_media_veiculo = (
-                    viagens_concluidas.groupby("placa")["km_percorrido_num"]
-                    .mean()
-                    .reset_index()
-                    .rename(columns={"km_percorrido_num": "Média Km", "placa": "Placa"})
-                    .sort_values(by="Média Km", ascending=False)
-                )
-                st.bar_chart(data=df_media_veiculo, x="Placa", y="Média Km", color="#2563EB", use_container_width=True)
-            else:
-                st.caption("Sem dados suficientes para calcular médias.")
-
-        with g_col2:
-            st.markdown("##### 🏆 **Km Total Rodado por Veículo**")
-            if not viagens_concluidas.empty:
-                df_total_veiculo = (
+                df_acumulado_veiculo = (
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
                     .sum()
                     .reset_index()
-                    .rename(columns={"km_percorrido_num": "Total Km", "placa": "Placa"})
-                    .sort_values(by="Total Km", ascending=False)
+                    .rename(columns={"km_percorrido_num": "Km Total Acumulado", "placa": "Placa"})
+                    .sort_values(by="Km Total Acumulado", ascending=False)
                 )
-                st.bar_chart(data=df_total_veiculo, x="Placa", y="Total Km", color="#059669", use_container_width=True)
+
+                df_acumulado_veiculo["Km Acumulado (%)"] = (
+                    df_acumulado_veiculo["Km Total Acumulado"].cumsum() / 
+                    df_acumulado_veiculo["Km Total Acumulado"].sum() * 100
+                ).round(1)
+
+                st.bar_chart(
+                    data=df_acumulado_veiculo,
+                    x="Placa",
+                    y="Km Total Acumulado",
+                    color="#2563EB",
+                    use_container_width=True
+                )
+
+                st.dataframe(
+                    df_acumulado_veiculo,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Placa": st.column_config.TextColumn("Placa do Veículo"),
+                        "Km Total Acumulado": st.column_config.NumberColumn("Km Total Acumulado", format="%d km"),
+                        "Km Acumulado (%)": st.column_config.NumberColumn("Concentração (%)", format="%.1f%%"),
+                    }
+                )
             else:
-                st.caption("Sem dados suficientes para calcular totais.")
+                st.caption("Sem dados suficientes para calcular valores acumulados.")
+
+        with g_col2:
+            st.markdown("##### 🚙 **Média de Km por Veículo (com Valores)**")
+            if not viagens_concluidas.empty:
+                df_media_veiculo = (
+                    viagens_concluidas.groupby("placa")["km_percorrido_num"]
+                    .agg(Media_Km="mean", Quantidade_Viagens="count")
+                    .reset_index()
+                    .rename(columns={"placa": "Placa", "Media_Km": "Média Km/Viagem", "Quantidade_Viagens": "Viagens Realizadas"})
+                    .sort_values(by="Média Km/Viagem", ascending=False)
+                )
+
+                st.bar_chart(
+                    data=df_media_veiculo,
+                    x="Placa",
+                    y="Média Km/Viagem",
+                    color="#059669",
+                    use_container_width=True
+                )
+
+                st.dataframe(
+                    df_media_veiculo,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Placa": st.column_config.TextColumn("Placa do Veículo"),
+                        "Média Km/Viagem": st.column_config.NumberColumn("Média de Km", format="%.1f km"),
+                        "Viagens Realizadas": st.column_config.NumberColumn("Total de Viagens", format="%d"),
+                    }
+                )
+            else:
+                st.caption("Sem dados suficientes para calcular médias.")
 
     # =========================================================================
     # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
