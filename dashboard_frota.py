@@ -29,7 +29,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA COMPLETAMENTE O ESPAÇO EM BRANCO NO TOPO */
+        /* Elimina o topo em branco fantasma */
         header[data-testid="stHeader"],
         [data-testid="stHeader"],
         div[data-testid="stDecoration"],
@@ -58,7 +58,6 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -80,7 +79,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Barra Lateral */
+        /* Sidebar Executiva */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -89,7 +88,7 @@ st.markdown("""
             color: #1E293B !important;
         }
 
-        /* Menu de Navegação na Barra Lateral */
+        /* Menu de Navegação na Sidebar */
         div[data-testid="stRadio"] > label {
             display: none !important;
         }
@@ -109,7 +108,7 @@ st.markdown("""
             border-color: #BFDBFE !important;
         }
 
-        /* Banner de Cabeçalho com Logo Compacto */
+        /* Cabeçalho Compacto */
         .dash-header-container {
             background: #FFFFFF;
             padding: 16px 24px;
@@ -133,7 +132,17 @@ st.markdown("""
             margin: 2px 0 0 0;
         }
 
-        /* Cards de KPI Executivos */
+        /* Caixa de Filtros no Topo */
+        .filter-panel {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px 10px 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.2rem;
+        }
+
+        /* KPI Cards */
         .kpi-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -252,10 +261,6 @@ def obter_caminho_logotipo():
     return None
 
 def renderizar_cabecalho_com_logo(subtitulo="Monitoramento em Tempo Real de Viagens e Quilometragem"):
-    """
-    Renderiza o cabeçalho executivo no topo da página com 'Painel de Frotas'
-    (sem 'Master Café' no texto) e logotipo compacto à esquerda.
-    """
     caminho_logo = obter_caminho_logotipo()
     agora = obter_agora_brasil()
 
@@ -443,7 +448,7 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # SIDEBAR COM NAVEGAÇÃO ENTRE AS PÁGINAS
+    # BARRA LATERAL (NAVEGAÇÃO ENTRE AS PÁGINAS)
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -696,40 +701,44 @@ def main():
     elif pagina == "🔍 Consulta & Filtros Avançados":
         renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
 
-        st.markdown("#### 🎯 **Parâmetros de Pesquisa**")
-        with st.container():
-            f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.5, 1.5, 1.3])
+        # PAINEL DE FILTROS DINÂMICOS
+        st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:8px;'>🎯 Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
+        
+        f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.8, 1.8, 1.4])
 
-            with f_col1:
-                status_opcoes = ["Todos", "Em Aberto", "Concluída"]
-                status_sel = st.selectbox("Status da Viagem:", status_opcoes)
+        with f_col1:
+            status_opcoes = ["Todos", "Em Aberto", "Concluída"]
+            status_sel = st.selectbox("Status da Viagem:", status_opcoes)
 
-            with f_col2:
-                lista_veiculos = sorted([v for v in df_base["rotulo_veiculo"].unique() if v])
-                veiculos_sel = st.multiselect(
-                    "Veículo(s):",
-                    options=lista_veiculos,
-                    placeholder="Selecione veículo(s)..."
-                )
+        with f_col2:
+            lista_veiculos = sorted([v for v in df_base["rotulo_veiculo"].unique() if v])
+            veiculos_sel = st.multiselect(
+                "Veículo(s):",
+                options=lista_veiculos,
+                placeholder="Todos os veículos..."
+            )
 
-            with f_col3:
-                lista_condutores = sorted([c for c in df_base["condutor"].unique() if c and c.lower() != "nan"])
-                condutores_sel = st.multiselect(
-                    "Condutor(es):",
-                    options=lista_condutores,
-                    placeholder="Selecione condutor(es)..."
-                )
+        with f_col3:
+            lista_condutores = sorted([c for c in df_base["condutor"].unique() if c and c.lower() != "nan"])
+            condutores_sel = st.multiselect(
+                "Condutor(es):",
+                options=lista_condutores,
+                placeholder="Todos os condutores..."
+            )
 
-            with f_col4:
-                datas_validas = df_base["data_ini_dt"].dropna()
-                min_d = datas_validas.min().date() if not datas_validas.empty else date.today() - timedelta(days=30)
-                max_d = datas_validas.max().date() if not datas_validas.empty else date.today()
-                periodo_sel = st.date_input(
-                    "Período de Saída:",
-                    value=(min_d, max_d),
-                    format="DD/MM/YYYY"
-                )
+        with f_col4:
+            datas_validas = df_base["data_ini_dt"].dropna()
+            min_d = datas_validas.min().date() if not datas_validas.empty else date.today() - timedelta(days=30)
+            max_d = datas_validas.max().date() if not datas_validas.empty else date.today()
+            periodo_sel = st.date_input(
+                "Período de Saída:",
+                value=(min_d, max_d),
+                format="DD/MM/YYYY"
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
 
+        # APLICAÇÃO DOS FILTROS
         df_consulta = df_base.copy()
 
         if status_sel != "Todos":
@@ -748,17 +757,21 @@ def main():
                 (df_consulta["data_ini_dt"].dt.date <= d_fim)
             ]
 
-        st.markdown("---")
-
+        # INDICADORES RESUMO DA PESQUISA
         qtd_res = len(df_consulta)
-        km_res = df_consulta[df_consulta["status"] == "Concluída"]["km_percorrido_num"].sum()
+        df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
+        km_res = df_conc_consulta["km_percorrido_num"].sum()
+        media_km_res = df_conc_consulta["km_percorrido_num"].mean() if not df_conc_consulta.empty else 0
 
-        r_col1, r_col2, r_col3 = st.columns([1, 1, 3])
+        r_col1, r_col2, r_col3, r_col4 = st.columns([1.2, 1.4, 1.4, 2])
         with r_col1:
-            st.metric("Viagens Encontradas", f"{qtd_res}")
+            st.metric("Viagens Localizadas", f"{qtd_res}")
         with r_col2:
-            st.metric("Km Total do Período", f"{km_res:,.0f} km")
+            st.metric("Km Total no Filtro", f"{km_res:,.0f} km")
+        with r_col3:
+            st.metric("Média Km / Viagem", f"{media_km_res:,.1f} km")
 
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
         st.markdown("#### 📋 **Extrato Detalhado de Viagens**")
 
         if df_consulta.empty:
@@ -791,6 +804,7 @@ def main():
                 }
             )
 
+            # EXPORTAÇÃO CSV
             csv_data = df_grid.to_csv(index=False, sep=";").encode("utf-8-sig")
             st.download_button(
                 label="📥 Exportar Dados Filtrados (CSV / Excel)",
@@ -799,10 +813,9 @@ def main():
                 mime="text/csv"
             )
 
-        # MATRIZ CRUZADA (PIVOT TABLE)
-        df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
+        # MATRIZ CRUZADA (PIVOT TABLE VEÍCULO X CONDUTOR)
         if not df_conc_consulta.empty:
-            with st.expander("📊 **Visualizar Matriz Cruzada: Km por Veículo e por Condutor**"):
+            with st.expander("📊 **Visualizar Matriz Cruzada: Km Total por Veículo e por Condutor**"):
                 pivot_km = df_conc_consulta.pivot_table(
                     index="veiculo",
                     columns="condutor",
