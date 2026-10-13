@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR BLINDADA E VISÍVEL)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR RESPONSIVA E OCULTÁVEL)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -29,46 +29,33 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. MANTÉM A SIDEBAR SEMPRE FIXA, ABERTA E VISÍVEL */
-        section[data-testid="stSidebar"] {
-            display: block !important;
-            visibility: visible !important;
-            width: 280px !important;
-            min-width: 280px !important;
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
-            transform: none !important; /* Desativa retração no desktop */
-        }
-        section[data-testid="stSidebar"] * {
-            color: #1E293B !important;
-        }
-
-        /* Garante que o botão de abrir a sidebar (se fechar no celular) fique visível */
-        [data-testid="collapsedControl"] {
+        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
+        [data-testid="collapsedControl"],
+        button[kind="header"] {
             display: flex !important;
             visibility: visible !important;
             color: #0F172A !important;
-            top: 10px !important;
-            left: 10px !important;
+            z-index: 1000000 !important;
         }
 
-        /* Reduz o vão superior sem quebrar a barra de ferramentas */
-        .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 96% !important;
-        }
-
-        header[data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 2rem !important;
-        }
-
+        /* Oculta apenas os menus de desenvolvimento e deploy do Streamlit */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
+        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
             display: none !important;
             visibility: hidden !important;
+        }
+
+        /* Ajusta o topo para não cobrir o botão da sidebar */
+        header[data-testid="stHeader"] {
+            background-color: transparent !important;
+            height: 2.2rem !important;
+        }
+
+        .block-container,
+        div[data-testid="stAppViewContainer"] > .main > .block-container {
+            padding-top: 0.8rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 96% !important;
         }
 
         /* 2. FORÇA TEMA CLARO NATIVO */
@@ -93,7 +80,16 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* Botões de rádio da barra lateral destacados */
+        /* 3. SIDEBAR COM RECOLHIMENTO NATURAL (SEM FORÇAR TRANSFORM) */
+        section[data-testid="stSidebar"] {
+            background-color: #FFFFFF !important;
+            border-right: 1px solid #E2E8F0 !important;
+        }
+        section[data-testid="stSidebar"] * {
+            color: #1E293B !important;
+        }
+
+        /* Botões de rádio da barra lateral */
         div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
             gap: 8px !important;
         }
@@ -138,7 +134,7 @@ st.markdown("""
             margin: 2px 0 0 0;
         }
 
-        /* Caixa de Filtros no Topo */
+        /* Painel de Filtros */
         .filter-panel {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -402,7 +398,7 @@ def carregar_dados_viagens():
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -449,7 +445,6 @@ def tela_login(df_usuarios):
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por URL caso o navegador recarregue (F5)
     if not st.session_state.get("dash_autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -466,13 +461,12 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # Módulos disponíveis
     opcoes_menu = ["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"]
 
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    # BARRA LATERAL (MENU GARANTIDO)
+    # BARRA LATERAL (COM CONTROLE LIVRE DE EXPANDIR/RECOLHER)
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -484,13 +478,13 @@ def main():
         else:
             st.markdown("### ☕")
 
-        st.markdown(f"👤 **Gestor Conectado:**\n**{nome_gestor}**")
+        st.markdown(f"👤 **Gestor:**\n**{nome_gestor}**")
         st.markdown("---")
 
         st.markdown("#### 📌 **Navegação**")
         idx_selecionado = opcoes_menu.index(st.session_state["pagina_selecionada"]) if st.session_state["pagina_selecionada"] in opcoes_menu else 0
         pagina_sidebar = st.radio(
-            "Selecione o módulo:",
+            "Módulos:",
             options=opcoes_menu,
             index=idx_selecionado,
             key="radio_nav_sidebar"
@@ -583,9 +577,7 @@ def main():
 
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
-        # =====================================================================
-        # 2. VEÍCULOS EM ABERTO NO TOPO (AUDITORIA EM TEMPO REAL)
-        # =====================================================================
+        # 2. VEÍCULOS EM ABERTO NO TOPO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -614,9 +606,7 @@ def main():
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
-        # =====================================================================
         # 3. GRÁFICOS ACUMULATIVOS
-        # =====================================================================
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -664,9 +654,7 @@ def main():
 
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
-        # =====================================================================
         # 4. CARROS UTILIZADOS NO DIA (HOJE)
-        # =====================================================================
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
@@ -724,12 +712,11 @@ def main():
             )
 
     # =========================================================================
-    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS (PÁGINA DEDICADA DE PESQUISA)
+    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == "🔍 Consulta & Filtros Avançados":
         renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
 
-        # PAINEL DE FILTROS DINÂMICOS
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
         st.markdown("<p style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:8px;'>🎯 Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
         
@@ -766,7 +753,6 @@ def main():
             )
         st.markdown('</div>', unsafe_allow_html=True)
 
-        # APLICAÇÃO DOS FILTROS
         df_consulta = df_base.copy()
 
         if status_sel != "Todos":
@@ -785,7 +771,6 @@ def main():
                 (df_consulta["data_ini_dt"].dt.date <= d_fim)
             ]
 
-        # INDICADORES RESUMO DA PESQUISA
         qtd_res = len(df_consulta)
         df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
         km_res = df_conc_consulta["km_percorrido_num"].sum()
@@ -840,7 +825,6 @@ def main():
                 mime="text/csv"
             )
 
-        # MATRIZ CRUZADA (PIVOT TABLE VEÍCULO X CONDUTOR)
         if not df_conc_consulta.empty:
             with st.expander("📊 **Visualizar Matriz Cruzada: Km Total por Veículo e por Condutor**"):
                 pivot_km = df_conc_consulta.pivot_table(
