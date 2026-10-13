@@ -547,71 +547,10 @@ def main():
                         </div>
                     """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
-
-        # =====================================================================
-        # 3. CARROS UTILIZADOS NO DIA (HOJE)
-        # =====================================================================
-        st.markdown("### 📅 **Carros Utilizados no Dia**")
-        
-        c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
-        with c_dia_col1:
-            dia_selecionado = st.date_input(
-                "Filtrar data de operação:",
-                value=hoje_brasil,
-                format="DD/MM/YYYY",
-                key="filtro_dia_atual"
-            )
-        
-        with c_dia_col2:
-            st.caption(f"Exibindo deslocamentos com saída registrada em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
-
-        df_carros_dia = df_base[df_base["data_ini_dt"].dt.date == dia_selecionado].copy()
-
-        if df_carros_dia.empty:
-            st.info(f"ℹ️ Nenhum registro de veículo em atividade na data de **{dia_selecionado.strftime('%d/%m/%Y')}**.")
-        else:
-            qtd_carros_dia = df_carros_dia["placa"].nunique()
-            km_dia_total = df_carros_dia[df_carros_dia["status"] == "Concluída"]["km_percorrido_num"].sum()
-
-            m1, m2, m3 = st.columns(3)
-            with m1:
-                st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
-            with m2:
-                st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
-            with m3:
-                st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
-
-            df_tabela_dia = df_carros_dia[[
-                "rv", "status", "placa", "veiculo", "condutor",
-                "horario_inicial", "km_inicial_num", "horario_final", "km_final_num",
-                "km_percorrido_num", "destino"
-            ]].copy()
-
-            df_tabela_dia.columns = [
-                "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
-                "Hora Saída", "Km Saída", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
-            ]
-
-            df_tabela_dia = df_tabela_dia.sort_values(by=["Status", "Hora Saída"], ascending=[True, False])
-
-            st.dataframe(
-                df_tabela_dia,
-                use_container_width=True,
-                hide_index=True,
-                column_config={
-                    "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
-                    "Status": st.column_config.TextColumn("Status", width="small"),
-                    "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
-                    "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
-                    "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
-                }
-            )
-
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 4. GRÁFICOS ACUMULATIVOS E TABELAS LOGO ABAIXO
+        # 3. GRÁFICOS ACUMULATIVOS E TABELAS LOGO ABAIXO
         # =====================================================================
         st.markdown("### 📈 **Quilometragem Acumulada da Frota (Gráficos e Detalhamento)**")
         g_col1, g_col2 = st.columns(2)
@@ -686,6 +625,67 @@ def main():
                 )
             else:
                 st.caption("Sem dados suficientes para calcular médias.")
+
+        st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
+
+        # =====================================================================
+        # 4. CARROS UTILIZADOS NO DIA (HOJE) - POSICIONADO ABAIXO DOS GRÁFICOS
+        # =====================================================================
+        st.markdown("### 📅 **Carros Utilizados no Dia**")
+        
+        c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
+        with c_dia_col1:
+            dia_selecionado = st.date_input(
+                "Filtrar data de operação:",
+                value=hoje_brasil,
+                format="DD/MM/YYYY",
+                key="filtro_dia_atual"
+            )
+        
+        with c_dia_col2:
+            st.caption(f"Exibindo deslocamentos com saída registrada em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+
+        df_carros_dia = df_base[df_base["data_ini_dt"].dt.date == dia_selecionado].copy()
+
+        if df_carros_dia.empty:
+            st.info(f"ℹ️ Nenhum registro de veículo em atividade na data de **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+        else:
+            qtd_carros_dia = df_carros_dia["placa"].nunique()
+            km_dia_total = df_carros_dia[df_carros_dia["status"] == "Concluída"]["km_percorrido_num"].sum()
+
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
+            with m2:
+                st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
+            with m3:
+                st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
+
+            df_tabela_dia = df_carros_dia[[
+                "rv", "status", "placa", "veiculo", "condutor",
+                "horario_inicial", "km_inicial_num", "horario_final", "km_final_num",
+                "km_percorrido_num", "destino"
+            ]].copy()
+
+            df_tabela_dia.columns = [
+                "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
+                "Hora Saída", "Km Saída", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
+            ]
+
+            df_tabela_dia = df_tabela_dia.sort_values(by=["Status", "Hora Saída"], ascending=[True, False])
+
+            st.dataframe(
+                df_tabela_dia,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
+                    "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
+                    "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
+                }
+            )
 
     # =========================================================================
     # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
