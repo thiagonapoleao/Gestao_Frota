@@ -550,9 +550,9 @@ def main():
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
         # =====================================================================
-        # 3. GRÁFICOS ACUMULATIVOS E TABELAS LOGO ABAIXO
+        # 3. GRÁFICOS ACUMULATIVOS (SEM AS TABELAS DE DETALHAMENTO ABAIXO)
         # =====================================================================
-        st.markdown("### 📈 **Quilometragem Acumulada da Frota (Gráficos e Detalhamento)**")
+        st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
         with g_col1:
@@ -566,29 +566,12 @@ def main():
                     .sort_values(by="Km Total Acumulado", ascending=False)
                 )
 
-                df_acumulado_veiculo["Km Acumulado (%)"] = (
-                    df_acumulado_veiculo["Km Total Acumulado"].cumsum() / 
-                    df_acumulado_veiculo["Km Total Acumulado"].sum() * 100
-                ).round(1)
-
                 st.bar_chart(
                     data=df_acumulado_veiculo,
                     x="Placa",
                     y="Km Total Acumulado",
                     color="#2563EB",
                     use_container_width=True
-                )
-
-                st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#64748B; margin-bottom:4px;'>📋 Dados Detalhados de Km Acumulado:</p>", unsafe_allow_html=True)
-                st.dataframe(
-                    df_acumulado_veiculo,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Placa": st.column_config.TextColumn("Placa do Veículo"),
-                        "Km Total Acumulado": st.column_config.NumberColumn("Km Total Acumulado", format="%d km"),
-                        "Km Acumulado (%)": st.column_config.NumberColumn("Concentração Acumulada", format="%.1f%%"),
-                    }
                 )
             else:
                 st.caption("Sem dados suficientes para calcular valores acumulados.")
@@ -598,9 +581,9 @@ def main():
             if not viagens_concluidas.empty:
                 df_media_veiculo = (
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
-                    .agg(Media_Km="mean", Quantidade_Viagens="count")
+                    .agg(Media_Km="mean")
                     .reset_index()
-                    .rename(columns={"placa": "Placa", "Media_Km": "Média Km/Viagem", "Quantidade_Viagens": "Viagens Realizadas"})
+                    .rename(columns={"placa": "Placa", "Media_Km": "Média Km/Viagem"})
                     .sort_values(by="Média Km/Viagem", ascending=False)
                 )
 
@@ -610,18 +593,6 @@ def main():
                     y="Média Km/Viagem",
                     color="#059669",
                     use_container_width=True
-                )
-
-                st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#64748B; margin-bottom:4px;'>📋 Dados Detalhados de Média por Veículo:</p>", unsafe_allow_html=True)
-                st.dataframe(
-                    df_media_veiculo,
-                    use_container_width=True,
-                    hide_index=True,
-                    column_config={
-                        "Placa": st.column_config.TextColumn("Placa do Veículo"),
-                        "Média Km/Viagem": st.column_config.NumberColumn("Média de Km", format="%.1f km"),
-                        "Viagens Realizadas": st.column_config.NumberColumn("Total de Viagens", format="%d"),
-                    }
                 )
             else:
                 st.caption("Sem dados suficientes para calcular médias.")
