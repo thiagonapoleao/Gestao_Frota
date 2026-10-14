@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR RESPONSIVA E OCULTÁVEL)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (REMOÇÃO DEFINITIVA DA DIV SUPERIOR)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -29,7 +29,43 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
+        /* 1. ELIMINA ESPECIFICAMENTE A DIV DE CABEÇALHO .e1o1x6gp2 E HASHES AFINS */
+        .e1o1x6gp2,
+        .st-emotion-cache-k2h9z6,
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
+        div[data-testid="stDecoration"],
+        div[data-testid="stToolbar"] {
+            display: none !important;
+            height: 0px !important;
+            min-height: 0px !important;
+            max-height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+            border: none !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            top: -9999px !important;
+        }
+
+        /* 2. ELIMINA CONTAINERS VAZIOS */
+        div[data-testid="stMarkdownContainer"]:empty,
+        div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
+            display: none !important;
+            height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+        }
+
+        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"]:empty),
+        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"] > style:only-child) {
+            display: none !important;
+            height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+        }
+
+        /* 3. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR VISÍVEL E OPERACIONAL */
         [data-testid="collapsedControl"],
         button[kind="header"] {
             display: flex !important;
@@ -38,27 +74,23 @@ st.markdown("""
             z-index: 1000000 !important;
         }
 
-        /* Oculta apenas os menus de desenvolvimento e deploy do Streamlit */
+        /* Cola o conteúdo direto no topo sem vãos verticais */
+        .block-container,
+        div[data-testid="stAppViewContainer"] > .main > .block-container,
+        div[data-testid="stAppViewBlockContainer"] {
+            padding-top: 0.5rem !important;
+            padding-bottom: 2rem !important;
+            margin-top: 0px !important;
+            max-width: 96% !important;
+        }
+
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
+        [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
-        /* Ajusta o topo para não cobrir o botão da sidebar */
-        header[data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 2.2rem !important;
-        }
-
-        .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.8rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 96% !important;
-        }
-
-        /* 2. FORÇA TEMA CLARO NATIVO */
+        /* 4. TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -80,7 +112,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* 3. SIDEBAR COM RECOLHIMENTO NATURAL (SEM FORÇAR TRANSFORM) */
+        /* SIDEBAR NATIVA E RESPONSIVA */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -89,7 +121,6 @@ st.markdown("""
             color: #1E293B !important;
         }
 
-        /* Botões de rádio da barra lateral */
         div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
             gap: 8px !important;
         }
@@ -398,7 +429,7 @@ def carregar_dados_viagens():
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -445,6 +476,7 @@ def tela_login(df_usuarios):
 def main():
     df_usuarios = carregar_usuarios()
 
+    # Recupera sessão por URL caso o navegador recarregue (F5)
     if not st.session_state.get("dash_autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -466,7 +498,7 @@ def main():
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    # BARRA LATERAL (COM CONTROLE LIVRE DE EXPANDIR/RECOLHER)
+    # BARRA LATERAL (MENU GARANTIDO E RETRÁTIL)
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
