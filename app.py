@@ -66,7 +66,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL */
+        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL FIXO */
         :root, html, body {
             background-color: #0b0217 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
@@ -109,21 +109,25 @@ st.markdown("""
             margin-bottom: 3px !important;
         }
 
-        /* 3. CARD BRANCO PRINCIPAL DO DASHBOARD PÓS-LOGIN */
-        div[data-testid="stVerticalBlock"]:has(> div > div.app-main-scope-marker) {
+        /* 3. CONTAINER PRINCIPAL BRANCO UNIFICADO (GARANTIDO) */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #FFFFFF !important;
             border: 1px solid rgba(255, 255, 255, 0.95) !important;
             border-radius: 18px !important;
-            box-shadow: 0 16px 40px rgba(11, 2, 23, 0.35) !important;
-            padding: 24px 26px !important;
-            margin-top: 6px !important;
-            margin-bottom: 24px !important;
+            box-shadow: 0 18px 45px rgba(11, 2, 23, 0.40) !important;
+            padding: 24px 24px 28px 24px !important;
+            margin-top: 0px !important;
+            margin-bottom: 20px !important;
+        }
+
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {
+            background-color: transparent !important;
         }
 
         /* Títulos internos do card branco */
         .card-header-block {
             text-align: center;
-            margin-bottom: 1rem;
+            margin-bottom: 0.8rem;
         }
         .corporate-title {
             font-size: 1.30rem !important;
@@ -139,7 +143,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Centralização universal de imagens */
+        /* Centralização universal e margem zero para imagens */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
@@ -165,22 +169,22 @@ st.markdown("""
             padding-bottom: 0px !important;
         }
 
-        /* Formulário de Login */
-        div[data-testid="stForm"]:has(div.login-form-marker) {
+        /* Formulários (Login e Operações Internas) */
+        [data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid rgba(255, 255, 255, 0.95) !important;
             border-radius: 18px !important;
             box-shadow: 0 16px 40px rgba(11, 2, 23, 0.35) !important;
-            padding: 24px 26px !important;
+            padding: 24px 24px !important;
         }
 
-        /* Formulários operacionais internos dentro do card branco */
-        div[data-testid="stVerticalBlock"]:has(> div > div.app-main-scope-marker) div[data-testid="stForm"] {
+        /* Formulário quando renderizado dentro do container branco já unificado */
+        div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stForm"] {
             background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
-            border-radius: 14px !important;
+            border-radius: 12px !important;
             box-shadow: none !important;
-            padding: 18px 20px !important;
+            padding: 18px 18px !important;
         }
 
         .card-vehicle-info {
@@ -316,7 +320,7 @@ def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Fr
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=115)
+            st.image(logo_img, width=110)
         except Exception:
             st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
@@ -539,9 +543,6 @@ def tela_login(df_usuarios):
     caminho_veiculo = obter_caminho_imagem_veiculo()
     
     with st.form("form_login"):
-        st.markdown('<div class="login-form-marker" style="display:none;"></div>', unsafe_allow_html=True)
-        
-        # 1. Logotipo centralizado
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
@@ -551,7 +552,6 @@ def tela_login(df_usuarios):
         else:
             st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        # 2. Imagem da frota centralizada
         if caminho_veiculo:
             try:
                 img_veiculo = Image.open(caminho_veiculo)
@@ -585,7 +585,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (ENVOLVIDO NA DIV/CARD BRANCO)
+# 6. APLICATIVO PRINCIPAL (CONTAINER BRANCO UNIFICADO VIA BORDER=TRUE)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -660,16 +660,14 @@ def main():
     ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # ENVOLTÓRIO DA DIV BRANCA PARA TODA A ESTRUTURA PÓS-LOGIN
+    # CONTAINER BRANCO UNIFICADO GARANTIDO (BORDER=TRUE)
     # =========================================================================
-    with st.container():
-        st.markdown('<div class="app-main-scope-marker" style="display:none;"></div>', unsafe_allow_html=True)
-        
-        # Cabeçalho interno com logo, banner e títulos
+    with st.container(border=True):
+        # 1. Cabeçalho interno (Logo, Banner da frota e Títulos)
         renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
 
         # ---------------------------------------------------------------------
-        # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FINALIZAÇÃO / RETORNO)
+        # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FINALIZAÇÃO)
         # ---------------------------------------------------------------------
         if viagem_pendente_condutor is not None:
             dados_ativos = viagem_pendente_condutor
