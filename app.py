@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (REMOÇÃO DEFINITIVA DA DIV SUPERIOR)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (AZUL CLARO CORPORATIVO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,7 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA ESPECIFICAMENTE A DIV DE CABEÇALHO .e1o1x6gp2 E HASHES AFINS */
+        /* 1. ELIMINAÇÃO DE CABEÇALHOS E DIVS FANTASMAS SUPERIORES */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         header[data-testid="stHeader"],
@@ -50,7 +50,6 @@ st.markdown("""
             top: -9999px !important;
         }
 
-        /* 2. ELIMINA CONTAINERS VAZIOS E ENCOLHE O TOPO */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -67,11 +66,24 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* Cola o conteúdo direto no topo sem vãos verticais */
+        /* 2. PLANO DE FUNDO AZUL CLARO CORPORATIVO (F0F6FE) */
+        :root, html, body {
+            background-color: #F0F6FE !important;
+            color: #0F172A !important;
+            color-scheme: light !important;
+        }
+
+        .stApp, [data-testid="stAppViewContainer"] {
+            background-color: #F0F6FE !important;
+            color: #0F172A !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.2rem !important;
+            background-color: #F0F6FE !important;
+            padding-top: 0.6rem !important;
             padding-bottom: 2rem !important;
             margin-top: 0px !important;
             max-width: 720px !important;
@@ -81,18 +93,6 @@ st.markdown("""
         [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
-        }
-
-        /* 3. TEMA CLARO CORPORATIVO NATIVO */
-        :root, html, body {
-            background-color: #F8FAFC !important;
-            color: #0F172A !important;
-            color-scheme: light !important;
-        }
-
-        .stApp, [data-testid="stAppViewContainer"] {
-            background-color: #F8FAFC !important;
-            color: #0F172A !important;
         }
 
         h1, h2, h3, h4, h5, h6, p, span, label, div {
@@ -105,20 +105,21 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
+        /* Card de Cabeçalho Superior */
         .corporate-header {
             background: #FFFFFF !important;
-            padding: 20px 20px !important;
+            padding: 18px 20px !important;
             border-radius: 14px !important;
             text-align: center !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-            margin-bottom: 1.3rem !important;
+            border: 1px solid #DBEAFE !important;
+            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.05) !important;
+            margin-bottom: 1.2rem !important;
         }
         .corporate-title {
             font-size: 1.35rem !important;
             font-weight: 700 !important;
             color: #0F172A !important;
-            margin: 6px 0 2px 0 !important;
+            margin: 4px 0 2px 0 !important;
             letter-spacing: -0.02em !important;
         }
         .corporate-subtitle {
@@ -128,17 +129,26 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
+        /* Formulários (Login e Viagem) */
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
-            border: 1px solid #E2E8F0 !important;
+            border: 1px solid #DBEAFE !important;
             border-radius: 14px !important;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-            padding: 24px !important;
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.06) !important;
+            padding: 24px 26px !important;
+        }
+
+        /* Card do Logotipo dentro da div de Login */
+        .login-logo-wrapper {
+            text-align: center !important;
+            margin-bottom: 1rem !important;
+            padding-bottom: 0.5rem !important;
+            border-bottom: 1px solid #F1F5F9 !important;
         }
 
         .card-vehicle-info {
-            background-color: #F8FAFC !important;
-            border: 1px solid #E2E8F0 !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #DBEAFE !important;
             border-left: 4px solid #2563EB !important;
             padding: 14px 16px !important;
             border-radius: 10px !important;
@@ -146,23 +156,26 @@ st.markdown("""
             color: #334155 !important;
             line-height: 1.6 !important;
             font-size: 0.92rem !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.04) !important;
         }
 
         .card-active-trip {
-            background-color: #EFF6FF !important;
+            background-color: #FFFFFF !important;
             border: 1px solid #BFDBFE !important;
+            border-left: 4px solid #2563EB !important;
             padding: 16px !important;
             border-radius: 12px !important;
             margin-bottom: 1.3rem !important;
             color: #1E3A8A !important;
             line-height: 1.65 !important;
             font-size: 0.93rem !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05) !important;
         }
         .card-active-trip b {
             color: #1E3A8A !important;
         }
 
-        /* Inputs de formulário claros */
+        /* Inputs e seletores */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -176,7 +189,7 @@ st.markdown("""
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 8px !important;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
         }
 
         div[data-baseweb="input"]:focus-within,
@@ -230,7 +243,7 @@ st.markdown("""
 
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
+            border-right: 1px solid #DBEAFE !important;
         }
         section[data-testid="stSidebar"] div.stButton > button {
             background: #F1F5F9 !important;
@@ -271,7 +284,7 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=160)
+            st.image(logo_img, width=150)
         except Exception:
             st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
@@ -474,12 +487,27 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN (LOGOTIPO INTEGRADO NA DIV DE FORMULÁRIO)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    renderizar_cabecalho("Portal de Acesso do Condutor")
+    caminho_logo = obter_caminho_logotipo()
+    
     with st.form("form_login"):
-        st.subheader("Identificação do Condutor")
+        # LOGOTIPO DENTRO DA DIV DE PREENCHIMENTO DO USUÁRIO
+        if caminho_logo:
+            try:
+                logo_img = Image.open(caminho_logo)
+                col_l, col_m, col_r = st.columns([1, 1.8, 1])
+                with col_m:
+                    st.image(logo_img, use_container_width=True)
+            except Exception:
+                st.markdown("<h2 style='text-align:center;'>🚗 Master Café</h2>", unsafe_allow_html=True)
+        else:
+            st.markdown("<h2 style='text-align:center;'>🚗 Master Café</h2>", unsafe_allow_html=True)
+
+        st.markdown("<h3 style='text-align:center; margin-top:0.4rem; margin-bottom:0.2rem;'>Identificação do Condutor</h3>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#64748B; font-size:0.88rem; margin-bottom:1.2rem;'>Acesse o sistema com suas credenciais de operação</p>", unsafe_allow_html=True)
+
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
         btn_login = st.form_submit_button("Entrar no Sistema")
@@ -506,7 +534,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL
+# 6. APLICATIVO PRINCIPAL (TELA DE PREENCHIMENTO DA VIAGEM)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -666,7 +694,7 @@ def main():
                 st.error(f"❌ Falha ao finalizar na planilha: {msg}")
 
     # =========================================================================
-    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (FILTRA VEÍCULOS POR LOCALIDADE)
+    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (PREENCHIMENTO DOS DADOS DA VIAGEM)
     # =========================================================================
     else:
         df_veiculos_todos = carregar_veiculos()
@@ -752,6 +780,7 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
+                # Verificação anti-duplicidade em tempo real
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -767,6 +796,7 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
+                # Bloqueio de duplo clique na sessão
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
