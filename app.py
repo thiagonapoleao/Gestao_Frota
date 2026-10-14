@@ -20,44 +20,68 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR VISÍVEL E IMAGEM CENTRALIZADA)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SETAS DO MENU 100% VISÍVEIS)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
     <style>
-        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL E VISÍVEL */
+        /* 1. FORÇA AS 2 SETAS / BOTÃO DO MENU LATERAL A FICAREM VISÍVEIS */
         [data-testid="collapsedControl"],
-        button[kind="header"] {
+        [data-testid="stSidebarCollapseButton"],
+        button[data-testid="stSidebarCollapseButton"],
+        div[data-testid="collapsedControl"],
+        div[data-testid="collapsedControl"] button,
+        header button[kind="header"] {
             display: flex !important;
             visibility: visible !important;
-            color: #FFFFFF !important;
-            z-index: 1000000 !important;
+            opacity: 1 !important;
+            z-index: 9999999 !important;
+            position: fixed !important;
+            top: 14px !important;
+            left: 14px !important;
+            background-color: rgba(15, 23, 42, 0.85) !important;
+            border: 1px solid rgba(255, 255, 255, 0.35) !important;
+            border-radius: 8px !important;
+            width: 40px !important;
+            height: 40px !important;
+            justify-content: center !important;
+            align-items: center !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+            cursor: pointer !important;
         }
 
-        /* 2. ELIMINAÇÃO DE ELEMENTOS FANTASMAS SUPERIORES */
+        /* Cor branca de alto contraste para o ícone das setas */
+        [data-testid="collapsedControl"] svg,
+        [data-testid="stSidebarCollapseButton"] svg,
+        header button[kind="header"] svg {
+            fill: #FFFFFF !important;
+            color: #FFFFFF !important;
+            stroke: #FFFFFF !important;
+            width: 20px !important;
+            height: 20px !important;
+        }
+
+        /* 2. ELIMINAÇÃO APENAS DA BARRA DECORATIVA E TOOLBAR (SEM OCULTAR O BOTÃO) */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         div[data-testid="stDecoration"],
-        div[data-testid="stToolbar"] {
+        div[data-testid="stToolbar"],
+        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
+        [data-testid="manage-app-button"] {
             display: none !important;
             height: 0px !important;
-            min-height: 0px !important;
-            max-height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            border: none !important;
             visibility: hidden !important;
         }
 
         header[data-testid="stHeader"] {
             background-color: transparent !important;
-            height: 2.2rem !important;
+            height: 0px !important;
         }
 
         div[data-testid="stMarkdownContainer"]:empty,
@@ -74,12 +98,6 @@ st.markdown("""
             height: 0px !important;
             margin: 0px !important;
             padding: 0px !important;
-        }
-
-        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
-            display: none !important;
-            visibility: hidden !important;
         }
 
         /* 3. PLANO DE FUNDO GERAL EM GRADIENTE RADIAL ESCURO */
@@ -105,7 +123,7 @@ st.markdown("""
             border-radius: 20px !important;
             box-shadow: 0 20px 50px rgba(11, 2, 23, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
             padding: 26px 26px 32px 26px !important;
-            margin-top: 0.8rem !important;
+            margin-top: 1.4rem !important;
             margin-bottom: 2rem !important;
             max-width: 660px !important;
         }
@@ -114,7 +132,6 @@ st.markdown("""
             background-color: transparent !important;
         }
 
-        /* Tipografia de alto contraste */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -143,16 +160,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* 5. CENTRALIZAÇÃO UNIVERSAL E ALINHAMENTO DA IMAGEM */
-        .image-center-wrapper {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            width: 100% !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-        }
-
+        /* 5. CENTRALIZAÇÃO DA IMAGEM E DO LOGO */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
@@ -273,12 +281,11 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
         }
 
-        /* SIDEBAR GARANTIDA */
+        /* 7. SIDEBAR NATIVA E VISÍVEL AO SER EXPANDIDA */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #DBEAFE !important;
-            display: block !important;
-            visibility: visible !important;
+            z-index: 10000000 !important;
         }
         section[data-testid="stSidebar"] * {
             color: #1E293B !important;
