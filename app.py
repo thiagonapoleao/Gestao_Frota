@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (NOVO GRADIENTE RADIAL)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (MARGEM ZERO ENTRE IMAGEM E USUÁRIO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -133,13 +133,15 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* CENTRALIZAÇÃO UNIVERSAL PARA IMAGENS (MOBILE E DESKTOP) */
+        /* CENTRALIZAÇÃO UNIVERSAL E MARGEM ZERO PARA A IMAGEM */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
             margin-left: auto !important;
             margin-right: auto !important;
+            margin-bottom: 0px !important;
+            padding-bottom: 0px !important;
             width: 100% !important;
             text-align: center !important;
         }
@@ -149,6 +151,13 @@ st.markdown("""
             display: block !important;
             margin-left: auto !important;
             margin-right: auto !important;
+            margin-bottom: 0px !important;
+        }
+
+        /* ZERA A MARGEM DO ELEMENT CONTAINER DA IMAGEM E DO INPUT LOGO ABAIXO */
+        div[data-testid="element-container"]:has(> div[data-testid="stImage"]) {
+            margin-bottom: 0px !important;
+            padding-bottom: 0px !important;
         }
 
         /* Formulários (Login e Viagem) */
@@ -309,9 +318,7 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     if caminho_veiculo:
         try:
             img_frota = Image.open(caminho_veiculo)
-            col_v1, col_v2, col_v3 = st.columns([1, 2.5, 1])
-            with col_v2:
-                st.image(img_frota, width=264)
+            st.image(img_frota, width=317)
         except Exception:
             pass
             
@@ -513,7 +520,7 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM 20% MAIOR + ESPAÇO 2PX)
+# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM 317PX + MARGEM 0PX)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -530,16 +537,13 @@ def tela_login(df_usuarios):
         else:
             st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        # 2. Imagem da frota centralizada (largura 264px)
+        # 2. Imagem da frota ampliada em 20% (317px), centralizada e sem margem inferior
         if caminho_veiculo:
             try:
                 img_veiculo = Image.open(caminho_veiculo)
-                st.image(img_veiculo, width=264)
+                st.image(img_veiculo, width=317)
             except Exception:
                 pass
-
-        # Margem de exatamente 2px antes do campo de usuário
-        st.markdown("<div style='height: 2px; margin: 0; padding: 0;'></div>", unsafe_allow_html=True)
 
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
