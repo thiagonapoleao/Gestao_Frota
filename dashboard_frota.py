@@ -19,7 +19,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM VÃOS E COM CARDS NATIVOS SEGUROS)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR RESPONSIVA E OCULTÁVEL)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -30,19 +30,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINAÇÃO LIMPA DO CABEÇALHO DO STREAMLIT */
-        header[data-testid="stHeader"] {
-            display: none !important;
-            height: 0px !important;
-        }
-
-        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* 2. CONTROLE DA BARRA LATERAL VISÍVEL */
+        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
         [data-testid="collapsedControl"],
         button[kind="header"] {
             display: flex !important;
@@ -51,17 +39,27 @@ st.markdown("""
             z-index: 1000000 !important;
         }
 
-        /* 3. ESPAÇAMENTO COMPACTO NO TOPO */
+        /* Oculta apenas os menus de desenvolvimento e deploy do Streamlit */
+        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
+        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* Ajusta o topo para não cobrir o botão da sidebar */
+        header[data-testid="stHeader"] {
+            background-color: transparent !important;
+            height: 2.2rem !important;
+        }
+
         .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container,
-        div[data-testid="stAppViewBlockContainer"] {
+        div[data-testid="stAppViewContainer"] > .main > .block-container {
             padding-top: 0.8rem !important;
-            margin-top: 0px !important;
             padding-bottom: 2rem !important;
             max-width: 96% !important;
         }
 
-        /* 4. TEMA CLARO CORPORATIVO */
+        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -74,27 +72,16 @@ st.markdown("""
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
 
-        /* ESTILIZAÇÃO DOS CARDS NATIVOS (st.metric + st.container) */
-        div[data-testid="stMetric"] {
-            background-color: transparent !important;
-            padding: 4px 6px !important;
-        }
-        div[data-testid="stMetricLabel"] p {
-            font-size: 0.82rem !important;
-            font-weight: 700 !important;
-            text-transform: uppercase !important;
-            letter-spacing: 0.04em !important;
-            color: #64748B !important;
-            margin-bottom: 2px !important;
-        }
-        div[data-testid="stMetricValue"] div {
-            font-size: 1.85rem !important;
-            font-weight: 800 !important;
+        h1, h2, h3, h4, h5, p, span, label, div {
             color: #0F172A !important;
-            line-height: 1.1 !important;
+        }
+        .stWidgetLabel p, label p {
+            color: #334155 !important;
+            font-weight: 600 !important;
+            font-size: 0.88rem !important;
         }
 
-        /* Sidebar */
+        /* 3. SIDEBAR COM RECOLHIMENTO NATURAL (SEM FORÇAR TRANSFORM) */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -103,6 +90,7 @@ st.markdown("""
             color: #1E293B !important;
         }
 
+        /* Botões de rádio da barra lateral */
         div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
             gap: 8px !important;
         }
@@ -125,39 +113,115 @@ st.markdown("""
 
         /* Cabeçalho Compacto */
         .dash-header-container {
-            background: #FFFFFF !important;
-            padding: 16px 24px !important;
-            border-radius: 12px !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
-            margin-bottom: 1.2rem !important;
-            margin-top: 0px !important;
+            background: #FFFFFF;
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.2rem;
+            margin-top: 0px;
         }
 
         .dash-title {
-            font-size: 1.45rem !important;
-            font-weight: 800 !important;
-            color: #0F172A !important;
-            margin: 0 !important;
-            letter-spacing: -0.02em !important;
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0F172A;
+            margin: 0;
+            letter-spacing: -0.02em;
         }
         .dash-subtitle {
-            font-size: 0.88rem !important;
-            color: #64748B !important;
-            margin: 2px 0 0 0 !important;
+            font-size: 0.88rem;
+            color: #64748B;
+            margin: 2px 0 0 0;
         }
 
         /* Painel de Filtros */
         .filter-panel {
-            background-color: #FFFFFF !important;
-            border: 1px solid #E2E8F0 !important;
-            border-radius: 12px !important;
-            padding: 18px 20px 10px 20px !important;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
-            margin-bottom: 1.2rem !important;
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px 10px 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.2rem;
         }
 
-        /* Botões */
+        /* KPI Cards */
+        .kpi-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .kpi-title {
+            font-size: 0.80rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748B;
+            margin: 0;
+        }
+        .kpi-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.1;
+            margin: 0;
+        }
+        .kpi-caption {
+            font-size: 0.78rem;
+            color: #94A3B8;
+            margin: 0;
+        }
+
+        .badge-open {
+            background-color: #FEF3C7;
+            color: #92400E;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid #FDE68A;
+        }
+        .badge-done {
+            background-color: #DEF7EC;
+            color: #03543F;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid #BCF0DA;
+        }
+
+        [data-testid="stForm"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+            padding: 24px !important;
+        }
+
+        div[data-baseweb="input"],
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] > div,
+        div[data-testid="stTextInput"] > div,
+        div[data-testid="stDateInput"] > div {
+            background-color: #FFFFFF !important;
+            border: 1px solid #CBD5E1 !important;
+            color: #0F172A !important;
+            border-radius: 8px !important;
+        }
+        input {
+            background-color: #FFFFFF !important;
+            color: #0F172A !important;
+            -webkit-text-fill-color: #0F172A !important;
+        }
+
         div.stButton > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             color: #FFFFFF !important;
@@ -335,7 +399,7 @@ def carregar_dados_viagens():
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -403,7 +467,7 @@ def main():
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    # BARRA LATERAL
+    # BARRA LATERAL (COM CONTROLE LIVRE DE EXPANDIR/RECOLHER)
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -463,53 +527,87 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
-        # 1. BLOCO DE CARDS DE KPIS (RENDERIZAÇÃO NATIVA BLINDADA)
+        # 1. BLOCO DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
-            with st.container(border=True):
-                st.metric(label="Total de Viagens", value=f"{total_viagens}", help="Histórico acumulado de viagens")
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #2563EB;">
+                    <p class="kpi-title">Total de Viagens</p>
+                    <p class="kpi-value">{total_viagens}</p>
+                    <p class="kpi-caption">Histórico acumulado</p>
+                </div>
+            """, unsafe_allow_html=True)
 
         with kpi2:
-            with st.container(border=True):
-                st.metric(label="Veículos em Aberto", value=f"{total_em_aberto}", help="Veículos atualmente em trânsito")
+            cor_aberto = "#F59E0B" if total_em_aberto > 0 else "#10B981"
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid {cor_aberto};">
+                    <p class="kpi-title">Veículos em Aberto</p>
+                    <p class="kpi-value" style="color: {'#B45309' if total_em_aberto > 0 else '#065F46'};">{total_em_aberto}</p>
+                    <p class="kpi-caption">Em trânsito agora</p>
+                </div>
+            """, unsafe_allow_html=True)
 
         with kpi3:
-            with st.container(border=True):
-                st.metric(label="Km Total Rodado", value=f"{total_km_rodado:,.0f} km", help="Quilometragem de viagens concluídas")
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #10B981;">
+                    <p class="kpi-title">Km Total Rodado</p>
+                    <p class="kpi-value">{total_km_rodado:,.0f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-caption">Viagens concluídas</p>
+                </div>
+            """, unsafe_allow_html=True)
 
         with kpi4:
-            with st.container(border=True):
-                st.metric(label="Média Km / Viagem", value=f"{media_km_geral:,.1f} km", help="Distância média percorrida por viagem")
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #6366F1;">
+                    <p class="kpi-title">Média Km / Viagem</p>
+                    <p class="kpi-value">{media_km_geral:,.1f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-caption">Média por percurso</p>
+                </div>
+            """, unsafe_allow_html=True)
 
         with kpi5:
-            with st.container(border=True):
-                perc_conc = (total_concluidas / total_viagens * 100) if total_viagens > 0 else 0
-                st.metric(label="Viagens Concluídas", value=f"{total_concluidas}", delta=f"{perc_conc:.0f}% do total")
+            perc_conc = (total_concluidas / total_viagens * 100) if total_viagens > 0 else 0
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #0EA5E9;">
+                    <p class="kpi-title">Viagens Concluídas</p>
+                    <p class="kpi-value">{total_concluidas}</p>
+                    <p class="kpi-caption">{perc_conc:.0f}% de finalização</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
-        # 2. CARDS DE VEÍCULOS EM ABERTO NO TOPO
+        # 2. VEÍCULOS EM ABERTO NO TOPO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
         else:
-            qtd_abertos = len(viagens_abertas_df)
-            cols_grid = st.columns(min(qtd_abertos, 3))
+            grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
             for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
-                col_target = cols_grid[idx % 3]
+                col_target = grid_abertos[idx % 3]
                 with col_target:
-                    with st.container(border=True):
-                        st.markdown(f"🚗 **Placa: {v_aberta['placa']}** — `{v_aberta['status']}`")
-                        st.caption(f"**Modelo:** {v_aberta['veiculo']}")
-                        st.write(f"👤 **Condutor:** {v_aberta['condutor']}")
-                        st.write(f"⏱️ **Saída:** {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}")
-                        st.write(f"🔢 **Km Saída:** {v_aberta['km_inicial']} km")
-                        st.write(f"📍 **Destino:** {v_aberta['destino'] or 'Não especificado'}")
-                        st.code(f"RV: {v_aberta['rv']}")
+                    st.markdown(f"""
+                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
+                                <span class="badge-open">EM TRÂNSITO</span>
+                            </div>
+                            <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
+                            <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
+                            <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
+                                <b>Condutor:</b> {v_aberta['condutor']}<br>
+                                <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
+                                <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
+                                <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
+                                <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
-        # 3. GRÁFICOS ACUMULATIVOS COM VALORES NAS BARRAS (ALTAIR)
+        # 3. GRÁFICOS ACUMULATIVOS COM VALORES NAS BARRAS
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -591,7 +689,7 @@ def main():
             else:
                 st.caption("Sem dados suficientes para calcular médias.")
 
-        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
         # 4. CARROS UTILIZADOS NO DIA (HOJE)
         st.markdown("### 📅 **Carros Utilizados no Dia**")
