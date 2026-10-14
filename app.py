@@ -131,10 +131,12 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Arredondamento da imagem dentro dos containers */
+        /* Arredondamento e sombra de imagens */
         div[data-testid="stImage"] img {
-            border-radius: 12px !important;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+            border-radius: 10px !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+            display: block !important;
+            margin: 0 auto !important;
         }
 
         /* Formulários (Login e Viagem) */
@@ -281,25 +283,25 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
 
     st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
     
-    # 1. Imagem local dos veículos/frota
-    if caminho_veiculo:
-        try:
-            img_frota = Image.open(caminho_veiculo)
-            st.image(img_frota, use_container_width=True)
-        except Exception:
-            pass
-    
-    # 2. Logotipo compacto
     col_l, col_m, col_r = st.columns([1, 1.4, 1])
     with col_m:
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=125)
+                st.image(logo_img, width=115)
             except Exception:
                 st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
         else:
             st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+            
+    if caminho_veiculo:
+        try:
+            img_frota = Image.open(caminho_veiculo)
+            col_v1, col_v2, col_v3 = st.columns([1, 1.8, 1])
+            with col_v2:
+                st.image(img_frota, width=220)
+        except Exception:
+            pass
             
     st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
@@ -499,35 +501,36 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (IMAGEM DO VEÍCULO E LOGO DENTRO DA DIV/CARD)
+# 5. TELA DE LOGIN (LOGO E IMAGEM DO VEÍCULO DENTRO DO CARD)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
     caminho_veiculo = obter_caminho_imagem_veiculo()
     
-    # Todo o conteúdo fica encapsulado dentro da div/card de login
     with st.form("form_login"):
-        # 1. Imagem local dos veículos/frota DENTRO da div
-        if caminho_veiculo:
-            try:
-                img_veiculo = Image.open(caminho_veiculo)
-                st.image(img_veiculo, use_container_width=True)
-            except Exception:
-                pass
-        
-        # 2. Logotipo compacto centralizado DENTRO da div
+        # 1. Logotipo compacto centralizado no topo do card
         col_l, col_m, col_r = st.columns([1, 1.2, 1])
         with col_m:
             if caminho_logo:
                 try:
                     logo_img = Image.open(caminho_logo)
-                    st.image(logo_img, width=115)
+                    st.image(logo_img, width=110)
                 except Exception:
                     st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
             else:
                 st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        st.markdown("<h4 style='text-align:center; margin-top:0.3rem; margin-bottom:0.1rem; color:#1E3A8A;'>Acesso do Condutor</h4>", unsafe_allow_html=True)
+        # 2. Imagem dos veículos/frota redimensionada logo abaixo do logo
+        if caminho_veiculo:
+            try:
+                img_veiculo = Image.open(caminho_veiculo)
+                col_v1, col_v2, col_v3 = st.columns([1, 2.2, 1])
+                with col_v2:
+                    st.image(img_veiculo, width=220)
+            except Exception:
+                pass
+
+        st.markdown("<h4 style='text-align:center; margin-top:0.4rem; margin-bottom:0.1rem; color:#1E3A8A;'>Acesso do Condutor</h4>", unsafe_allow_html=True)
         st.markdown("<p style='text-align:center; color:#64748B; font-size:0.85rem; margin-bottom:1rem;'>Controle e Apontamento de Viagens</p>", unsafe_allow_html=True)
 
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
@@ -802,6 +805,7 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
+                # Verificação anti-duplicidade em tempo real
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
