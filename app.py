@@ -366,6 +366,40 @@ def carregar_lancamentos_existentes():
             continue
     return pd.DataFrame()
 
+def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
+    """
+    Verifica se já existe lançamento idêntico ou com o mesmo RV registrado na planilha,
+    evitando duplicidades de cliques rápidos ou gravações duplicadas.
+    """
+    if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
+        return False, ""
+
+    placa_limpa_alvo = limpar_placa(placa)
+    condutor_norm_alvo = normalizar_texto(condutor)
+    data_ini_alvo = str(data_ini).strip()
+    km_ini_alvo = str(int(km_ini)).strip() if km_ini is not None else ""
+    rv_alvo = str(rv_codigo).strip().upper()
+
+    for _, row in df_lancamentos.iterrows():
+        rv_row = str(row.iloc[12]).strip().upper() if pd.notna(row.iloc[12]) else ""
+        placa_row = limpar_placa(row.iloc[8]) if pd.notna(row.iloc[8]) else ""
+        cond_row = normalizar_texto(row.iloc[6]) if pd.notna(row.iloc[6]) else ""
+        data_row = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
+        km_row = str(row.iloc[2]).split(".")[0].strip() if pd.notna(row.iloc[2]) else ""
+
+        # 1. Checa duplicidade direta por código RV
+        if rv_row and rv_row == rv_alvo:
+            return True, f"O Registro de Viagem {rv_alvo} já existe na planilha."
+
+        # 2. Checa duplicidade operacional (mesmo condutor, placa, data inicial e km inicial)
+        if (placa_row == placa_limpa_alvo and 
+            cond_row == condutor_norm_alvo and 
+            data_row == data_ini_alvo and 
+            km_row == km_ini_alvo):
+            return True, f"Já existe uma viagem registrada para este condutor e veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
+
+    return False, ""
+
 def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     """
     Gera o código RV no formato RV-PPPP-AAAA-XXXX
@@ -376,19 +410,15 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     maior_seq = 0
 
     if not df_lancamentos.empty and len(df_lancamentos.columns) >= 13:
-        # Coluna M é a 13ª coluna (índice 12)
         coluna_rv = df_lancamentos.iloc[:, 12].dropna().astype(str)
         for val in coluna_rv:
             val = val.strip().upper()
-            # Suporta leitura do formato novo RV-PPPP-AAAA-XXXX e retrocompatível com RV-PPPP_AAAA-XXXX
             if val.startswith(prefixo) or val.startswith(f"RV-{placa_limpa}_{ano_atual}-"):
                 partes = val.split("-")
-                # Se formato RV-PPPP-AAAA-XXXX tem 4 partes
                 if len(partes) == 4 and partes[3].isdigit():
                     num = int(partes[3])
                     if num > maior_seq:
                         maior_seq = num
-                # Se formato anterior RV-PPPP_AAAA-XXXX tem 3 partes
                 elif len(partes) == 3 and partes[2].isdigit():
                     num = int(partes[2])
                     if num > maior_seq:
@@ -461,7 +491,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (REGRAS DE TRAVA E PERSISTÊNCIA)
+# 6. APLICATIVO PRINCIPAL (COM TRAVA ANTI-DUPLICIDADE)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -486,9 +516,9 @@ def main():
     # Lê lançamentos para analisar status das viagens em tempo real
     df_lanc = carregar_lancamentos_existentes()
 
-    # Mapeamento de viagens em aberto na planilha (onde Data Final / Coluna D ou Km Final / Coluna F está vazio)
+    # Mapeamento de viagens em aberto na planilha (onde Data Final ou Km Final está vazio)
     viagens_abertas_por_condutor = {}
-    veiculos_em_uso = {} # Placa limpa -> dict com condutor, RV, data, etc.
+    veiculos_em_uso = {}
 
     if not df_lanc.empty and len(df_lanc.columns) >= 13:
         for _, row in df_lanc.iterrows():
@@ -498,7 +528,6 @@ def main():
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            # Se ainda não possui data final ou km final, a viagem está aberta
             if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
                 info_aberta = {
                     "rv": rv_row,
@@ -511,16 +540,13 @@ def main():
                     "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
                 }
                 
-                # Registra o veículo ocupado
                 placa_k = limpar_placa(placa_row)
                 if placa_k:
                     veiculos_em_uso[placa_k] = info_aberta
 
-                # Registra condutor com viagem pendente
                 if cond_row:
                     viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
 
-    # Verifica se este condutor já tem viagem aberta pendente
     condutor_chave = normalizar_texto(nome_condutor)
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
@@ -592,6 +618,13 @@ def main():
 
             km_percorrido = int(km_fim - km_inicial_val)
 
+            # TRAVA ANTI-DUPLICIDADE DE START FINAL (BLOQUEIA DUPLO CLIQUE)
+            chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
+            if st.session_state.get("ultima_transacao") == chave_transacao_final:
+                st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
+                return
+            st.session_state["ultima_transacao"] = chave_transacao_final
+
             payload_finalizar = {
                 "acao": "finalizar",
                 "gid_destino": GID_LANCAMENTOS,
@@ -613,6 +646,7 @@ def main():
                 time.sleep(2)
                 st.rerun()
             else:
+                st.session_state["ultima_transacao"] = None
                 st.error(f"❌ Falha ao finalizar na planilha: {msg}")
 
     # =========================================================================
@@ -637,14 +671,13 @@ def main():
             modelo = dados_veiculo["veiculo"]
             placa_limpa = limpar_placa(placa)
 
-            # Trava do Veículo
+            # Trava do Veículo em Uso
             if placa_limpa in veiculos_em_uso:
                 ocupante = veiculos_em_uso[placa_limpa]
                 st.error(f"🚫 **Veículo Indisponível!** O veículo de placa **{placa}** já está em viagem aberta iniciada por **{ocupante['condutor']}** em {ocupante['data_inicial']} às {ocupante['horario_inicial']}.")
                 st.info(f"Código da viagem aberta em andamento: **{ocupante['rv']}**. Escolha outro veículo ou aguarde a finalização.")
                 return
 
-            # Veículo liberado: Gera código RV no formato RV-PPPP-AAAA-XXXX
             codigo_rv_previsto = gerar_proximo_rv(df_lanc, placa, ano_atual)
 
             st.markdown(f"""
@@ -685,6 +718,32 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
+                # =============================================================
+                # VERIFICAÇÃO RIGOROSA ANTI-DUPLICIDADE
+                # =============================================================
+                # 1. Consulta em tempo real na planilha se esse registro já existe
+                df_lanc_tempo_real = carregar_lancamentos_existentes()
+                duplicado, motivo_duplicado = verificar_lancamento_duplicado(
+                    df_lanc_tempo_real,
+                    rv_codigo=codigo_rv_previsto,
+                    placa=placa,
+                    condutor=nome_condutor,
+                    data_ini=data_ini.strftime("%d/%m/%Y"),
+                    km_ini=km_ini
+                )
+
+                if duplicado:
+                    st.error(f"🚫 **Lançamento Duplicado Impedido:** {motivo_duplicado}")
+                    st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
+                    return
+
+                # 2. Bloqueio de duplo clique na sessão
+                chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
+                if st.session_state.get("ultima_transacao") == chave_transacao_ini:
+                    st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
+                    return
+                st.session_state["ultima_transacao"] = chave_transacao_ini
+
                 payload_iniciar = {
                     "acao": "iniciar",
                     "gid_destino": GID_LANCAMENTOS,
@@ -709,6 +768,7 @@ def main():
                     time.sleep(1.5)
                     st.rerun()
                 else:
+                    st.session_state["ultima_transacao"] = None
                     st.error(f"❌ Falha ao iniciar viagem na planilha: {msg}")
 
 if __name__ == "__main__":
