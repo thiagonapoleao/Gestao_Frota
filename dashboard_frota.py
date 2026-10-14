@@ -18,7 +18,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR RESPONSIVA E OCULTÁVEL)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -29,40 +29,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        .e1o1x6gp2,
-        .st-emotion-cache-k2h9z6,
-        header[data-testid="stHeader"],
-        [data-testid="stHeader"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stToolbar"] {
-            display: none !important;
-            height: 0px !important;
-            min-height: 0px !important;
-            max-height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            border: none !important;
-            visibility: hidden !important;
-            position: absolute !important;
-            top: -9999px !important;
-        }
-
-        div[data-testid="stMarkdownContainer"]:empty,
-        div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
-            display: none !important;
-            height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-        }
-
-        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"]:empty),
-        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"] > style:only-child) {
-            display: none !important;
-            height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-        }
-
+        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
         [data-testid="collapsedControl"],
         button[kind="header"] {
             display: flex !important;
@@ -71,21 +38,27 @@ st.markdown("""
             z-index: 1000000 !important;
         }
 
-        .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container,
-        div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.5rem !important;
-            padding-bottom: 2rem !important;
-            margin-top: 0px !important;
-            max-width: 96% !important;
-        }
-
+        /* Oculta apenas os menus de desenvolvimento e deploy do Streamlit */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
+        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
             display: none !important;
             visibility: hidden !important;
         }
 
+        /* Ajusta o topo para não cobrir o botão da sidebar */
+        header[data-testid="stHeader"] {
+            background-color: transparent !important;
+            height: 2.2rem !important;
+        }
+
+        .block-container,
+        div[data-testid="stAppViewContainer"] > .main > .block-container {
+            padding-top: 0.8rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 96% !important;
+        }
+
+        /* 2. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -107,6 +80,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
+        /* 3. SIDEBAR COM RECOLHIMENTO NATURAL (SEM FORÇAR TRANSFORM) */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -115,6 +89,7 @@ st.markdown("""
             color: #1E293B !important;
         }
 
+        /* Botões de rádio da barra lateral */
         div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
             gap: 8px !important;
         }
@@ -135,6 +110,7 @@ st.markdown("""
             border-color: #2563EB !important;
         }
 
+        /* Cabeçalho Compacto */
         .dash-header-container {
             background: #FFFFFF;
             padding: 16px 24px;
@@ -158,6 +134,7 @@ st.markdown("""
             margin: 2px 0 0 0;
         }
 
+        /* Painel de Filtros */
         .filter-panel {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -167,6 +144,7 @@ st.markdown("""
             margin-bottom: 1.2rem;
         }
 
+        /* KPI Cards */
         .kpi-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -420,7 +398,7 @@ def carregar_dados_viagens():
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -488,6 +466,7 @@ def main():
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
+    # BARRA LATERAL (COM CONTROLE LIVRE DE EXPANDIR/RECOLHER)
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -547,6 +526,7 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
+        # 1. BLOCO DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -597,6 +577,7 @@ def main():
 
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
+        # 2. VEÍCULOS EM ABERTO NO TOPO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -625,6 +606,7 @@ def main():
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
+        # 3. GRÁFICOS ACUMULATIVOS
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -672,6 +654,7 @@ def main():
 
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
+        # 4. CARROS UTILIZADOS NO DIA (HOJE)
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
