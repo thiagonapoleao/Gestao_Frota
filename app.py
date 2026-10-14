@@ -19,9 +19,6 @@ def obter_agora_brasil():
     """Retorna datetime atual oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
-# URL segura de frota veicular comercial para fallback
-BANNER_FROTA_URL = "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1000&q=80"
-
 # -------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (AZUL VIBRANTE EM DEGRADÊ)
 # -------------------------------------------------------------
@@ -134,7 +131,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Ajuste fino na imagem nativa do banner */
+        /* Arredondamento da imagem dentro dos containers */
         div[data-testid="stImage"] img {
             border-radius: 12px !important;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
@@ -255,9 +252,10 @@ GID_VEICULOS = "0"               # Aba Frota
 GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO E BANNER DE FROTA
+# 3. SUPORTE A ARQUIVOS LOCAIS (LOGOTIPO E IMAGEM DO VEÍCULO/FROTA)
 # -------------------------------------------------------------
 def obter_caminho_arquivo(nomes_possiveis):
+    """Busca um arquivo existente no mesmo diretório do script."""
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     for nome in nomes_possiveis:
         for ext in extensoes:
@@ -269,25 +267,27 @@ def obter_caminho_arquivo(nomes_possiveis):
 def obter_caminho_logotipo():
     return obter_caminho_arquivo(["Logotipo", "logotipo", "Logo", "logo"])
 
-def renderizar_banner_frota():
-    """Renderiza com st.image garantindo compatibilidade multiplataforma."""
-    caminho_banner = obter_caminho_arquivo(["banner", "Banner", "frota", "Frota", "cars"])
-    if caminho_banner:
-        try:
-            img = Image.open(caminho_banner)
-            st.image(img, use_container_width=True)
-            return
-        except Exception:
-            pass
-    # Caso não tenha arquivo local, exibe a imagem oficial via URL segura
-    st.image(BANNER_FROTA_URL, use_container_width=True)
+def obter_caminho_imagem_veiculo():
+    """Busca a imagem do veículo/frota localizada na mesma pasta do app."""
+    return obter_caminho_arquivo([
+        "veiculo", "veiculos", "Veiculo", "Veiculos",
+        "frota", "Frota", "carro", "carros", "Carro", "Carros",
+        "banner", "Banner"
+    ])
 
 def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     caminho_logo = obter_caminho_logotipo()
+    caminho_veiculo = obter_caminho_imagem_veiculo()
+
     st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
     
-    # 1. Imagem do Banner no topo
-    renderizar_banner_frota()
+    # 1. Imagem local dos veículos/frota
+    if caminho_veiculo:
+        try:
+            img_frota = Image.open(caminho_veiculo)
+            st.image(img_frota, use_container_width=True)
+        except Exception:
+            pass
     
     # 2. Logotipo compacto
     col_l, col_m, col_r = st.columns([1, 1.4, 1])
@@ -499,15 +499,23 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (COM BANNER NATIVO E LOGOTIPO CENTRALIZADO)
+# 5. TELA DE LOGIN (IMAGEM DO VEÍCULO E LOGO DENTRO DA DIV/CARD)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
+    caminho_veiculo = obter_caminho_imagem_veiculo()
     
-    # 1. Banner de frota renderizado diretamente com st.image
-    renderizar_banner_frota()
-
+    # Todo o conteúdo fica encapsulado dentro da div/card de login
     with st.form("form_login"):
+        # 1. Imagem local dos veículos/frota DENTRO da div
+        if caminho_veiculo:
+            try:
+                img_veiculo = Image.open(caminho_veiculo)
+                st.image(img_veiculo, use_container_width=True)
+            except Exception:
+                pass
+        
+        # 2. Logotipo compacto centralizado DENTRO da div
         col_l, col_m, col_r = st.columns([1, 1.2, 1])
         with col_m:
             if caminho_logo:
@@ -794,7 +802,6 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
-                # Verificação anti-duplicidade em tempo real
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -810,7 +817,6 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
-                # Bloqueio de duplo clique na sessão
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
