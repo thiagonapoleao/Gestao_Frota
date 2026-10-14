@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import altair as alt
 from datetime import datetime, timezone, timedelta, date
 try:
     from zoneinfo import ZoneInfo
@@ -18,7 +19,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR RESPONSIVA E OCULTÁVEL)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM VÃOS/DIVS EM BRANCO NO TOPO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -29,7 +30,43 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
+        /* 1. ELIMINA COMPLETAMENTE O CABEÇALHO E DIVS FANTASMAS DO TOPO */
+        .e1o1x6gp2,
+        .st-emotion-cache-k2h9z6,
+        div[data-testid="stDecoration"],
+        div[data-testid="stToolbar"],
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"] {
+            display: none !important;
+            height: 0px !important;
+            min-height: 0px !important;
+            max-height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+            border: none !important;
+            visibility: hidden !important;
+            position: absolute !important;
+            top: -9999px !important;
+        }
+
+        /* Elimina containers markdown vazios geradores de espaço em branco */
+        div[data-testid="stMarkdownContainer"]:empty,
+        div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
+            display: none !important;
+            height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+        }
+
+        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"]:empty),
+        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"] > style:only-child) {
+            display: none !important;
+            height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+        }
+
+        /* 2. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
         [data-testid="collapsedControl"],
         button[kind="header"] {
             display: flex !important;
@@ -38,27 +75,23 @@ st.markdown("""
             z-index: 1000000 !important;
         }
 
-        /* Oculta apenas os menus de desenvolvimento e deploy do Streamlit */
-        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* Ajusta o topo para não cobrir o botão da sidebar */
-        header[data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 2.2rem !important;
-        }
-
+        /* 3. COLA O CONTEÚDO DIRETO NO TOPO ZERO */
         .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.8rem !important;
+        div[data-testid="stAppViewContainer"] > .main > .block-container,
+        div[data-testid="stAppViewBlockContainer"] {
+            padding-top: 0.2rem !important;
+            margin-top: 0px !important;
             padding-bottom: 2rem !important;
             max-width: 96% !important;
         }
 
-        /* 2. FORÇA TEMA CLARO NATIVO */
+        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
+        [data-testid="manage-app-button"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* 4. FORÇA TEMA CLARO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -80,7 +113,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* 3. SIDEBAR COM RECOLHIMENTO NATURAL (SEM FORÇAR TRANSFORM) */
+        /* SIDEBAR */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -89,7 +122,6 @@ st.markdown("""
             color: #1E293B !important;
         }
 
-        /* Botões de rádio da barra lateral */
         div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
             gap: 8px !important;
         }
@@ -606,7 +638,7 @@ def main():
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
-        # 3. GRÁFICOS ACUMULATIVOS
+        # 3. GRÁFICOS ACUMULATIVOS COM VALORES NAS BARRAS (ALTAIR)
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -617,17 +649,37 @@ def main():
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
                     .sum()
                     .reset_index()
-                    .rename(columns={"km_percorrido_num": "Km Total Acumulado", "placa": "Placa"})
-                    .sort_values(by="Km Total Acumulado", ascending=False)
+                    .rename(columns={"km_percorrido_num": "Km_Total", "placa": "Placa"})
+                    .sort_values(by="Km_Total", ascending=False)
                 )
 
-                st.bar_chart(
-                    data=df_acumulado_veiculo,
-                    x="Placa",
-                    y="Km Total Acumulado",
-                    color="#2563EB",
-                    use_container_width=True
+                df_acumulado_veiculo["rotulo_km"] = df_acumulado_veiculo["Km_Total"].apply(lambda v: f"{v:,.0f} km")
+
+                # Barras
+                bars1 = alt.Chart(df_acumulado_veiculo).mark_bar(
+                    color="#2563EB", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Km_Total:Q", title="Km Total Acumulado"),
+                    tooltip=[alt.Tooltip("Placa:N", title="Placa"), alt.Tooltip("rotulo_km:N", title="Km Total")]
                 )
+
+                # Texto com os valores em cima de cada barra
+                text1 = alt.Chart(df_acumulado_veiculo).mark_text(
+                    align="center",
+                    baseline="bottom",
+                    dy=-4,
+                    fontSize=12,
+                    fontWeight=700,
+                    color="#1E3A8A"
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y"),
+                    y=alt.Y("Km_Total:Q"),
+                    text="rotulo_km:N"
+                )
+
+                grafico_km_total = (bars1 + text1).properties(height=320)
+                st.altair_chart(grafico_km_total, use_container_width=True)
             else:
                 st.caption("Sem dados suficientes para calcular valores acumulados.")
 
@@ -638,17 +690,37 @@ def main():
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
                     .agg(Media_Km="mean")
                     .reset_index()
-                    .rename(columns={"placa": "Placa", "Media_Km": "Média Km/Viagem"})
-                    .sort_values(by="Média Km/Viagem", ascending=False)
+                    .rename(columns={"placa": "Placa", "Media_Km": "Media_Km"})
+                    .sort_values(by="Media_Km", ascending=False)
                 )
 
-                st.bar_chart(
-                    data=df_media_veiculo,
-                    x="Placa",
-                    y="Média Km/Viagem",
-                    color="#059669",
-                    use_container_width=True
+                df_media_veiculo["rotulo_media"] = df_media_veiculo["Media_Km"].apply(lambda v: f"{v:,.1f} km")
+
+                # Barras
+                bars2 = alt.Chart(df_media_veiculo).mark_bar(
+                    color="#059669", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Media_Km:Q", title="Média Km por Viagem"),
+                    tooltip=[alt.Tooltip("Placa:N", title="Placa"), alt.Tooltip("rotulo_media:N", title="Média Km")]
                 )
+
+                # Texto com os valores em cima de cada barra
+                text2 = alt.Chart(df_media_veiculo).mark_text(
+                    align="center",
+                    baseline="bottom",
+                    dy=-4,
+                    fontSize=12,
+                    fontWeight=700,
+                    color="#064E3B"
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y"),
+                    y=alt.Y("Media_Km:Q"),
+                    text="rotulo_media:N"
+                )
+
+                grafico_media_km = (bars2 + text2).properties(height=320)
+                st.altair_chart(grafico_media_km, use_container_width=True)
             else:
                 st.caption("Sem dados suficientes para calcular médias.")
 
