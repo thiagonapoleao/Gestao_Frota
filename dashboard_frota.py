@@ -19,7 +19,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM VÃOS/DIVS EM BRANCO NO TOPO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -30,43 +30,25 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA COMPLETAMENTE O CABEÇALHO E DIVS FANTASMAS DO TOPO */
+        /* 1. ELIMINA O CABEÇALHO PADRÃO E DECORAÇÕES DESNECESSÁRIAS */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         div[data-testid="stDecoration"],
         div[data-testid="stToolbar"],
         header[data-testid="stHeader"],
-        [data-testid="stHeader"] {
+        [data-testid="stHeader"],
+        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
+        [data-testid="manage-app-button"] {
             display: none !important;
             height: 0px !important;
             min-height: 0px !important;
             max-height: 0px !important;
             margin: 0px !important;
             padding: 0px !important;
-            border: none !important;
             visibility: hidden !important;
-            position: absolute !important;
-            top: -9999px !important;
         }
 
-        /* Elimina containers markdown vazios geradores de espaço em branco */
-        div[data-testid="stMarkdownContainer"]:empty,
-        div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
-            display: none !important;
-            height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-        }
-
-        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"]:empty),
-        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"] > style:only-child) {
-            display: none !important;
-            height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-        }
-
-        /* 2. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL */
+        /* 2. MANTÉM O CONTROLE DA SIDEBAR VISÍVEL */
         [data-testid="collapsedControl"],
         button[kind="header"] {
             display: flex !important;
@@ -75,23 +57,17 @@ st.markdown("""
             z-index: 1000000 !important;
         }
 
-        /* 3. COLA O CONTEÚDO DIRETO NO TOPO ZERO */
+        /* 3. ESPAÇAMENTO COMPACTO NO TOPO SEM ESPAÇO MORTO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.2rem !important;
+            padding-top: 0.5rem !important;
             margin-top: 0px !important;
             padding-bottom: 2rem !important;
             max-width: 96% !important;
         }
 
-        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* 4. FORÇA TEMA CLARO NATIVO */
+        /* 4. TEMA CLARO CORPORATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -144,89 +120,90 @@ st.markdown("""
 
         /* Cabeçalho Compacto */
         .dash-header-container {
-            background: #FFFFFF;
-            padding: 16px 24px;
-            border-radius: 12px;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
-            margin-bottom: 1.2rem;
-            margin-top: 0px;
+            background: #FFFFFF !important;
+            padding: 16px 24px !important;
+            border-radius: 12px !important;
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
+            margin-bottom: 1.2rem !important;
+            margin-top: 0px !important;
         }
 
         .dash-title {
-            font-size: 1.45rem;
-            font-weight: 800;
-            color: #0F172A;
-            margin: 0;
-            letter-spacing: -0.02em;
+            font-size: 1.45rem !important;
+            font-weight: 800 !important;
+            color: #0F172A !important;
+            margin: 0 !important;
+            letter-spacing: -0.02em !important;
         }
         .dash-subtitle {
-            font-size: 0.88rem;
-            color: #64748B;
-            margin: 2px 0 0 0;
+            font-size: 0.88rem !important;
+            color: #64748B !important;
+            margin: 2px 0 0 0 !important;
         }
 
         /* Painel de Filtros */
         .filter-panel {
-            background-color: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 18px 20px 10px 20px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-            margin-bottom: 1.2rem;
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 12px !important;
+            padding: 18px 20px 10px 20px !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+            margin-bottom: 1.2rem !important;
         }
 
-        /* KPI Cards */
+        /* KPI Cards (Garantidos sem corte) */
         .kpi-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 18px 20px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 12px !important;
+            padding: 18px 20px !important;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 6px !important;
+            width: 100% !important;
         }
         .kpi-title {
-            font-size: 0.80rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #64748B;
-            margin: 0;
+            font-size: 0.80rem !important;
+            font-weight: 700 !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.05em !important;
+            color: #64748B !important;
+            margin: 0 !important;
         }
         .kpi-value {
-            font-size: 1.85rem;
-            font-weight: 800;
-            color: #0F172A;
-            line-height: 1.1;
-            margin: 0;
+            font-size: 1.85rem !important;
+            font-weight: 800 !important;
+            color: #0F172A !important;
+            line-height: 1.1 !important;
+            margin: 0 !important;
         }
         .kpi-caption {
-            font-size: 0.78rem;
-            color: #94A3B8;
-            margin: 0;
+            font-size: 0.78rem !important;
+            color: #94A3B8 !important;
+            margin: 0 !important;
         }
 
         .badge-open {
-            background-color: #FEF3C7;
-            color: #92400E;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.76rem;
-            font-weight: 700;
-            display: inline-block;
-            border: 1px solid #FDE68A;
+            background-color: #FEF3C7 !important;
+            color: #92400E !important;
+            padding: 4px 10px !important;
+            border-radius: 20px !important;
+            font-size: 0.76rem !important;
+            font-weight: 700 !important;
+            display: inline-block !important;
+            border: 1px solid #FDE68A !important;
         }
         .badge-done {
-            background-color: #DEF7EC;
-            color: #03543F;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.76rem;
-            font-weight: 700;
-            display: inline-block;
-            border: 1px solid #BCF0DA;
+            background-color: #DEF7EC !important;
+            color: #03543F !important;
+            padding: 4px 10px !important;
+            border-radius: 20px !important;
+            font-size: 0.76rem !important;
+            font-weight: 700 !important;
+            display: inline-block !important;
+            border: 1px solid #BCF0DA !important;
         }
 
         [data-testid="stForm"] {
@@ -430,7 +407,7 @@ def carregar_dados_viagens():
     return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -498,7 +475,7 @@ def main():
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    # BARRA LATERAL (COM CONTROLE LIVRE DE EXPANDIR/RECOLHER)
+    # BARRA LATERAL
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -558,7 +535,7 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
-        # 1. BLOCO DE KPIS
+        # 1. BLOCO DE CARDS DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -609,7 +586,7 @@ def main():
 
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO
+        # 2. CARDS DE VEÍCULOS EM ABERTO NO TOPO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -655,7 +632,6 @@ def main():
 
                 df_acumulado_veiculo["rotulo_km"] = df_acumulado_veiculo["Km_Total"].apply(lambda v: f"{v:,.0f} km")
 
-                # Barras
                 bars1 = alt.Chart(df_acumulado_veiculo).mark_bar(
                     color="#2563EB", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
                 ).encode(
@@ -664,7 +640,6 @@ def main():
                     tooltip=[alt.Tooltip("Placa:N", title="Placa"), alt.Tooltip("rotulo_km:N", title="Km Total")]
                 )
 
-                # Texto com os valores em cima de cada barra
                 text1 = alt.Chart(df_acumulado_veiculo).mark_text(
                     align="center",
                     baseline="bottom",
@@ -696,7 +671,6 @@ def main():
 
                 df_media_veiculo["rotulo_media"] = df_media_veiculo["Media_Km"].apply(lambda v: f"{v:,.1f} km")
 
-                # Barras
                 bars2 = alt.Chart(df_media_veiculo).mark_bar(
                     color="#059669", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
                 ).encode(
@@ -705,7 +679,6 @@ def main():
                     tooltip=[alt.Tooltip("Placa:N", title="Placa"), alt.Tooltip("rotulo_media:N", title="Média Km")]
                 )
 
-                # Texto com os valores em cima de cada barra
                 text2 = alt.Chart(df_media_veiculo).mark_text(
                     align="center",
                     baseline="bottom",
