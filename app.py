@@ -19,8 +19,11 @@ def obter_agora_brasil():
     """Retorna datetime atual oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
+# URL da imagem representativa de frota comercial
+IMAGEM_FROTA_URL = "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80"
+
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (AZUL CLARO CORPORATIVO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (AZUL VIBRANTE EM DEGRADÊ)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -66,15 +69,17 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO AZUL CLARO CORPORATIVO (F0F6FE) */
+        /* 2. PLANO DE FUNDO EM AZUL VIBRANTE DEGRADÊ */
         :root, html, body {
-            background-color: #F0F6FE !important;
+            background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
+            background-attachment: fixed !important;
             color: #0F172A !important;
             color-scheme: light !important;
         }
 
         .stApp, [data-testid="stAppViewContainer"] {
-            background-color: #F0F6FE !important;
+            background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
+            background-attachment: fixed !important;
             color: #0F172A !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
@@ -82,11 +87,11 @@ st.markdown("""
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            background-color: #F0F6FE !important;
+            background: transparent !important;
             padding-top: 0.6rem !important;
             padding-bottom: 2rem !important;
             margin-top: 0px !important;
-            max-width: 720px !important;
+            max-width: 680px !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -101,81 +106,83 @@ st.markdown("""
         .stWidgetLabel p, label p {
             color: #334155 !important;
             font-weight: 600 !important;
-            font-size: 0.90rem !important;
-            margin-bottom: 4px !important;
+            font-size: 0.88rem !important;
+            margin-bottom: 3px !important;
         }
 
-        /* Card de Cabeçalho Superior */
+        /* Header Operacional com Imagem e Detalhes */
         .corporate-header {
             background: #FFFFFF !important;
-            padding: 18px 20px !important;
-            border-radius: 14px !important;
+            padding: 16px 20px !important;
+            border-radius: 16px !important;
             text-align: center !important;
-            border: 1px solid #DBEAFE !important;
-            box-shadow: 0 4px 16px rgba(37, 99, 235, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.7) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
             margin-bottom: 1.2rem !important;
         }
         .corporate-title {
-            font-size: 1.35rem !important;
-            font-weight: 700 !important;
-            color: #0F172A !important;
+            font-size: 1.30rem !important;
+            font-weight: 800 !important;
+            color: #1E3A8A !important;
             margin: 4px 0 2px 0 !important;
             letter-spacing: -0.02em !important;
         }
         .corporate-subtitle {
-            font-size: 0.88rem !important;
+            font-size: 0.86rem !important;
             color: #64748B !important;
             margin: 0 !important;
             font-weight: 500 !important;
         }
 
+        /* Imagem de Frota Embutida */
+        .fleet-banner-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+
         /* Formulários (Login e Viagem) */
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
-            border: 1px solid #DBEAFE !important;
-            border-radius: 14px !important;
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.06) !important;
-            padding: 24px 26px !important;
-        }
-
-        /* Card do Logotipo dentro da div de Login */
-        .login-logo-wrapper {
-            text-align: center !important;
-            margin-bottom: 1rem !important;
-            padding-bottom: 0.5rem !important;
-            border-bottom: 1px solid #F1F5F9 !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18) !important;
+            padding: 22px 24px !important;
         }
 
         .card-vehicle-info {
             background-color: #FFFFFF !important;
             border: 1px solid #DBEAFE !important;
-            border-left: 4px solid #2563EB !important;
+            border-left: 5px solid #2563EB !important;
             padding: 14px 16px !important;
-            border-radius: 10px !important;
+            border-radius: 12px !important;
             margin: 14px 0 !important;
             color: #334155 !important;
             line-height: 1.6 !important;
-            font-size: 0.92rem !important;
-            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.04) !important;
+            font-size: 0.90rem !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
         }
 
         .card-active-trip {
             background-color: #FFFFFF !important;
             border: 1px solid #BFDBFE !important;
-            border-left: 4px solid #2563EB !important;
+            border-left: 5px solid #2563EB !important;
             padding: 16px !important;
             border-radius: 12px !important;
             margin-bottom: 1.3rem !important;
             color: #1E3A8A !important;
             line-height: 1.65 !important;
-            font-size: 0.93rem !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05) !important;
+            font-size: 0.92rem !important;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10) !important;
         }
         .card-active-trip b {
             color: #1E3A8A !important;
         }
 
-        /* Inputs e seletores */
+        /* Inputs e controles */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -185,72 +192,58 @@ st.markdown("""
         div[data-testid="stTimeInput"] > div,
         div[data-testid="stNumberInput"] > div,
         div[data-testid="stNumberInputContainer"] {
-            background-color: #FFFFFF !important;
+            background-color: #F8FAFC !important;
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 8px !important;
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
         }
 
         div[data-baseweb="input"]:focus-within,
         div[data-baseweb="select"]:focus-within,
         div[data-testid="stNumberInputContainer"]:focus-within {
             border-color: #2563EB !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.20) !important;
+            background-color: #FFFFFF !important;
         }
 
         input[type="text"], 
         input[type="number"], 
         input[type="password"],
         input {
-            background-color: #FFFFFF !important;
+            background-color: transparent !important;
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
             border: none !important;
             font-size: 0.94rem !important;
             font-weight: 500 !important;
         }
-        input::placeholder {
-            color: #94A3B8 !important;
-            -webkit-text-fill-color: #94A3B8 !important;
-        }
 
         /* Botões */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
-            background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-            background-color: #2563EB !important;
+            background: linear-gradient(135deg, #1D4ED8, #2563EB) !important;
+            background-color: #1D4ED8 !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             border: none !important;
             border-radius: 10px !important;
-            height: 48px !important;
-            font-size: 1rem !important;
+            height: 46px !important;
+            font-size: 0.98rem !important;
             font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
         }
         div.stButton > button:first-child:hover,
         div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
-            background-color: #1D4ED8 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
+            background: linear-gradient(135deg, #1E40AF, #1D4ED8) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
         }
 
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #DBEAFE !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button {
-            background: #F1F5F9 !important;
-            color: #334155 !important;
-            -webkit-text-fill-color: #334155 !important;
-            box-shadow: none !important;
-            border: 1px solid #CBD5E1 !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -281,14 +274,19 @@ def obter_caminho_logotipo():
 def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     caminho_logo = obter_caminho_logotipo()
     st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
-    if caminho_logo:
-        try:
-            logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=150)
-        except Exception:
+    st.markdown(f'<img src="{IMAGEM_FROTA_URL}" class="fleet-banner-img" alt="Frota de Veículos">', unsafe_allow_html=True)
+    
+    col_l, col_m, col_r = st.columns([1, 1.4, 1])
+    with col_m:
+        if caminho_logo:
+            try:
+                logo_img = Image.open(caminho_logo)
+                st.image(logo_img, width=125)
+            except Exception:
+                st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+        else:
             st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+            
     st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
@@ -306,6 +304,7 @@ def limpar_placa(placa_str):
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
+    """Carrega usuários mapeando credenciais, nome e local de acesso (cidade/pernoite)."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
@@ -342,6 +341,7 @@ def carregar_usuarios():
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
+    """Carrega veículos mapeando placa, modelo e o local de pernoite da base de frotas."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
@@ -487,26 +487,29 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGOTIPO INTEGRADO NA DIV DE FORMULÁRIO)
+# 5. TELA DE LOGIN (LOGOTIPO COMPACTO + BANNER DA FROTA)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
     
     with st.form("form_login"):
-        # LOGOTIPO DENTRO DA DIV DE PREENCHIMENTO DO USUÁRIO
-        if caminho_logo:
-            try:
-                logo_img = Image.open(caminho_logo)
-                col_l, col_m, col_r = st.columns([1, 1.8, 1])
-                with col_m:
-                    st.image(logo_img, use_container_width=True)
-            except Exception:
-                st.markdown("<h2 style='text-align:center;'>🚗 Master Café</h2>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h2 style='text-align:center;'>🚗 Master Café</h2>", unsafe_allow_html=True)
+        # Imagem ilustrativa de frota
+        st.markdown(f'<img src="{IMAGEM_FROTA_URL}" class="fleet-banner-img" alt="Frota Comercial">', unsafe_allow_html=True)
+        
+        # Logotipo compacto centralizado
+        col_l, col_m, col_r = st.columns([1, 1.2, 1])
+        with col_m:
+            if caminho_logo:
+                try:
+                    logo_img = Image.open(caminho_logo)
+                    st.image(logo_img, width=115)
+                except Exception:
+                    st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
+            else:
+                st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        st.markdown("<h3 style='text-align:center; margin-top:0.4rem; margin-bottom:0.2rem;'>Identificação do Condutor</h3>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center; color:#64748B; font-size:0.88rem; margin-bottom:1.2rem;'>Acesse o sistema com suas credenciais de operação</p>", unsafe_allow_html=True)
+        st.markdown("<h4 style='text-align:center; margin-top:0.3rem; margin-bottom:0.1rem; color:#1E3A8A;'>Acesso do Condutor</h4>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#64748B; font-size:0.85rem; margin-bottom:1rem;'>Controle e Apontamento de Viagens</p>", unsafe_allow_html=True)
 
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
@@ -796,7 +799,6 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
-                # Bloqueio de duplo clique na sessão
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
