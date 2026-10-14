@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (CONTAINER BRANCO SÓLIDO UNIFICADO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -66,7 +66,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL FIXO */
+        /* 2. PLANO DE FUNDO GERAL EM GRADIENTE RADIAL ESCURO */
         :root, html, body {
             background-color: #0b0217 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
@@ -109,22 +109,26 @@ st.markdown("""
             margin-bottom: 3px !important;
         }
 
-        /* 3. CONTAINER PRINCIPAL BRANCO UNIFICADO (GARANTIDO) */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
+        /* 3. CARD BRANCO UNIFICADO QUE ENVOLVE TODA A TELA PÓS-LOGIN */
+        .main-white-card {
+            background-color: #FFFFFF !important;
+            border-radius: 18px !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            box-shadow: 0 18px 45px rgba(11, 2, 23, 0.40) !important;
+            padding: 24px 22px 28px 22px !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* Estilização quando st.container(border=True) é renderizado */
+        div[data-testid="stVerticalBlockBorderWrapper"],
+        div[data-testid="stVerticalBlockBorderWrapper"] > div {
             background-color: #FFFFFF !important;
             border: 1px solid rgba(255, 255, 255, 0.95) !important;
             border-radius: 18px !important;
             box-shadow: 0 18px 45px rgba(11, 2, 23, 0.40) !important;
-            padding: 24px 24px 28px 24px !important;
-            margin-top: 0px !important;
-            margin-bottom: 20px !important;
+            padding: 22px 20px 24px 20px !important;
         }
 
-        div[data-testid="stVerticalBlockBorderWrapper"] > div {
-            background-color: transparent !important;
-        }
-
-        /* Títulos internos do card branco */
         .card-header-block {
             text-align: center;
             margin-bottom: 0.8rem;
@@ -169,7 +173,7 @@ st.markdown("""
             padding-bottom: 0px !important;
         }
 
-        /* Formulários (Login e Operações Internas) */
+        /* Formulários (Login e formulários internos) */
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid rgba(255, 255, 255, 0.95) !important;
@@ -178,13 +182,13 @@ st.markdown("""
             padding: 24px 24px !important;
         }
 
-        /* Formulário quando renderizado dentro do container branco já unificado */
+        /* Formulários dentro do container branco */
         div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stForm"] {
             background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
             border-radius: 12px !important;
             box-shadow: none !important;
-            padding: 18px 18px !important;
+            padding: 16px 16px !important;
         }
 
         .card-vehicle-info {
@@ -585,7 +589,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (CONTAINER BRANCO UNIFICADO VIA BORDER=TRUE)
+# 6. APLICATIVO PRINCIPAL (CONTAINER BRANCO NATIVO E UNIFICADO)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -660,10 +664,10 @@ def main():
     ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # CONTAINER BRANCO UNIFICADO GARANTIDO (BORDER=TRUE)
+    # CARD BRANCO UNIFICADO ONDE FICA TODA A PÁGINA PÓS-LOGIN
     # =========================================================================
     with st.container(border=True):
-        # 1. Cabeçalho interno (Logo, Banner da frota e Títulos)
+        # 1. Cabeçalho interno (Logo, Banner da frota e Título)
         renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
 
         # ---------------------------------------------------------------------
