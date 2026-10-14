@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SETAS DO MENU 100% VISÍVEIS)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,57 +31,28 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. FORÇA AS 2 SETAS / BOTÃO DO MENU LATERAL A FICAREM VISÍVEIS */
-        [data-testid="collapsedControl"],
-        [data-testid="stSidebarCollapseButton"],
-        button[data-testid="stSidebarCollapseButton"],
-        div[data-testid="collapsedControl"],
-        div[data-testid="collapsedControl"] button,
-        header button[kind="header"] {
-            display: flex !important;
-            visibility: visible !important;
-            opacity: 1 !important;
-            z-index: 9999999 !important;
-            position: fixed !important;
-            top: 14px !important;
-            left: 14px !important;
-            background-color: rgba(15, 23, 42, 0.85) !important;
-            border: 1px solid rgba(255, 255, 255, 0.35) !important;
-            border-radius: 8px !important;
-            width: 40px !important;
-            height: 40px !important;
-            justify-content: center !important;
-            align-items: center !important;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
-            cursor: pointer !important;
-        }
-
-        /* Cor branca de alto contraste para o ícone das setas */
-        [data-testid="collapsedControl"] svg,
-        [data-testid="stSidebarCollapseButton"] svg,
-        header button[kind="header"] svg {
-            fill: #FFFFFF !important;
-            color: #FFFFFF !important;
-            stroke: #FFFFFF !important;
-            width: 20px !important;
-            height: 20px !important;
-        }
-
-        /* 2. ELIMINAÇÃO APENAS DA BARRA DECORATIVA E TOOLBAR (SEM OCULTAR O BOTÃO) */
+        /* 1. ELIMINAÇÃO DE ELEMENTOS FANTASMAS E DO BOTÃO FLUTUANTE FORA DO CARD */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         div[data-testid="stDecoration"],
         div[data-testid="stToolbar"],
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="manage-app-button"] {
             display: none !important;
             height: 0px !important;
+            min-height: 0px !important;
+            max-height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+            border: none !important;
             visibility: hidden !important;
         }
 
-        header[data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 0px !important;
+        /* Oculta botão nativo de toggle externo para usar o botão interno no card */
+        [data-testid="collapsedControl"] {
+            display: none !important;
         }
 
         div[data-testid="stMarkdownContainer"]:empty,
@@ -100,7 +71,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 3. PLANO DE FUNDO GERAL EM GRADIENTE RADIAL ESCURO */
+        /* 2. PLANO DE FUNDO GERAL EM GRADIENTE RADIAL ESCURO */
         :root, html, body {
             background-color: #0b0217 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
@@ -115,15 +86,15 @@ st.markdown("""
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
 
-        /* 4. CONTAINER CENTRAL BRANCO UNIFICADO */
+        /* 3. CARD BRANCO UNIFICADO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
             box-shadow: 0 20px 50px rgba(11, 2, 23, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
-            padding: 26px 26px 32px 26px !important;
-            margin-top: 1.4rem !important;
+            padding: 24px 26px 32px 26px !important;
+            margin-top: 1rem !important;
             margin-bottom: 2rem !important;
             max-width: 660px !important;
         }
@@ -132,6 +103,40 @@ st.markdown("""
             background-color: transparent !important;
         }
 
+        /* Barra de Controle de Menu Interna ao Card */
+        .card-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
+        .user-status-pill {
+            background: #EFF6FF;
+            color: #1E40AF;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            border: 1px solid #DBEAFE;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Painel deslizante interno para o Menu */
+        .internal-menu-panel {
+            background-color: #F8FAFC;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        }
+
+        /* Tipografia de alto contraste */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -160,7 +165,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* 5. CENTRALIZAÇÃO DA IMAGEM E DO LOGO */
+        /* Centralização universal de imagens */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
@@ -186,7 +191,7 @@ st.markdown("""
             padding-bottom: 0px !important;
         }
 
-        /* 6. FORMULÁRIOS OPERACIONAIS */
+        /* Formulários operacionais */
         [data-testid="stForm"] {
             background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
@@ -258,7 +263,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Botões */
+        /* Botões principais */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #1D4ED8, #2563EB) !important;
@@ -281,7 +286,23 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
         }
 
-        /* 7. SIDEBAR NATIVA E VISÍVEL AO SER EXPANDIDA */
+        /* Estilo sutil para o botão de alternância do menu no card */
+        .btn-menu-card button {
+            background: #F1F5F9 !important;
+            color: #334155 !important;
+            -webkit-text-fill-color: #334155 !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px !important;
+            height: 38px !important;
+            font-size: 0.88rem !important;
+            box-shadow: none !important;
+        }
+        .btn-menu-card button:hover {
+            background: #E2E8F0 !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #DBEAFE !important;
@@ -593,13 +614,14 @@ def tela_login(df_usuarios):
                 st.session_state["usuario_logado"] = usuario_digitado
                 st.session_state["nome_condutor"] = row_user["nome"]
                 st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
+                st.session_state["menu_aberto"] = False
                 st.query_params["u"] = usuario_digitado
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (TELA DA VIAGEM)
+# 6. APLICATIVO PRINCIPAL (BOTÃO DE MENU EMBUTIDO NO CARD)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -615,6 +637,7 @@ def main():
                 st.session_state["usuario_logado"] = usuario_url
                 st.session_state["nome_condutor"] = row_user["nome"]
                 st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
+                st.session_state["menu_aberto"] = False
 
     if not st.session_state.get("autenticado", False):
         tela_login(df_usuarios)
@@ -659,13 +682,13 @@ def main():
     condutor_chave = normalizar_texto(nome_condutor)
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
-    # Menu Lateral
+    # Sidebar tradicional mantida para navegação expandida
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
         st.caption(f"📍 **Base de Acesso:** {acesso_local}")
         if viagem_pendente_condutor:
             st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
-        if st.button("🚪 Sair do Sistema"):
+        if st.button("🚪 Sair do Sistema", key="btn_logout_sidebar"):
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
@@ -674,8 +697,48 @@ def main():
     ano_atual = agora.strftime("%Y")
 
     # -------------------------------------------------------------
-    # 7. CONTEÚDO DENTRO DO CARD BRANCO UNIFICADO
+    # 7. CONTEÚDO PRINCIPAL (DENTRO DO CARD BRANCO UNIFICADO)
     # -------------------------------------------------------------
+    
+    # 1. BOTÃO DE ACESSO AO MENU EMBUTIDO DIRETAMENTE NO TOPO DO CARD
+    col_menu_btn, col_user_info = st.columns([1.1, 2.2])
+    
+    with col_menu_btn:
+        st.markdown('<div class="btn-menu-card">', unsafe_allow_html=True)
+        texto_botao = "✖ Fechar Menu" if st.session_state.get("menu_aberto", False) else "☰ Menu do Condutor"
+        if st.button(texto_botao, key="toggle_menu_card", use_container_width=True):
+            st.session_state["menu_aberto"] = not st.session_state.get("menu_aberto", False)
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with col_user_info:
+        st.markdown(f"""
+            <div style="text-align: right; padding-top: 6px;">
+                <span class="user-status-pill">👤 {nome_condutor} • {acesso_local}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+    # Painel interno do menu que abre/fecha pelo botão dentro do card
+    if st.session_state.get("menu_aberto", False):
+        st.markdown(f"""
+            <div class="internal-menu-panel">
+                <b>🚗 Painel do Condutor</b><br>
+                <span style="font-size: 0.88rem; color: #475569;">Usuário: <b>{usuario_atual}</b> | Cidade Base: <b>{acesso_local}</b></span>
+            </div>
+        """, unsafe_allow_html=True)
+        col_m1, col_m2 = st.columns(2)
+        with col_m1:
+            if st.button("🔄 Atualizar Informações", use_container_width=True):
+                st.cache_data.clear()
+                st.rerun()
+        with col_m2:
+            if st.button("🚪 Desconectar / Sair", use_container_width=True):
+                st.session_state.clear()
+                st.query_params.clear()
+                st.rerun()
+        st.markdown("<hr style='margin: 12px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
+    # 2. Cabeçalho interno (Logo, Banner da frota e Título)
     renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
 
     # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FINALIZAÇÃO)
