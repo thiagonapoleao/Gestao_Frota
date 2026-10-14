@@ -19,8 +19,8 @@ def obter_agora_brasil():
     """Retorna datetime atual oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
-# URL da imagem representativa de frota comercial
-IMAGEM_FROTA_URL = "https://images.unsplash.com/photo-1519003722824-194d4455a60c?auto=format&fit=crop&w=900&q=80"
+# URL segura de frota veicular comercial para fallback
+BANNER_FROTA_URL = "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1000&q=80"
 
 # -------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (AZUL VIBRANTE EM DEGRADÊ)
@@ -110,7 +110,7 @@ st.markdown("""
             margin-bottom: 3px !important;
         }
 
-        /* Header Operacional com Imagem e Detalhes */
+        /* Container do Cabeçalho Operacional */
         .corporate-header {
             background: #FFFFFF !important;
             padding: 16px 20px !important;
@@ -134,14 +134,10 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Imagem de Frota Embutida */
-        .fleet-banner-img {
-            width: 100%;
-            height: 120px;
-            object-fit: cover;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        /* Ajuste fino na imagem nativa do banner */
+        div[data-testid="stImage"] img {
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
         }
 
         /* Formulários (Login e Viagem) */
@@ -259,23 +255,41 @@ GID_VEICULOS = "0"               # Aba Frota
 GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO CORPORATIVO
+# 3. SUPORTE A LOGOTIPO E BANNER DE FROTA
 # -------------------------------------------------------------
-def obter_caminho_logotipo():
+def obter_caminho_arquivo(nomes_possiveis):
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
-    nomes = ["Logotipo", "logotipo", "Logo", "logo"]
-    for nome in nomes:
+    for nome in nomes_possiveis:
         for ext in extensoes:
             caminho = f"{nome}{ext}"
             if os.path.exists(caminho) and not os.path.isdir(caminho):
                 return caminho
     return None
 
+def obter_caminho_logotipo():
+    return obter_caminho_arquivo(["Logotipo", "logotipo", "Logo", "logo"])
+
+def renderizar_banner_frota():
+    """Renderiza com st.image garantindo compatibilidade multiplataforma."""
+    caminho_banner = obter_caminho_arquivo(["banner", "Banner", "frota", "Frota", "cars"])
+    if caminho_banner:
+        try:
+            img = Image.open(caminho_banner)
+            st.image(img, use_container_width=True)
+            return
+        except Exception:
+            pass
+    # Caso não tenha arquivo local, exibe a imagem oficial via URL segura
+    st.image(BANNER_FROTA_URL, use_container_width=True)
+
 def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     caminho_logo = obter_caminho_logotipo()
     st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
-    st.markdown(f'<img src="{IMAGEM_FROTA_URL}" class="fleet-banner-img" alt="Frota de Veículos">', unsafe_allow_html=True)
     
+    # 1. Imagem do Banner no topo
+    renderizar_banner_frota()
+    
+    # 2. Logotipo compacto
     col_l, col_m, col_r = st.columns([1, 1.4, 1])
     with col_m:
         if caminho_logo:
@@ -304,7 +318,6 @@ def limpar_placa(placa_str):
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
-    """Carrega usuários mapeando credenciais, nome e local de acesso (cidade/pernoite)."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
@@ -341,7 +354,6 @@ def carregar_usuarios():
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
-    """Carrega veículos mapeando placa, modelo e o local de pernoite da base de frotas."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
@@ -487,16 +499,15 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGOTIPO COMPACTO + BANNER DA FROTA)
+# 5. TELA DE LOGIN (COM BANNER NATIVO E LOGOTIPO CENTRALIZADO)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
     
+    # 1. Banner de frota renderizado diretamente com st.image
+    renderizar_banner_frota()
+
     with st.form("form_login"):
-        # Imagem ilustrativa de frota
-        st.markdown(f'<img src="{IMAGEM_FROTA_URL}" class="fleet-banner-img" alt="Frota Comercial">', unsafe_allow_html=True)
-        
-        # Logotipo compacto centralizado
         col_l, col_m, col_r = st.columns([1, 1.2, 1])
         with col_m:
             if caminho_logo:
@@ -799,6 +810,7 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
+                # Bloqueio de duplo clique na sessão
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
