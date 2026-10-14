@@ -19,7 +19,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM VÃOS/DIVS EM BRANCO NO TOPO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -30,7 +30,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA COMPLETAMENTE O CABEÇALHO E ELEMENTOS EM BRANCO DO TOPO */
+        /* 1. ELIMINAÇÃO TOTAL DA FAIXA EM BRANCO NO TOPO */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         header[data-testid="stHeader"],
@@ -49,7 +49,6 @@ st.markdown("""
             top: -9999px !important;
         }
 
-        /* Elimina containers markdown vazios geradores de espaço em branco */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -75,11 +74,11 @@ st.markdown("""
             z-index: 1000000 !important;
         }
 
-        /* 3. COLA O CONTEÚDO NO TOPO ZERO */
+        /* 3. COLA O CONTEÚDO DIRETO NO TOPO ZERO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0px !important;
+            padding-top: 0.2rem !important;
             margin-top: 0px !important;
             padding-bottom: 2rem !important;
             max-width: 96% !important;
@@ -91,7 +90,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 4. TEMA CLARO NATIVO */
+        /* 4. TEMA CLARO CORPORATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -113,7 +112,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* SIDEBAR */
+        /* SIDEBAR NATIVA */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
@@ -150,7 +149,7 @@ st.markdown("""
             border: 1px solid #E2E8F0;
             box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
             margin-bottom: 1.2rem;
-            margin-top: 8px;
+            margin-top: 0px;
         }
 
         .dash-title {
@@ -477,7 +476,6 @@ def tela_login(df_usuarios):
 def main():
     df_usuarios = carregar_usuarios()
 
-    # Recupera sessão por URL caso o navegador recarregue (F5)
     if not st.session_state.get("dash_autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
@@ -499,7 +497,7 @@ def main():
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    # BARRA LATERAL (MENU GARANTIDO E RETRÁTIL)
+    # BARRA LATERAL
     with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
         if caminho_logo:
@@ -559,7 +557,7 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
-        # 1. BLOCO DE KPIS
+        # 1. BLOCO DE CARDS DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -610,7 +608,7 @@ def main():
 
         st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO
+        # 2. CARDS DE VEÍCULOS EM ABERTO NO TOPO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -656,14 +654,14 @@ def main():
 
                 df_acumulado_veiculo["rotulo_km"] = df_acumulado_veiculo["Km_Total"].apply(lambda v: f"{v:,.0f} km")
 
-                # Barras
-                bars1 = alt.Chart(df_acumulado_veiculo).mark_bar(color="#2563EB", cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+                bars1 = alt.Chart(df_acumulado_veiculo).mark_bar(
+                    color="#2563EB", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
                     x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
                     y=alt.Y("Km_Total:Q", title="Km Total Acumulado"),
                     tooltip=[alt.Tooltip("Placa:N", title="Placa"), alt.Tooltip("rotulo_km:N", title="Km Total")]
                 )
 
-                # Texto de valor no topo da barra
                 text1 = alt.Chart(df_acumulado_veiculo).mark_text(
                     align="center",
                     baseline="bottom",
@@ -695,14 +693,14 @@ def main():
 
                 df_media_veiculo["rotulo_media"] = df_media_veiculo["Media_Km"].apply(lambda v: f"{v:,.1f} km")
 
-                # Barras
-                bars2 = alt.Chart(df_media_veiculo).mark_bar(color="#059669", cornerRadiusTopLeft=6, cornerRadiusTopRight=6).encode(
+                bars2 = alt.Chart(df_media_veiculo).mark_bar(
+                    color="#059669", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
                     x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
                     y=alt.Y("Media_Km:Q", title="Média Km por Viagem"),
                     tooltip=[alt.Tooltip("Placa:N", title="Placa"), alt.Tooltip("rotulo_media:N", title="Média Km")]
                 )
 
-                # Texto de valor no topo da barra
                 text2 = alt.Chart(df_media_veiculo).mark_text(
                     align="center",
                     baseline="bottom",
@@ -723,7 +721,7 @@ def main():
 
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
-        # 4. CARROS UTILIZADOS NO DIA (HOJE)
+        # 4. CARROS UTILIZADOS NO DIA (LEVANTAMENTO DO DIA)
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
@@ -781,7 +779,7 @@ def main():
             )
 
     # =========================================================================
-    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
+    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS (LEVANTAMENTOS COMPLETOS)
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == "🔍 Consulta & Filtros Avançados":
         renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
