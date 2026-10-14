@@ -20,10 +20,10 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (100% TEMA CLARO CORPORATIVO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM VÃOS/GRIDS EM BRANCO NO TOPO)
 # -------------------------------------------------------------
 st.set_page_config(
-    page_title="Master Café - Gestão de Frota",
+    page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
     initial_sidebar_state="collapsed"
@@ -31,19 +31,43 @@ st.set_page_config(
 
 st.markdown("""
     <style>
+        /* 1. ELIMINA COMPLETAMENTE O ESPAÇO/DIV EM BRANCO NO TOPO */
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
+        div[data-testid="stDecoration"],
+        [data-testid="stDecoration"],
+        div[data-testid="stToolbar"] {
+            display: none !important;
+            height: 0px !important;
+            max-height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+            visibility: hidden !important;
+        }
+
+        .block-container,
+        div[data-testid="stAppViewContainer"] > .main > .block-container,
+        div[data-testid="stAppViewBlockContainer"] {
+            padding-top: 0.6rem !important;
+            padding-bottom: 2rem !important;
+            margin-top: 0px !important;
+            max-width: 720px !important;
+        }
+
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="stDecoration"], [data-testid="manage-app-button"] {
+        [data-testid="manage-app-button"] {
             display: none !important;
             visibility: hidden !important;
         }
 
+        /* 2. TEMA CLARO CORPORATIVO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
             color-scheme: light !important;
         }
 
-        .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        .stApp, [data-testid="stAppViewContainer"] {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
         }
@@ -60,22 +84,22 @@ st.markdown("""
 
         .corporate-header {
             background: #FFFFFF !important;
-            padding: 24px 20px !important;
+            padding: 20px 20px !important;
             border-radius: 14px !important;
             text-align: center !important;
             border: 1px solid #E2E8F0 !important;
             box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-            margin-bottom: 1.5rem !important;
+            margin-bottom: 1.3rem !important;
         }
         .corporate-title {
-            font-size: 1.40rem !important;
+            font-size: 1.35rem !important;
             font-weight: 700 !important;
             color: #0F172A !important;
-            margin: 8px 0 2px 0 !important;
+            margin: 6px 0 2px 0 !important;
             letter-spacing: -0.02em !important;
         }
         .corporate-subtitle {
-            font-size: 0.90rem !important;
+            font-size: 0.88rem !important;
             color: #64748B !important;
             margin: 0 !important;
             font-weight: 500 !important;
@@ -86,7 +110,7 @@ st.markdown("""
             border: 1px solid #E2E8F0 !important;
             border-radius: 14px !important;
             box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-            padding: 26px !important;
+            padding: 24px !important;
         }
 
         .card-vehicle-info {
@@ -155,66 +179,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Botões de step (+ e -) */
-        div[data-testid="stNumberInputStepDown"],
-        div[data-testid="stNumberInputStepUp"] {
-            background-color: #F1F5F9 !important;
-            border: 1px solid #CBD5E1 !important;
-            border-radius: 6px !important;
-            color: #0F172A !important;
-            margin: 2px !important;
-        }
-        div[data-testid="stNumberInputStepDown"]:hover,
-        div[data-testid="stNumberInputStepUp"]:hover {
-            background-color: #E2E8F0 !important;
-        }
-        div[data-testid="stNumberInputStepDown"] svg,
-        div[data-testid="stNumberInputStepUp"] svg {
-            fill: #0F172A !important;
-            stroke: #0F172A !important;
-        }
-
-        /* Popovers, Calendários e Menus Dropdown */
-        [data-testid="stPortal"],
-        div[data-baseweb="popover"],
-        div[data-baseweb="calendar"],
-        div[data-baseweb="menu"],
-        ul[role="listbox"],
-        div[role="dialog"] {
-            background-color: #FFFFFF !important;
-            color: #0F172A !important;
-            border: 1px solid #CBD5E1 !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
-            border-radius: 10px !important;
-        }
-
-        div[data-baseweb="calendar"] * {
-            background-color: transparent !important;
-            color: #0F172A !important;
-            -webkit-text-fill-color: #0F172A !important;
-        }
-        div[data-baseweb="calendar"] [aria-selected="true"] {
-            background-color: #2563EB !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border-radius: 50% !important;
-        }
-        div[data-baseweb="calendar"] button:hover {
-            background-color: #EFF6FF !important;
-            color: #2563EB !important;
-        }
-        li[role="option"] {
-            background-color: #FFFFFF !important;
-            color: #0F172A !important;
-            -webkit-text-fill-color: #0F172A !important;
-        }
-        li[role="option"]:hover, li[aria-selected="true"] {
-            background-color: #EFF6FF !important;
-            color: #2563EB !important;
-            -webkit-text-fill-color: #2563EB !important;
-        }
-
-        /* Botões Start Inicial e Final */
+        /* Botões */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
@@ -283,13 +248,11 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
-            col_l, col_m, col_r = st.columns([1, 2.2, 1])
-            with col_m:
-                st.image(logo_img, use_container_width=True)
+            st.image(logo_img, width=160)
         except Exception:
-            st.markdown('<div class="corporate-title">Master Café ☕</div>', unsafe_allow_html=True)
+            st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="corporate-title">Master Café ☕</div>', unsafe_allow_html=True)
+        st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
@@ -307,6 +270,7 @@ def limpar_placa(placa_str):
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
+    """Carrega usuários mapeando credenciais, nome e local de acesso (cidade/pernoite)."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
@@ -319,18 +283,32 @@ def carregar_usuarios():
                 c_user = cols_norm.get("usuario", cols_norm.get("login", df.columns[0]))
                 c_pass = cols_norm.get("senha", df.columns[1] if len(df.columns) > 1 else df.columns[0])
                 c_nome = cols_norm.get("nome", cols_norm.get("condutor", c_user))
+                
+                # Identifica coluna de Acesso / Localidade / Cidade
+                c_acesso = None
+                for col_k in ["acesso", "local", "cidade", "unidade", "pernoite", "base"]:
+                    if col_k in cols_norm:
+                        c_acesso = cols_norm[col_k]
+                        break
 
                 df_res = pd.DataFrame()
                 df_res["usuario"] = df[c_user].fillna("").astype(str).str.strip().str.lower()
                 df_res["senha"] = df[c_pass].fillna("").astype(str).str.strip()
                 df_res["nome"] = df[c_nome].fillna(df[c_user]).astype(str).str.strip()
+                
+                if c_acesso:
+                    df_res["acesso_local"] = df[c_acesso].fillna("Geral").astype(str).str.strip()
+                else:
+                    df_res["acesso_local"] = "Geral"
+                
                 return df_res
         except Exception:
             continue
-    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor"}])
+    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor", "acesso_local": "Geral"}])
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
+    """Carrega veículos mapeando placa, modelo e o local de pernoite da base de frotas."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
@@ -338,18 +316,47 @@ def carregar_veiculos():
     for url in urls:
         try:
             df_raw = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
-            if not df_raw.empty and len(df_raw.columns) >= 5:
-                col_veiculo = df_raw.columns[1]
-                col_placa = df_raw.columns[4]
+            if not df_raw.empty and len(df_raw.columns) >= 2:
+                cols_norm = {normalizar_texto(c): c for c in df_raw.columns}
+                
+                # Identifica colunas por nome ou índice posicional
+                c_placa = None
+                for k in ["placa", "placas"]:
+                    if k in cols_norm:
+                        c_placa = cols_norm[k]
+                        break
+                if not c_placa:
+                    c_placa = df_raw.columns[4] if len(df_raw.columns) >= 5 else df_raw.columns[0]
+
+                c_veiculo = None
+                for k in ["veiculo", "modelo", "carro", "descricao"]:
+                    if k in cols_norm:
+                        c_veiculo = cols_norm[k]
+                        break
+                if not c_veiculo:
+                    c_veiculo = df_raw.columns[1] if len(df_raw.columns) >= 2 else df_raw.columns[0]
+
+                # Identifica coluna de Local de Pernoite / Cidade
+                c_pernoite = None
+                for k in ["local de pernoite", "pernoite", "local", "cidade", "base", "unidade"]:
+                    if k in cols_norm:
+                        c_pernoite = cols_norm[k]
+                        break
 
                 df_veiculos = pd.DataFrame()
-                df_veiculos["placa"] = df_raw[col_placa].dropna().astype(str).str.strip().str.upper()
-                df_veiculos["veiculo"] = df_raw[col_veiculo].fillna("Não informado").astype(str).str.strip()
+                df_veiculos["placa"] = df_raw[c_placa].dropna().astype(str).str.strip().str.upper()
+                df_veiculos["veiculo"] = df_raw[c_veiculo].fillna("Não informado").astype(str).str.strip()
+                
+                if c_pernoite:
+                    df_veiculos["local_pernoite"] = df_raw[c_pernoite].fillna("Não informado").astype(str).str.strip()
+                else:
+                    df_veiculos["local_pernoite"] = "Geral"
+
                 df_veiculos = df_veiculos[df_veiculos["placa"].str.len() >= 5].drop_duplicates(subset=["placa"])
                 return df_veiculos
         except Exception:
             continue
-    return pd.DataFrame(columns=["placa", "veiculo"])
+    return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
     """Lê em tempo real a aba de lançamentos (GID 379222602) para verificar bloqueios e gerar RV."""
@@ -367,10 +374,7 @@ def carregar_lancamentos_existentes():
     return pd.DataFrame()
 
 def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
-    """
-    Verifica se já existe lançamento idêntico ou com o mesmo RV registrado na planilha,
-    evitando duplicidades de cliques rápidos ou gravações duplicadas.
-    """
+    """Verifica duplicidade antes de registrar uma nova saída."""
     if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
         return False, ""
 
@@ -387,11 +391,9 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
         data_row = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
         km_row = str(row.iloc[2]).split(".")[0].strip() if pd.notna(row.iloc[2]) else ""
 
-        # 1. Checa duplicidade direta por código RV
         if rv_row and rv_row == rv_alvo:
             return True, f"O Registro de Viagem {rv_alvo} já existe na planilha."
 
-        # 2. Checa duplicidade operacional (mesmo condutor, placa, data inicial e km inicial)
         if (placa_row == placa_limpa_alvo and 
             cond_row == condutor_norm_alvo and 
             data_row == data_ini_alvo and 
@@ -401,10 +403,7 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
     return False, ""
 
 def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
-    """
-    Gera o código RV no formato RV-PPPP-AAAA-XXXX
-    Calcula o próximo sequencial XXXX específico para a placa e ano na coluna M.
-    """
+    """Gera o código RV no formato RV-PPPP-AAAA-XXXX."""
     placa_limpa = limpar_placa(placa)
     prefixo = f"RV-{placa_limpa}-{ano_atual}-"
     maior_seq = 0
@@ -482,16 +481,18 @@ def tela_login(df_usuarios):
             ]
 
             if not usuario_valido.empty:
+                row_user = usuario_valido.iloc[0]
                 st.session_state["autenticado"] = True
                 st.session_state["usuario_logado"] = usuario_digitado
-                st.session_state["nome_condutor"] = usuario_valido.iloc[0]["nome"]
+                st.session_state["nome_condutor"] = row_user["nome"]
+                st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
                 st.query_params["u"] = usuario_digitado
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (COM TRAVA ANTI-DUPLICIDADE)
+# 6. APLICATIVO PRINCIPAL
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -502,9 +503,11 @@ def main():
             usuario_url = str(usuario_url).strip().lower()
             usuario_valido = df_usuarios[df_usuarios["usuario"] == usuario_url]
             if not usuario_valido.empty:
+                row_user = usuario_valido.iloc[0]
                 st.session_state["autenticado"] = True
                 st.session_state["usuario_logado"] = usuario_url
-                st.session_state["nome_condutor"] = usuario_valido.iloc[0]["nome"]
+                st.session_state["nome_condutor"] = row_user["nome"]
+                st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
 
     if not st.session_state.get("autenticado", False):
         tela_login(df_usuarios)
@@ -512,6 +515,7 @@ def main():
 
     usuario_atual = st.session_state.get("usuario_logado")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
+    acesso_local = st.session_state.get("acesso_local", "Geral")
 
     # Lê lançamentos para analisar status das viagens em tempo real
     df_lanc = carregar_lancamentos_existentes()
@@ -553,6 +557,7 @@ def main():
     # Menu Lateral
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
+        st.caption(f"📍 **Base de Acesso:** {acesso_local}")
         if viagem_pendente_condutor:
             st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
         if st.button("🚪 Sair do Sistema"):
@@ -618,7 +623,7 @@ def main():
 
             km_percorrido = int(km_fim - km_inicial_val)
 
-            # TRAVA ANTI-DUPLICIDADE DE START FINAL (BLOQUEIA DUPLO CLIQUE)
+            # TRAVA ANTI-DUPLICIDADE DE START FINAL
             chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
             if st.session_state.get("ultima_transacao") == chave_transacao_final:
                 st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
@@ -650,25 +655,49 @@ def main():
                 st.error(f"❌ Falha ao finalizar na planilha: {msg}")
 
     # =========================================================================
-    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (PODE ESCOLHER VEÍCULO E INICIAR VIAGEM)
+    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (FILTRA VEÍCULOS POR LOCALIDADE)
     # =========================================================================
     else:
-        df_veiculos = carregar_veiculos()
-        if df_veiculos.empty:
+        df_veiculos_todos = carregar_veiculos()
+        if df_veiculos_todos.empty:
             st.error("Nenhum veículo disponível na base. Verifique a planilha.")
+            return
+
+        # =====================================================================
+        # REGRA DE FILTRO: ACESSO DO USUÁRIO X LOCAL DE PERNOITE DO VEÍCULO
+        # =====================================================================
+        acesso_norm = normalizar_texto(acesso_local)
+        
+        # Se for "geral", "todas", "todos" ou "admin", exibe a frota completa
+        if acesso_norm in ["geral", "todas", "todos", "adm", "admin", ""]:
+            df_veiculos = df_veiculos_todos.copy()
+            st.caption("🌐 **Acesso Geral:** Todos os veículos da frota estão disponíveis para escolha.")
+        else:
+            # Filtra estritamente os veículos cujo Local de Pernoite contenha a localidade do usuário
+            df_veiculos = df_veiculos_todos[
+                df_veiculos_todos["local_pernoite"].apply(lambda loc: acesso_norm in normalizar_texto(loc))
+            ].copy()
+            st.caption(f"📍 **Acesso Restrito:** Exibindo veículos com pernoite em **{acesso_local}**.")
+
+        if df_veiculos.empty:
+            st.warning(f"⚠️ Nenhum veículo cadastrado com pernoite para sua localidade ({acesso_local}). Contate o gestor de frota.")
             return
 
         st.subheader("1. Seleção do Veículo")
         
-        opcoes = ["-- Selecione um veículo --"] + (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]).tolist()
+        # Monta opções com Placa, Veículo e Cidade de Pernoite
+        df_veiculos["rotulo_completo"] = df_veiculos.apply(
+            lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
+            axis=1
+        )
+        opcoes = ["-- Selecione um veículo --"] + df_veiculos["rotulo_completo"].tolist()
         veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
 
         if veiculo_escolhido != "-- Selecione um veículo --":
-            dados_veiculo = df_veiculos[
-                (df_veiculos["placa"] + " - " + df_veiculos["veiculo"]) == veiculo_escolhido
-            ].iloc[0]
+            dados_veiculo = df_veiculos[df_veiculos["rotulo_completo"] == veiculo_escolhido].iloc[0]
             placa = dados_veiculo["placa"]
             modelo = dados_veiculo["veiculo"]
+            cidade_veiculo = dados_veiculo.get("local_pernoite", "Não informado")
             placa_limpa = limpar_placa(placa)
 
             # Trava do Veículo em Uso
@@ -685,7 +714,8 @@ def main():
                     <b>🎫 Registro de Viagem:</b> {codigo_rv_previsto}<br>
                     <b>👤 Condutor:</b> {nome_condutor}<br>
                     <b>🚙 Veículo:</b> {modelo}<br>
-                    <b>🔢 Placa:</b> {placa}
+                    <b>🔢 Placa:</b> {placa}<br>
+                    <b>📍 Base/Pernoite:</b> {cidade_veiculo}
                 </div>
             """, unsafe_allow_html=True)
 
@@ -721,7 +751,6 @@ def main():
                 # =============================================================
                 # VERIFICAÇÃO RIGOROSA ANTI-DUPLICIDADE
                 # =============================================================
-                # 1. Consulta em tempo real na planilha se esse registro já existe
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -737,7 +766,7 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
-                # 2. Bloqueio de duplo clique na sessão
+                # Bloqueio de duplo clique na sessão
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
