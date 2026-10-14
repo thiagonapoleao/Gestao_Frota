@@ -131,7 +131,12 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* Arredondamento e sombra de imagens */
+        /* Centralização e acabamento das imagens */
+        div[data-testid="stImage"] {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+        }
         div[data-testid="stImage"] img {
             border-radius: 10px !important;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
@@ -297,9 +302,9 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     if caminho_veiculo:
         try:
             img_frota = Image.open(caminho_veiculo)
-            col_v1, col_v2, col_v3 = st.columns([1, 1.8, 1])
+            col_v1, col_v2, col_v3 = st.columns([1, 2.5, 1])
             with col_v2:
-                st.image(img_frota, width=220)
+                st.image(img_frota, width=264)
         except Exception:
             pass
             
@@ -501,14 +506,14 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGO E IMAGEM DO VEÍCULO DENTRO DO CARD)
+# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM 20% MAIOR + ESPAÇO 10PX)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
     caminho_veiculo = obter_caminho_imagem_veiculo()
     
     with st.form("form_login"):
-        # 1. Logotipo compacto centralizado no topo do card
+        # 1. Logotipo compacto e centralizado
         col_l, col_m, col_r = st.columns([1, 1.2, 1])
         with col_m:
             if caminho_logo:
@@ -520,18 +525,18 @@ def tela_login(df_usuarios):
             else:
                 st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        # 2. Imagem dos veículos/frota redimensionada logo abaixo do logo
+        # 2. Imagem da frota ampliada em 20% (264px) e centralizada
         if caminho_veiculo:
             try:
                 img_veiculo = Image.open(caminho_veiculo)
-                col_v1, col_v2, col_v3 = st.columns([1, 2.2, 1])
+                col_v1, col_v2, col_v3 = st.columns([1, 2.5, 1])
                 with col_v2:
-                    st.image(img_veiculo, width=220)
+                    st.image(img_veiculo, width=264)
             except Exception:
                 pass
 
-        st.markdown("<h4 style='text-align:center; margin-top:0.4rem; margin-bottom:0.1rem; color:#1E3A8A;'>Acesso do Condutor</h4>", unsafe_allow_html=True)
-        st.markdown("<p style='text-align:center; color:#64748B; font-size:0.85rem; margin-bottom:1rem;'>Controle e Apontamento de Viagens</p>", unsafe_allow_html=True)
+        # Espaçamento estrito de 10px antes do preenchimento do usuário
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
