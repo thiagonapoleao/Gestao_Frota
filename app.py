@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SEM VÃOS/GRIDS EM BRANCO NO TOPO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (REMOCAO DE DIVS/MARKDOWN VAZIOS)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,7 +31,24 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA COMPLETAMENTE O ESPAÇO/DIV EM BRANCO NO TOPO */
+        /* 1. ELIMINA QUALQUER stMarkdownContainer OU ELEMENT-CONTAINER VAZIO/SEM USO */
+        div[data-testid="stMarkdownContainer"]:empty,
+        div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
+            display: none !important;
+            height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+        }
+
+        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"]:empty),
+        div[data-testid="element-container"]:has(> div[data-testid="stMarkdownContainer"] > style:only-child) {
+            display: none !important;
+            height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+        }
+
+        /* 2. ELIMINA O TOPO EM BRANCO FANTASMA */
         header[data-testid="stHeader"],
         [data-testid="stHeader"],
         div[data-testid="stDecoration"],
@@ -48,7 +65,7 @@ st.markdown("""
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.6rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 2rem !important;
             margin-top: 0px !important;
             max-width: 720px !important;
@@ -60,7 +77,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 2. TEMA CLARO CORPORATIVO NATIVO */
+        /* 3. TEMA CLARO CORPORATIVO NATIVO */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -319,7 +336,6 @@ def carregar_veiculos():
             if not df_raw.empty and len(df_raw.columns) >= 2:
                 cols_norm = {normalizar_texto(c): c for c in df_raw.columns}
                 
-                # Identifica colunas por nome ou índice posicional
                 c_placa = None
                 for k in ["placa", "placas"]:
                     if k in cols_norm:
@@ -336,7 +352,6 @@ def carregar_veiculos():
                 if not c_veiculo:
                     c_veiculo = df_raw.columns[1] if len(df_raw.columns) >= 2 else df_raw.columns[0]
 
-                # Identifica coluna de Local de Pernoite / Cidade
                 c_pernoite = None
                 for k in ["local de pernoite", "pernoite", "local", "cidade", "base", "unidade"]:
                     if k in cols_norm:
@@ -623,7 +638,6 @@ def main():
 
             km_percorrido = int(km_fim - km_inicial_val)
 
-            # TRAVA ANTI-DUPLICIDADE DE START FINAL
             chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
             if st.session_state.get("ultima_transacao") == chave_transacao_final:
                 st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
@@ -663,17 +677,12 @@ def main():
             st.error("Nenhum veículo disponível na base. Verifique a planilha.")
             return
 
-        # =====================================================================
-        # REGRA DE FILTRO: ACESSO DO USUÁRIO X LOCAL DE PERNOITE DO VEÍCULO
-        # =====================================================================
         acesso_norm = normalizar_texto(acesso_local)
         
-        # Se for "geral", "todas", "todos" ou "admin", exibe a frota completa
         if acesso_norm in ["geral", "todas", "todos", "adm", "admin", ""]:
             df_veiculos = df_veiculos_todos.copy()
             st.caption("🌐 **Acesso Geral:** Todos os veículos da frota estão disponíveis para escolha.")
         else:
-            # Filtra estritamente os veículos cujo Local de Pernoite contenha a localidade do usuário
             df_veiculos = df_veiculos_todos[
                 df_veiculos_todos["local_pernoite"].apply(lambda loc: acesso_norm in normalizar_texto(loc))
             ].copy()
@@ -685,7 +694,6 @@ def main():
 
         st.subheader("1. Seleção do Veículo")
         
-        # Monta opções com Placa, Veículo e Cidade de Pernoite
         df_veiculos["rotulo_completo"] = df_veiculos.apply(
             lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
             axis=1
@@ -700,7 +708,6 @@ def main():
             cidade_veiculo = dados_veiculo.get("local_pernoite", "Não informado")
             placa_limpa = limpar_placa(placa)
 
-            # Trava do Veículo em Uso
             if placa_limpa in veiculos_em_uso:
                 ocupante = veiculos_em_uso[placa_limpa]
                 st.error(f"🚫 **Veículo Indisponível!** O veículo de placa **{placa}** já está em viagem aberta iniciada por **{ocupante['condutor']}** em {ocupante['data_inicial']} às {ocupante['horario_inicial']}.")
@@ -748,9 +755,6 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
-                # =============================================================
-                # VERIFICAÇÃO RIGOROSA ANTI-DUPLICIDADE
-                # =============================================================
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -766,7 +770,6 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
-                # Bloqueio de duplo clique na sessão
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
