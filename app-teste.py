@@ -104,23 +104,53 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU EXPANSÍVEL NATIVO COLADO NO TOPO */
+        /* 5. MENU EXPANSÍVEL NATIVO COM APENAS OS 3 PONTINHOS (···) */
         div[data-testid="stExpander"] {
-            border: 1px solid #E2E8F0 !important;
-            border-radius: 10px !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px !important;
             background-color: #F8FAFC !important;
             margin-top: 0px !important;
-            margin-bottom: 8px !important;
+            margin-bottom: 4px !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            width: fit-content !important;
+            min-width: 44px !important;
         }
+
         div[data-testid="stExpander"] summary {
-            padding: 6px 12px !important;
-            font-size: 0.90rem !important;
-            font-weight: 700 !important;
+            padding: 2px 10px !important;
+            font-size: 1.5rem !important;
+            font-weight: 900 !important;
             color: #1E293B !important;
+            line-height: 1 !important;
+            letter-spacing: 2px !important;
+            list-style: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            user-select: none !important;
+            cursor: pointer !important;
         }
+
+        div[data-testid="stExpander"] summary::-webkit-details-marker {
+            display: none !important;
+        }
+
+        /* Oculta qualquer ícone ou seta que o Streamlit queira injetar */
+        div[data-testid="stExpander"] summary svg,
+        div[data-testid="stExpander"] summary span:first-child:empty {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
         div[data-testid="stExpander"] summary:hover {
             color: #2563EB !important;
+            background-color: #EFF6FF !important;
+            border-radius: 8px !important;
+        }
+
+        div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {
+            min-width: 280px !important;
+            padding-top: 10px !important;
         }
 
         /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O MENU */
@@ -622,9 +652,9 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO SISTEMA NATIVO (COLADO NO TOPO DO CONTAINER BRANCO, ANTES DO LOGO)
+    # MENU DO SISTEMA NATIVO COM APENAS OS 3 PONTINHOS (···), SEM SETAS E SEM TEXTO
     # ---------------------------------------------------------------------------------
-    with st.expander("☰ Menu do Sistema", expanded=False):
+    with st.expander("···", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
         with col_m1:
             st.write(f"👤 **Condutor:** {nome_condutor}")
