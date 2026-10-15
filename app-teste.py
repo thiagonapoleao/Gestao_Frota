@@ -84,21 +84,21 @@ st.markdown("""
             background-size: cover !important;
         }
 
-        /* 4. CONTAINER BRANCO UNIFICADO QUE ENGLOBA TODO O FORMULÁRIO/CONTEÚDO */
+        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
-            border-radius: 18px !important;
-            padding: 32px 30px !important;
+            border-radius: 20px !important;
+            padding: 36px 32px !important;
             margin-top: 2rem !important;
             margin-bottom: 2.5rem !important;
-            max-width: 720px !important;
-            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35) !important;
-            border: 1px solid rgba(255, 255, 255, 0.12) !important;
+            max-width: 680px !important;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* Cores tipográficas internas */
+        /* Tipografia Base */
         h1, h2, h3, h4, h5, h6, p, span, label {
             color: #0F172A !important;
         }
@@ -110,26 +110,38 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
-        /* Cabeçalho interno */
+        /* Cabeçalho Corporativo */
         .corporate-header {
             background: transparent !important;
-            padding: 10px 0 12px 0 !important;
+            padding: 0 0 14px 0 !important;
             text-align: center !important;
             border-bottom: 1px solid #E2E8F0 !important;
-            margin-bottom: 1.2rem !important;
+            margin-bottom: 1.4rem !important;
         }
         .corporate-title {
             font-size: 1.45rem !important;
             font-weight: 700 !important;
             color: #0F172A !important;
-            margin: 6px 0 2px 0 !important;
-            letter-spacing: -0.02em !important;
+            margin: 6px 0 3px 0 !important;
+            letter-spacing: -0.025em !important;
         }
+        /* Subtítulo aumentado e com presença corporativa */
         .corporate-subtitle {
-            font-size: 0.90rem !important;
-            color: #64748B !important;
+            font-size: 1.15rem !important;
+            color: #475569 !important;
             margin: 0 !important;
-            font-weight: 500 !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.015em !important;
+        }
+
+        /* Subtítulo de identificação / seções menores */
+        .section-subheading {
+            font-size: 1.05rem !important;
+            font-weight: 600 !important;
+            color: #1E293B !important;
+            margin-bottom: 1rem !important;
+            margin-top: 0.2rem !important;
+            letter-spacing: -0.01em !important;
         }
 
         /* Centralizador para imagem da Frota */
@@ -137,7 +149,7 @@ st.markdown("""
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 1.5rem;
+            margin: 0.5rem 0 1.4rem 0;
             width: 100%;
         }
 
@@ -279,18 +291,21 @@ def obter_caminho_imagem_frota():
                 return caminho
     return None
 
-def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
+def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
     caminho_logo = obter_caminho_logotipo()
-    st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=160)
+            # Centralização precisa do Logotipo
+            col_l1, col_logo, col_l2 = st.columns([1, 1.4, 1])
+            with col_logo:
+                st.image(logo_img, use_container_width=True)
         except Exception:
-            st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+            st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-    st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
+        st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+
+    st.markdown(f'<div class="corporate-header"><p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
@@ -488,24 +503,26 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (COM IMAGEM FROTA CENTRALIZADA)
+# 5. TELA DE LOGIN (COM HIERARQUIA VISUAL MODERNA E PROPORCIONAL)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
     
-    # Exibe a imagem Frota centralizada logo abaixo do logotipo/cabeçalho
+    # Imagem Frota centralizada logo abaixo do logotipo/cabeçalho
     caminho_frota = obter_caminho_imagem_frota()
     if caminho_frota:
         try:
             img_frota = Image.open(caminho_frota)
-            col_esq, col_centro, col_dir = st.columns([1, 2.5, 1])
+            col_esq, col_centro, col_dir = st.columns([1, 2.8, 1])
             with col_centro:
                 st.image(img_frota, use_container_width=True)
         except Exception:
             pass
 
     with st.form("form_login"):
-        st.subheader("Identificação do Condutor")
+        # Título da seção em estilo corporativo reduzido e discreto
+        st.markdown('<div class="section-subheading">Identificação do Condutor</div>', unsafe_allow_html=True)
+        
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
         btn_login = st.form_submit_button("Entrar no Sistema")
@@ -625,7 +642,7 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("Start Final (Retorno do Veículo)")
+        st.markdown('<div class="section-subheading">Start Final (Retorno do Veículo)</div>', unsafe_allow_html=True)
         with st.form("form_start_final"):
             col_df, col_hf = st.columns(2)
             with col_df:
@@ -715,7 +732,7 @@ def main():
             st.warning(f"⚠️ Nenhum veículo cadastrado com pernoite para sua localidade ({acesso_local}). Contate o gestor de frota.")
             return
 
-        st.subheader("1. Seleção do Veículo")
+        st.markdown('<div class="section-subheading">1. Seleção do Veículo</div>', unsafe_allow_html=True)
         
         df_veiculos["rotulo_completo"] = df_veiculos.apply(
             lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
@@ -749,7 +766,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-            st.subheader("2. Start Inicial (Saída do Veículo)")
+            st.markdown('<div class="section-subheading">2. Start Inicial (Saída do Veículo)</div>', unsafe_allow_html=True)
             with st.form("form_start_inicial"):
                 col_d, col_h = st.columns(2)
                 with col_d:
