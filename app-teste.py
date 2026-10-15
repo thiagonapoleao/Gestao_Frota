@@ -20,17 +20,13 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONTROLE E CONFIGURAÇÃO DA SIDEBAR
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
-if "sidebar_aberta" not in st.session_state:
-    st.session_state["sidebar_aberta"] = False
-
-# Abre ou fecha dinamicamente no carregamento
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="expanded" if st.session_state["sidebar_aberta"] else "collapsed"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -52,7 +48,9 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. OCULTA DEFINITIVAMENTE O BOTÃO DE SETINHAS FORA DO CONTAINER */
+        /* 2. OCULTA A SIDEBAR NATIVA E O HEADER EXTERNO */
+        section[data-testid="stSidebar"],
+        [data-testid="stSidebar"],
         header[data-testid="stHeader"],
         [data-testid="stHeader"],
         div[data-testid="stSidebarCollapsedControl"],
@@ -106,37 +104,26 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. BOTÃO NATIVO DO MENU DENTRO DO CONTAINER (COLADO NO TOPO) */
-        div.stButton.btn-menu-container > button {
+        /* 5. MENU EXPANSÍVEL NATIVO COLADO NO TOPO */
+        div[data-testid="stExpander"] {
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 10px !important;
             background-color: #F8FAFC !important;
-            color: #1E293B !important;
-            -webkit-text-fill-color: #1E293B !important;
-            border: 1px solid #CBD5E1 !important;
-            border-radius: 8px !important;
-            height: 32px !important;
-            min-height: 32px !important;
-            padding: 0px 10px !important;
-            font-size: 0.88rem !important;
+            margin-top: 0px !important;
+            margin-bottom: 8px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+        }
+        div[data-testid="stExpander"] summary {
+            padding: 6px 12px !important;
+            font-size: 0.90rem !important;
             font-weight: 700 !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-            transition: all 0.2s ease-in-out !important;
-            margin: 0px !important;
-            width: auto !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
+            color: #1E293B !important;
         }
-
-        div.stButton.btn-menu-container > button:hover {
-            background-color: #EFF6FF !important;
+        div[data-testid="stExpander"] summary:hover {
             color: #2563EB !important;
-            -webkit-text-fill-color: #2563EB !important;
-            border-color: #93C5FD !important;
-            transform: scale(1.03) !important;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
         }
 
-        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
+        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O MENU */
         .logo-wrapper {
             margin-top: 0px !important;
             padding-top: 0px !important;
@@ -281,30 +268,6 @@ st.markdown("""
             transform: translateY(-1px) !important;
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
         }
-
-        /* Barra Lateral */
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #E2E8F0 !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button {
-            background: #F8FAFC !important;
-            color: #334155 !important;
-            -webkit-text-fill-color: #334155 !important;
-            border: 1px solid #CBD5E1 !important;
-            box-shadow: none !important;
-            height: 44px !important;
-            font-size: 0.92rem !important;
-            font-weight: 600 !important;
-            border-radius: 8px !important;
-            width: 100% !important;
-        }
-        section[data-testid="stSidebar"] div.stButton > button:hover {
-            background: #EFF6FF !important;
-            color: #2563EB !important;
-            -webkit-text-fill-color: #2563EB !important;
-            border-color: #BFDBFE !important;
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -341,17 +304,7 @@ def obter_caminho_imagem_frota():
                 return caminho
     return None
 
-def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_botao_menu=False):
-    # 1. Botão nativo do Streamlit dentro do container colado no topo
-    if incluir_botao_menu:
-        col_btn, _ = st.columns([0.28, 0.72])
-        with col_btn:
-            label_btn = "◀ Fechar" if st.session_state.get("sidebar_aberta") else "▶ Menu"
-            if st.button(label_btn, key="btn_toggle_sidebar_real"):
-                st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
-                st.rerun()
-
-    # 2. Logotipo colado imediatamente após o botão
+def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
     caminho_logo = obter_caminho_logotipo()
     st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
     if caminho_logo:
@@ -567,7 +520,7 @@ def enviar_requisicao_apps_script(payload):
 # 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    renderizar_cabecalho("Portal de Acesso do Condutor", incluir_botao_menu=False)
+    renderizar_cabecalho("Portal de Acesso do Condutor")
     
     caminho_frota = obter_caminho_imagem_frota()
     if caminho_frota:
@@ -668,30 +621,27 @@ def main():
     condutor_chave = normalizar_texto(nome_condutor)
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
-    # ---------------------------------------------------------
-    # MENU LATERAL (SIDEBAR)
-    # ---------------------------------------------------------
-    with st.sidebar:
-        st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
-        st.caption(f"📍 **Base de Acesso:** {acesso_local}")
-        
-        if viagem_pendente_condutor:
-            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
-        
-        st.markdown("---")
-        st.write("⚙️ **Opções do Sistema**")
-        
-        if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_sidebar_refresh"):
-            st.cache_data.clear()
-            st.rerun()
+    # ---------------------------------------------------------------------------------
+    # MENU DO SISTEMA NATIVO (COLADO NO TOPO DO CONTAINER BRANCO, ANTES DO LOGO)
+    # ---------------------------------------------------------------------------------
+    with st.expander("☰ Menu do Sistema", expanded=False):
+        col_m1, col_m2 = st.columns([1.5, 1])
+        with col_m1:
+            st.write(f"👤 **Condutor:** {nome_condutor}")
+            st.caption(f"📍 **Base:** {acesso_local}")
+            if viagem_pendente_condutor:
+                st.warning(f"⚠️ Viagem em aberto no veículo: **{viagem_pendente_condutor['placa']}**")
+        with col_m2:
+            if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_menu_refresh"):
+                st.cache_data.clear()
+                st.rerun()
+            if st.button("🚪 Sair do Sistema", use_container_width=True, key="btn_menu_logout"):
+                st.session_state.clear()
+                st.query_params.clear()
+                st.rerun()
 
-        if st.button("🚪 Sair do Sistema", use_container_width=True, key="btn_sidebar_logout"):
-            st.session_state.clear()
-            st.query_params.clear()
-            st.rerun()
-
-    # Cabeçalho Principal (renderiza o botão nativo do menu e o logotipo colados)
-    renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_botao_menu=True)
+    # Cabeçalho Principal (Logotipo colado imediatamente abaixo do menu)
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
 
