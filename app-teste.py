@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (REMOÇÃO DEFINITIVA DA DIV SUPERIOR)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (REMOCAO DE DIVS/MARKDOWN VAZIOS)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,26 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA ESPECIFICAMENTE A DIV DE CABEÇALHO .e1o1x6gp2 E HASHES AFINS */
-        .e1o1x6gp2,
-        .st-emotion-cache-k2h9z6,
-        header[data-testid="stHeader"],
-        [data-testid="stHeader"],
-        div[data-testid="stDecoration"],
-        div[data-testid="stToolbar"] {
-            display: none !important;
-            height: 0px !important;
-            min-height: 0px !important;
-            max-height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            border: none !important;
-            visibility: hidden !important;
-            position: absolute !important;
-            top: -9999px !important;
-        }
-
-        /* 2. ELIMINA CONTAINERS VAZIOS E ENCOLHE O TOPO */
+        /* 1. ELIMINA QUALQUER stMarkdownContainer OU ELEMENT-CONTAINER VAZIO/SEM USO */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -67,11 +48,24 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* Cola o conteúdo direto no topo sem vãos verticais */
+        /* 2. ELIMINA O TOPO EM BRANCO FANTASMA */
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
+        div[data-testid="stDecoration"],
+        [data-testid="stDecoration"],
+        div[data-testid="stToolbar"] {
+            display: none !important;
+            height: 0px !important;
+            max-height: 0px !important;
+            margin: 0px !important;
+            padding: 0px !important;
+            visibility: hidden !important;
+        }
+
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 0.2rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 2rem !important;
             margin-top: 0px !important;
             max-width: 720px !important;
@@ -293,6 +287,7 @@ def limpar_placa(placa_str):
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
+    """Carrega usuários mapeando credenciais, nome e local de acesso (cidade/pernoite)."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
@@ -306,6 +301,7 @@ def carregar_usuarios():
                 c_pass = cols_norm.get("senha", df.columns[1] if len(df.columns) > 1 else df.columns[0])
                 c_nome = cols_norm.get("nome", cols_norm.get("condutor", c_user))
                 
+                # Identifica coluna de Acesso / Localidade / Cidade
                 c_acesso = None
                 for col_k in ["acesso", "local", "cidade", "unidade", "pernoite", "base"]:
                     if col_k in cols_norm:
@@ -329,6 +325,7 @@ def carregar_usuarios():
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
+    """Carrega veículos mapeando placa, modelo e o local de pernoite da base de frotas."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
@@ -377,6 +374,7 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
+    """Lê em tempo real a aba de lançamentos (GID 379222602) para verificar bloqueios e gerar RV."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
@@ -391,6 +389,7 @@ def carregar_lancamentos_existentes():
     return pd.DataFrame()
 
 def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
+    """Verifica duplicidade antes de registrar uma nova saída."""
     if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
         return False, ""
 
@@ -419,6 +418,7 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
     return False, ""
 
 def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
+    """Gera o código RV no formato RV-PPPP-AAAA-XXXX."""
     placa_limpa = limpar_placa(placa)
     prefixo = f"RV-{placa_limpa}-{ano_atual}-"
     maior_seq = 0
@@ -442,6 +442,7 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
+    """Envia comandos para o Apps Script com timeout e fallback."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
@@ -531,8 +532,10 @@ def main():
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
+    # Lê lançamentos para analisar status das viagens em tempo real
     df_lanc = carregar_lancamentos_existentes()
 
+    # Mapeamento de viagens em aberto na planilha (onde Data Final ou Km Final está vazio)
     viagens_abertas_por_condutor = {}
     veiculos_em_uso = {}
 
