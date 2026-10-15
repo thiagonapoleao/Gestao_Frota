@@ -48,11 +48,9 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER E ITENS DESNECESSÁRIOS, MANTENDO O BOTÃO DA SIDEBAR VISÍVEL */
+        /* 2. REMOVE HEADER PADRÃO */
         header[data-testid="stHeader"] {
             background: transparent !important;
-            height: 0px !important;
-            min-height: 0px !important;
             border: none !important;
         }
 
@@ -85,8 +83,8 @@ st.markdown("""
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 34px 30px 38px 30px !important;
-            margin-top: 1.8rem !important;
+            padding: 24px 30px 38px 30px !important;
+            margin-top: 1.5rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
@@ -94,54 +92,53 @@ st.markdown("""
             position: relative !important;
         }
 
-        /* 5. REPOSICIONAMENTO DAS 2 SETINHAS NATIVAS DO STREAMLIT (>> / <<) DENTRO DO CONTAINER */
+        /* 5. ÁREA ANCORA DAS SETINHAS ACIMA DO LOGOTIPO */
+        #sidebar-control-anchor {
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            width: 100%;
+            min-height: 40px;
+            margin-bottom: 4px;
+        }
+
+        /* ESTILIZAÇÃO DO BOTÃO DE SETINHAS NATIVO DO STREAMLIT */
         div[data-testid="stSidebarCollapsedControl"],
-        [data-testid="stSidebarCollapsedControl"],
-        div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"],
-        div[data-testid="stHeader"] button[aria-label*="sidebar"],
-        div[data-testid="stHeader"] button[aria-label*="Sidebar"] {
-            display: flex !important;
+        [data-testid="stSidebarCollapsedControl"] {
+            display: inline-flex !important;
             visibility: visible !important;
-            opacity: 1 !important;
-            position: fixed !important;
-            top: 2.5rem !important;
-            left: calc(50% - 340px + 18px) !important; /* Alinhado ao canto interno esquerdo do container (largura 680px) */
-            z-index: 1000 !important;
+            position: relative !important;
+            top: 0 !important;
+            left: 0 !important;
             background-color: #F8FAFC !important;
             border: 1px solid #CBD5E1 !important;
             border-radius: 8px !important;
-            width: 36px !important;
-            height: 36px !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+            padding: 4px 8px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
             transition: all 0.2s ease-in-out !important;
             cursor: pointer !important;
         }
 
-        /* Ajuste para telas menores/mobile onde o container ocupa a largura toda */
-        @media (max-width: 720px) {
-            div[data-testid="stSidebarCollapsedControl"],
-            [data-testid="stSidebarCollapsedControl"],
-            div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"] {
-                left: 1.8rem !important;
-                top: 2.4rem !important;
-            }
-        }
-
-        div[data-testid="stSidebarCollapsedControl"]:hover,
-        div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"]:hover {
+        div[data-testid="stSidebarCollapsedControl"]:hover {
             background-color: #EFF6FF !important;
             border-color: #93C5FD !important;
-            transform: scale(1.06) !important;
+            transform: scale(1.05) !important;
         }
 
-        div[data-testid="stSidebarCollapsedControl"] svg,
-        div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"] svg {
+        div[data-testid="stSidebarCollapsedControl"] button {
+            color: #1E293B !important;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+        }
+
+        div[data-testid="stSidebarCollapsedControl"] svg {
             fill: #1E293B !important;
             color: #1E293B !important;
-            width: 20px !important;
-            height: 20px !important;
+            width: 22px !important;
+            height: 22px !important;
         }
 
         /* Tipografia Base */
@@ -179,7 +176,6 @@ st.markdown("""
             letter-spacing: -0.015em !important;
         }
 
-        /* Subtítulo de identificação / seções menores */
         .section-subheading {
             font-size: 1.05rem !important;
             font-weight: 600 !important;
@@ -308,6 +304,21 @@ st.markdown("""
             border-color: #BFDBFE !important;
         }
     </style>
+
+    <script>
+        // Move o botão nativo de setinhas para dentro do container, acima do logotipo
+        function realocarSetinhasSidebar() {
+            try {
+                const parentDoc = window.parent.document || document;
+                const controle = parentDoc.querySelector('[data-testid="stSidebarCollapsedControl"]');
+                const destino = parentDoc.querySelector('#sidebar-control-anchor');
+                if (controle && destino && !destino.contains(controle)) {
+                    destino.appendChild(controle);
+                }
+            } catch (e) {}
+        }
+        setInterval(realocarSetinhasSidebar, 200);
+    </script>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
@@ -343,7 +354,11 @@ def obter_caminho_imagem_frota():
                 return caminho
     return None
 
-def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
+def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_setinhas=False):
+    # Se solicitado, renderiza a âncora acima do logotipo que recebe as 2 setinhas nativas
+    if incluir_setinhas:
+        st.markdown('<div id="sidebar-control-anchor"></div>', unsafe_allow_html=True)
+
     caminho_logo = obter_caminho_logotipo()
     if caminho_logo:
         try:
@@ -557,7 +572,7 @@ def enviar_requisicao_apps_script(payload):
 # 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    renderizar_cabecalho("Portal de Acesso do Condutor")
+    renderizar_cabecalho("Portal de Acesso do Condutor", incluir_setinhas=False)
     
     caminho_frota = obter_caminho_imagem_frota()
     if caminho_frota:
@@ -680,8 +695,8 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # Cabeçalho Principal (as setinhas ficam ancoradas no canto superior esquerdo deste container)
-    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
+    # Cabeçalho Principal (com a âncora que acolhe as setinhas >> diretamente acima do logo)
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_setinhas=True)
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
 
