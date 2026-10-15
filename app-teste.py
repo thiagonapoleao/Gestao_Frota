@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (MARGEM ZERO ENTRE IMAGEM E USUÁRIO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (CENTRALIZAÇÃO MOBILE E ESPAÇO 2PX)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -66,18 +66,16 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL PERSONALIZADO */
+        /* 2. PLANO DE FUNDO EM AZUL VIBRANTE DEGRADÊ */
         :root, html, body {
-            background-color: #0b0217 !important;
-            background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
+            background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
             background-attachment: fixed !important;
             color: #0F172A !important;
             color-scheme: light !important;
         }
 
         .stApp, [data-testid="stAppViewContainer"] {
-            background-color: #0b0217 !important;
-            background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
+            background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
             background-attachment: fixed !important;
             color: #0F172A !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
@@ -116,7 +114,7 @@ st.markdown("""
             border-radius: 16px !important;
             text-align: center !important;
             border: 1px solid rgba(255, 255, 255, 0.7) !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
             margin-bottom: 1.2rem !important;
         }
         .corporate-title {
@@ -133,15 +131,13 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* CENTRALIZAÇÃO UNIVERSAL E MARGEM ZERO PARA A IMAGEM */
+        /* CENTRALIZAÇÃO UNIVERSAL PARA IMAGENS (MOBILE E DESKTOP) */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
             align-items: center !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            margin-bottom: 0px !important;
-            padding-bottom: 0px !important;
             width: 100% !important;
             text-align: center !important;
         }
@@ -151,13 +147,6 @@ st.markdown("""
             display: block !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            margin-bottom: 0px !important;
-        }
-
-        /* ZERA A MARGEM DO ELEMENT CONTAINER DA IMAGEM E DO INPUT LOGO ABAIXO */
-        div[data-testid="element-container"]:has(> div[data-testid="stImage"]) {
-            margin-bottom: 0px !important;
-            padding-bottom: 0px !important;
         }
 
         /* Formulários (Login e Viagem) */
@@ -165,7 +154,7 @@ st.markdown("""
             background-color: #FFFFFF !important;
             border: 1px solid rgba(255, 255, 255, 0.9) !important;
             border-radius: 16px !important;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25) !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18) !important;
             padding: 22px 24px !important;
         }
 
@@ -304,21 +293,19 @@ def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
 
     st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
     
-    col_l, col_m, col_r = st.columns([1, 1.4, 1])
-    with col_m:
-        if caminho_logo:
-            try:
-                logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=115)
-            except Exception:
-                st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-        else:
+    if caminho_logo:
+        try:
+            logo_img = Image.open(caminho_logo)
+            st.image(logo_img, width=115)
+        except Exception:
             st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
             
     if caminho_veiculo:
         try:
             img_frota = Image.open(caminho_veiculo)
-            st.image(img_frota, width=317)
+            st.image(img_frota, width=264)
         except Exception:
             pass
             
@@ -520,7 +507,7 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM 317PX + MARGEM 0PX)
+# 5. TELA DE LOGIN (ALINHAMENTO CENTRAL UNIVERSAL + MARGEM 2PX)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -537,13 +524,16 @@ def tela_login(df_usuarios):
         else:
             st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        # 2. Imagem da frota ampliada em 20% (317px), centralizada e sem margem inferior
+        # 2. Imagem da frota centralizada (largura 264px)
         if caminho_veiculo:
             try:
                 img_veiculo = Image.open(caminho_veiculo)
-                st.image(img_veiculo, width=317)
+                st.image(img_veiculo, width=264)
             except Exception:
                 pass
+
+        # Margem de exatamente 2px antes do campo de usuário
+        st.markdown("<div style='height: 2px; margin: 0; padding: 0;'></div>", unsafe_allow_html=True)
 
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
