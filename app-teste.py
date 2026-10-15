@@ -339,6 +339,7 @@ def obter_caminho_imagem_veiculo():
     ])
 
 def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
+    """Renderiza logotipo e títulos (SEM imagem da frota)."""
     caminho_logo = obter_caminho_logotipo()
 
     if caminho_logo:
@@ -370,7 +371,7 @@ def limpar_placa(placa_str):
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
 
 def _eh_vazio_ou_nulo(val):
-    """Verifica com precisão se o campo está vazio, nulo ou não preenchido."""
+    """Verifica com precisão se o campo está vazio ou nulo."""
     if val is None:
         return True
     s = str(val).strip().lower()
@@ -688,14 +689,15 @@ def main():
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
+    # Identificação Primária: Session State Soberana
+    viagem_pendente_condutor = st.session_state.get("viagem_ativa", None)
+
+    # Identificação Secundária: Leitura da Planilha caso não esteja na sessão
     df_lanc = carregar_lancamentos_existentes()
     viagens_abertas_por_condutor, veiculos_em_uso = extrair_viagens_abertas(df_lanc)
 
     condutor_chave = normalizar_texto(nome_condutor)
     usuario_chave = normalizar_texto(usuario_atual)
-
-    # Identificação por estado ativo local ou busca por nome/login na planilha
-    viagem_pendente_condutor = st.session_state.get("viagem_em_andamento", None)
 
     if not viagem_pendente_condutor:
         viagem_pendente_condutor = (
@@ -703,7 +705,7 @@ def main():
             viagens_abertas_por_condutor.get(usuario_chave)
         )
         if viagem_pendente_condutor:
-            st.session_state["viagem_em_andamento"] = viagem_pendente_condutor
+            st.session_state["viagem_ativa"] = viagem_pendente_condutor
 
     # Menu Lateral
     with st.sidebar:
@@ -764,7 +766,7 @@ def main():
     renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
 
     # =========================================================================
-    # CENÁRIO 1: CONDUTOR EM VIAGEM ABERTA (EXIBE CARD RESUMO + FORM FINAL)
+    # CENÁRIO 1: CONDUTOR EM VIAGEM ABERTA (CARD RESUMO + FORM FINAL)
     # =========================================================================
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
@@ -843,12 +845,13 @@ def main():
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.session_state["viagem_em_andamento"] = None
+                # Libera o estado da sessão imediatamente para voltar ao Cenário 2
+                st.session_state["viagem_ativa"] = None
                 st.session_state["ultima_transacao"] = None
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
                 st.balloons()
                 st.cache_data.clear()
-                time.sleep(1.8)
+                time.sleep(1.5)
                 st.rerun()
             else:
                 st.session_state["ultima_transacao"] = None
@@ -941,7 +944,6 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
-                # Verificação anti-duplicidade em tempo real
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -982,8 +984,8 @@ def main():
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
-                    # Grava diretamente no session_state para garantia do Cenário 1 instantâneo
-                    st.session_state["viagem_em_andamento"] = {
+                    # Persistência Ativa Soberana: Garante exibição do card imediatamente
+                    st.session_state["viagem_ativa"] = {
                         "rv": codigo_rv_previsto,
                         "condutor": nome_condutor,
                         "placa": placa,
