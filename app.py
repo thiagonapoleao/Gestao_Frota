@@ -202,22 +202,22 @@ st.markdown("""
             font-size: 0.90rem !important;
         }
 
-        /* CARD RESUMO DA VIAGEM ATIVA COM ALTO DESTAQUE */
+        /* CARD RESUMO DA VIAGEM ATIVA: VERDE/AZUL CORPORATIVO */
         .card-active-trip {
-            background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important;
-            border: 1px solid #86EFAC !important;
+            background: linear-gradient(135deg, #F0FDF4 0%, #E0F2FE 100%) !important;
+            border: 1px solid #93C5FD !important;
             border-left: 6px solid #16A34A !important;
             padding: 18px 20px !important;
             border-radius: 14px !important;
             margin-bottom: 1.4rem !important;
             margin-top: 0.8rem !important;
-            color: #14532D !important;
+            color: #0F172A !important;
             line-height: 1.75 !important;
             font-size: 0.95rem !important;
-            box-shadow: 0 6px 18px rgba(22, 163, 74, 0.12) !important;
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.10) !important;
         }
         .card-active-trip b {
-            color: #064E3B !important;
+            color: #1E3A8A !important;
             font-weight: 700 !important;
         }
 
@@ -339,6 +339,7 @@ def obter_caminho_imagem_veiculo():
     ])
 
 def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
+    """Renderiza apenas o logotipo e títulos (SEM a imagem da frota)."""
     caminho_logo = obter_caminho_logotipo()
 
     if caminho_logo:
@@ -368,6 +369,13 @@ def normalizar_texto(texto):
 
 def limpar_placa(placa_str):
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
+
+def _eh_vazio_ou_nulo(val):
+    """Verifica com precisão cirúrgica se o campo está vazio ou nulo."""
+    if val is None:
+        return True
+    s = str(val).strip().lower()
+    return s in ["", "nan", "none", "null", "nat", "0", "0.0", "undefined", "-"]
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
@@ -487,20 +495,18 @@ def extrair_viagens_abertas(df_lanc):
     col_condutor = col_map.get("condutor", col_map.get("motorista", df_lanc.columns[6] if len(df_lanc.columns) > 6 else df_lanc.columns[0]))
     col_destino = col_map.get("destino", col_map.get("rota", df_lanc.columns[7] if len(df_lanc.columns) > 7 else df_lanc.columns[0]))
     col_placa = col_map.get("placa", df_lanc.columns[8] if len(df_lanc.columns) > 8 else df_lanc.columns[0])
-    col_veiculo = col_map.get("veiculo", col_map.get("modelo", df_lanc.columns[9] if len(df_lanc.columns) > 9 else df_lanc.columns[0]))
+    col_veiculo = col_map.get("veiculo", col_map.get("modelo", df_lanc.columns[9] if len(df_lanc.columns) > 9 else df_lanc.columns[0])
     col_rv = col_map.get("rv", col_map.get("registro", df_lanc.columns[12] if len(df_lanc.columns) > 12 else df_lanc.columns[-1]))
 
     for _, row in df_lanc.iterrows():
-        val_data_fim = str(row.get(col_data_fim, "")).strip()
-        val_km_fim = str(row.get(col_km_fim, "")).strip()
+        val_data_fim = row.get(col_data_fim, "")
+        val_km_fim = row.get(col_km_fim, "")
         val_cond = str(row.get(col_condutor, "")).strip()
         val_placa = str(row.get(col_placa, "")).strip()
         val_rv = str(row.get(col_rv, "")).strip()
 
-        tem_fim = (
-            (val_data_fim != "" and val_data_fim.lower() not in ["nan", "none", "null"]) or
-            (val_km_fim != "" and val_km_fim.lower() not in ["nan", "none", "null", "0", "0.0"])
-        )
+        # Condição aprimorada: só é finalizada se houver data OU km final preenchidos
+        tem_fim = not (_eh_vazio_ou_nulo(val_data_fim) and _eh_vazio_ou_nulo(val_km_fim))
 
         if not tem_fim and val_rv:
             info = {
@@ -689,7 +695,7 @@ def main():
     condutor_chave = normalizar_texto(nome_condutor)
     usuario_chave = normalizar_texto(usuario_atual)
 
-    # Identificação por estado ativo local ou busca por nome/login
+    # Identificação resiliente da viagem aberta
     viagem_pendente_condutor = st.session_state.get("viagem_ativa", None)
 
     if not viagem_pendente_condutor:
@@ -766,18 +772,18 @@ def main():
 
         st.warning("⚠️ **Você possui uma viagem em andamento!** Finalize o retorno abaixo para liberar novos lançamentos.")
         
-        # CARD COM AS INFORMAÇÕES DETALHADAS APÓS O START INICIAL
+        # CARD COM AS INFORMAÇÕES DETALHADAS APÓS O START INICIAL (VERDE/AZUL CORPORATIVO)
         st.markdown(f"""
             <div class="card-active-trip">
-                <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: #166534; border-bottom: 1px solid #86EFAC; padding-bottom: 4px;">
+                <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: #15803D; border-bottom: 1px solid #93C5FD; padding-bottom: 4px;">
                     📋 Resumo da Viagem em Andamento
                 </div>
-                <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
-                <b>👤 Usuário / Condutor:</b> {dados_ativos.get('condutor')}<br>
-                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: <b>{dados_ativos.get('placa')}</b>)<br>
-                <b>⏱️ Início da Viagem:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial (Saída):</b> {dados_ativos.get('km_inicial')} km<br>
-                <b>📍 Destino Planejado:</b> {dados_ativos.get('destino') or 'Não especificado'}
+                <b>🎫 Registro de Viagem (RV):</b> {dados_ativos.get('rv')}<br>
+                <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
+                <b>🚙 Veículo & Placa:</b> {dados_ativos.get('veiculo')} — <b>{dados_ativos.get('placa')}</b><br>
+                <b>⏱️ Data e Horário de Início:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
+                <b>🔢 Km Inicial de Saída:</b> {dados_ativos.get('km_inicial')} km<br>
+                <b>📍 Destino / Rota Informada:</b> {dados_ativos.get('destino') or 'Não informado'}
             </div>
         """, unsafe_allow_html=True)
 
@@ -977,6 +983,7 @@ def main():
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
+                    # Persistência ativa no estado da sessão: Card exibido imediatamente
                     st.session_state["viagem_ativa"] = {
                         "rv": codigo_rv_previsto,
                         "condutor": nome_condutor,
