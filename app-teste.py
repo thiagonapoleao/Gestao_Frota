@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime, timezone, timedelta
+import numpy as np
+from datetime import datetime, timezone, timedelta, date
 try:
     from zoneinfo import ZoneInfo
     FUSO_BRASIL = ZoneInfo("America/Sao_Paulo")
@@ -10,28 +11,24 @@ except Exception:
 import os
 import re
 import unicodedata
-import requests
-import json
-import time
 from PIL import Image
 
 def obter_agora_brasil():
-    """Retorna datetime atual oficial de Brasília."""
+    """Retorna datetime oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (CENTRALIZAÇÃO MOBILE E ESPAÇO 2PX)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
 st.set_page_config(
-    page_title="Gestão de Frota",
-    page_icon="🚗",
-    layout="centered",
-    initial_sidebar_state="collapsed"
+    page_title="Painel de Frotas",
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
     <style>
-        /* 1. ELIMINAÇÃO DE CABEÇALHOS E DIVS FANTASMAS SUPERIORES */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         header[data-testid="stHeader"],
@@ -66,29 +63,21 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO EM AZUL VIBRANTE DEGRADÊ */
-        :root, html, body {
-            background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
-            background-attachment: fixed !important;
+        [data-testid="collapsedControl"],
+        button[kind="header"] {
+            display: flex !important;
+            visibility: visible !important;
             color: #0F172A !important;
-            color-scheme: light !important;
-        }
-
-        .stApp, [data-testid="stAppViewContainer"] {
-            background: linear-gradient(145deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%) !important;
-            background-attachment: fixed !important;
-            color: #0F172A !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            z-index: 1000000 !important;
         }
 
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            background: transparent !important;
-            padding-top: 0.6rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 2rem !important;
             margin-top: 0px !important;
-            max-width: 680px !important;
+            max-width: 96% !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -97,233 +86,248 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        h1, h2, h3, h4, h5, h6, p, span, label, div {
+        :root, html, body {
+            background-color: #F8FAFC !important;
+            color: #0F172A !important;
+            color-scheme: light !important;
+        }
+
+        .stApp, [data-testid="stAppViewContainer"] {
+            background-color: #F8FAFC !important;
+            color: #0F172A !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+
+        h1, h2, h3, h4, h5, p, span, label, div {
             color: #0F172A !important;
         }
         .stWidgetLabel p, label p {
             color: #334155 !important;
             font-weight: 600 !important;
             font-size: 0.88rem !important;
-            margin-bottom: 3px !important;
-        }
-
-        /* Container do Cabeçalho Operacional */
-        .corporate-header {
-            background: #FFFFFF !important;
-            padding: 16px 20px !important;
-            border-radius: 16px !important;
-            text-align: center !important;
-            border: 1px solid rgba(255, 255, 255, 0.7) !important;
-            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.15) !important;
-            margin-bottom: 1.2rem !important;
-        }
-        .corporate-title {
-            font-size: 1.30rem !important;
-            font-weight: 800 !important;
-            color: #1E3A8A !important;
-            margin: 4px 0 2px 0 !important;
-            letter-spacing: -0.02em !important;
-        }
-        .corporate-subtitle {
-            font-size: 0.86rem !important;
-            color: #64748B !important;
-            margin: 0 !important;
-            font-weight: 500 !important;
-        }
-
-        /* CENTRALIZAÇÃO UNIVERSAL PARA IMAGENS (MOBILE E DESKTOP) */
-        div[data-testid="stImage"] {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-            width: 100% !important;
-            text-align: center !important;
-        }
-        div[data-testid="stImage"] img {
-            border-radius: 10px !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-            display: block !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-        }
-
-        /* Formulários (Login e Viagem) */
-        [data-testid="stForm"] {
-            background-color: #FFFFFF !important;
-            border: 1px solid rgba(255, 255, 255, 0.9) !important;
-            border-radius: 16px !important;
-            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18) !important;
-            padding: 22px 24px !important;
-        }
-
-        .card-vehicle-info {
-            background-color: #FFFFFF !important;
-            border: 1px solid #DBEAFE !important;
-            border-left: 5px solid #2563EB !important;
-            padding: 14px 16px !important;
-            border-radius: 12px !important;
-            margin: 14px 0 !important;
-            color: #334155 !important;
-            line-height: 1.6 !important;
-            font-size: 0.90rem !important;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
-        }
-
-        .card-active-trip {
-            background-color: #FFFFFF !important;
-            border: 1px solid #BFDBFE !important;
-            border-left: 5px solid #2563EB !important;
-            padding: 16px !important;
-            border-radius: 12px !important;
-            margin-bottom: 1.3rem !important;
-            color: #1E3A8A !important;
-            line-height: 1.65 !important;
-            font-size: 0.92rem !important;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10) !important;
-        }
-        .card-active-trip b {
-            color: #1E3A8A !important;
-        }
-
-        /* Inputs e controles */
-        div[data-baseweb="input"],
-        div[data-baseweb="base-input"],
-        div[data-baseweb="select"],
-        div[data-baseweb="select"] > div,
-        div[data-testid="stTextInput"] > div,
-        div[data-testid="stDateInput"] > div,
-        div[data-testid="stTimeInput"] > div,
-        div[data-testid="stNumberInput"] > div,
-        div[data-testid="stNumberInputContainer"] {
-            background-color: #F8FAFC !important;
-            border: 1px solid #CBD5E1 !important;
-            color: #0F172A !important;
-            border-radius: 8px !important;
-        }
-
-        div[data-baseweb="input"]:focus-within,
-        div[data-baseweb="select"]:focus-within,
-        div[data-testid="stNumberInputContainer"]:focus-within {
-            border-color: #2563EB !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.20) !important;
-            background-color: #FFFFFF !important;
-        }
-
-        input[type="text"], 
-        input[type="number"], 
-        input[type="password"],
-        input {
-            background-color: transparent !important;
-            color: #0F172A !important;
-            -webkit-text-fill-color: #0F172A !important;
-            border: none !important;
-            font-size: 0.94rem !important;
-            font-weight: 500 !important;
-        }
-
-        /* Botões */
-        div.stButton > button:first-child,
-        div[data-testid="stFormSubmitButton"] > button {
-            background: linear-gradient(135deg, #1D4ED8, #2563EB) !important;
-            background-color: #1D4ED8 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 10px !important;
-            height: 46px !important;
-            font-size: 0.98rem !important;
-            font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35) !important;
-            cursor: pointer !important;
-            transition: all 0.2s ease-in-out !important;
-        }
-        div.stButton > button:first-child:hover,
-        div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1E40AF, #1D4ED8) !important;
-            transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
         }
 
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
-            border-right: 1px solid #DBEAFE !important;
+            border-right: 1px solid #E2E8F0 !important;
+        }
+        section[data-testid="stSidebar"] * {
+            color: #1E293B !important;
+        }
+
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] > div {
+            gap: 8px !important;
+        }
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label {
+            background-color: #F8FAFC !important;
+            border: 1px solid #CBD5E1 !important;
+            padding: 10px 14px !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+            display: flex !important;
+            align-items: center !important;
+            font-weight: 600 !important;
+            color: #0F172A !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03) !important;
+        }
+        div[data-testid="stSidebar"] div[data-testid="stRadio"] > div > label:hover {
+            background-color: #EFF6FF !important;
+            border-color: #2563EB !important;
+        }
+
+        .dash-header-container {
+            background: #FFFFFF;
+            padding: 16px 24px;
+            border-radius: 12px;
+            border: 1px solid #E2E8F0;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.2rem;
+            margin-top: 0px;
+        }
+
+        .dash-title {
+            font-size: 1.45rem;
+            font-weight: 800;
+            color: #0F172A;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+        .dash-subtitle {
+            font-size: 0.88rem;
+            color: #64748B;
+            margin: 2px 0 0 0;
+        }
+
+        .filter-panel {
+            background-color: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px 10px 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1.2rem;
+        }
+
+        .kpi-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 18px 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .kpi-title {
+            font-size: 0.80rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748B;
+            margin: 0;
+        }
+        .kpi-value {
+            font-size: 1.85rem;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.1;
+            margin: 0;
+        }
+        .kpi-caption {
+            font-size: 0.78rem;
+            color: #94A3B8;
+            margin: 0;
+        }
+
+        .badge-open {
+            background-color: #FEF3C7;
+            color: #92400E;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid #FDE68A;
+        }
+        .badge-done {
+            background-color: #DEF7EC;
+            color: #03543F;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            display: inline-block;
+            border: 1px solid #BCF0DA;
+        }
+
+        [data-testid="stForm"] {
+            background-color: #FFFFFF !important;
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+            padding: 24px !important;
+        }
+
+        div[data-baseweb="input"],
+        div[data-baseweb="select"],
+        div[data-baseweb="select"] > div,
+        div[data-testid="stTextInput"] > div,
+        div[data-testid="stDateInput"] > div {
+            background-color: #FFFFFF !important;
+            border: 1px solid #CBD5E1 !important;
+            color: #0F172A !important;
+            border-radius: 8px !important;
+        }
+        input {
+            background-color: #FFFFFF !important;
+            color: #0F172A !important;
+            -webkit-text-fill-color: #0F172A !important;
+        }
+
+        div.stButton > button {
+            background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            border: none !important;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2) !important;
+        }
+        div.stButton > button:hover {
+            background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+        }
+
+        div[data-testid="stDataFrame"] {
+            border: 1px solid #E2E8F0 !important;
+            border-radius: 10px !important;
+            overflow: hidden !important;
         }
     </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 2. VARIÁVEIS GLOBAIS E ENDPOINTS
+# 2. CONFIGURAÇÕES DA PLANILHA
 # -------------------------------------------------------------
-WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
-
-GID_USUARIOS = "426012097"       # Aba Condutores / Logins
-GID_VEICULOS = "0"               # Aba Frota
-GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
+GID_LANCAMENTOS = "379222602"
+GID_USUARIOS = "426012097"
 
 # -------------------------------------------------------------
-# 3. SUPORTE A ARQUIVOS LOCAIS (LOGOTIPO E IMAGEM DO VEÍCULO/FROTA)
+# 3. SUPORTE A LOGOTIPO
 # -------------------------------------------------------------
-def obter_caminho_arquivo(nomes_possiveis):
-    """Busca um arquivo existente no mesmo diretório do script."""
+def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
-    for nome in nomes_possiveis:
+    nomes = ["Logotipo", "logotipo", "Logo", "logo"]
+    for nome in nomes:
         for ext in extensoes:
             caminho = f"{nome}{ext}"
             if os.path.exists(caminho) and not os.path.isdir(caminho):
                 return caminho
     return None
 
-def obter_caminho_logotipo():
-    return obter_caminho_arquivo(["Logotipo", "logotipo", "Logo", "logo"])
-
-def obter_caminho_imagem_veiculo():
-    """Busca a imagem do veículo/frota localizada na mesma pasta do app."""
-    return obter_caminho_arquivo([
-        "veiculo", "veiculos", "Veiculo", "Veiculos",
-        "frota", "Frota", "carro", "carros", "Carro", "Carros",
-        "banner", "Banner"
-    ])
-
-def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
+def renderizar_cabecalho_com_logo(subtitulo="Monitoramento em Tempo Real de Viagens e Quilometragem"):
     caminho_logo = obter_caminho_logotipo()
-    caminho_veiculo = obter_caminho_imagem_veiculo()
+    agora = obter_agora_brasil()
 
-    st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
-    
-    if caminho_logo:
-        try:
-            logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=115)
-        except Exception:
-            st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-            
-    if caminho_veiculo:
-        try:
-            img_frota = Image.open(caminho_veiculo)
-            st.image(img_frota, width=264)
-        except Exception:
-            pass
-            
-    st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
+    st.markdown('<div class="dash-header-container">', unsafe_allow_html=True)
+    c_logo, c_texto, c_hora = st.columns([1.2, 5, 2.3])
 
-# -------------------------------------------------------------
-# 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
-# -------------------------------------------------------------
+    with c_logo:
+        if caminho_logo:
+            try:
+                logo_img = Image.open(caminho_logo)
+                st.image(logo_img, width=140)
+            except Exception:
+                st.markdown("### ☕")
+        else:
+            st.markdown("### ☕")
+
+    with c_texto:
+        st.markdown(f"""
+            <div style="padding-left: 8px;">
+                <div class="dash-title">Painel de Frotas</div>
+                <div class="dash-subtitle">{subtitulo}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+    with c_hora:
+        st.markdown(f"""
+            <div style="text-align: right; padding-top: 4px;">
+                <span style="font-size: 0.78rem; color: #64748B; font-weight: 600; text-transform: uppercase;">Sincronizado</span><br>
+                <span style="font-size: 0.92rem; font-weight: 700; color: #0F172A;">{agora.strftime("%d/%m/%Y às %H:%M:%S")}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
 def normalizar_texto(texto):
     if not isinstance(texto, str):
         texto = str(texto)
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto.strip().lower()
 
-def limpar_placa(placa_str):
-    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
-    return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
-
+# -------------------------------------------------------------
+# 4. CARREGAMENTO E TRATAMENTO DOS DADOS (ETL)
+# -------------------------------------------------------------
 @st.cache_data(ttl=60)
 def carregar_usuarios():
     urls = [
@@ -338,523 +342,516 @@ def carregar_usuarios():
                 c_user = cols_norm.get("usuario", cols_norm.get("login", df.columns[0]))
                 c_pass = cols_norm.get("senha", df.columns[1] if len(df.columns) > 1 else df.columns[0])
                 c_nome = cols_norm.get("nome", cols_norm.get("condutor", c_user))
-                
-                c_acesso = None
-                for col_k in ["acesso", "local", "cidade", "unidade", "pernoite", "base"]:
-                    if col_k in cols_norm:
-                        c_acesso = cols_norm[col_k]
-                        break
 
                 df_res = pd.DataFrame()
                 df_res["usuario"] = df[c_user].fillna("").astype(str).str.strip().str.lower()
                 df_res["senha"] = df[c_pass].fillna("").astype(str).str.strip()
                 df_res["nome"] = df[c_nome].fillna(df[c_user]).astype(str).str.strip()
-                
-                if c_acesso:
-                    df_res["acesso_local"] = df[c_acesso].fillna("Geral").astype(str).str.strip()
-                else:
-                    df_res["acesso_local"] = "Geral"
-                
                 return df_res
         except Exception:
             continue
-    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor", "acesso_local": "Geral"}])
+    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Gestor Master Café"}])
 
 @st.cache_data(ttl=30)
-def carregar_veiculos():
-    urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
-    ]
-    for url in urls:
-        try:
-            df_raw = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
-            if not df_raw.empty and len(df_raw.columns) >= 2:
-                cols_norm = {normalizar_texto(c): c for c in df_raw.columns}
-                
-                c_placa = None
-                for k in ["placa", "placas"]:
-                    if k in cols_norm:
-                        c_placa = cols_norm[k]
-                        break
-                if not c_placa:
-                    c_placa = df_raw.columns[4] if len(df_raw.columns) >= 5 else df_raw.columns[0]
-
-                c_veiculo = None
-                for k in ["veiculo", "modelo", "carro", "descricao"]:
-                    if k in cols_norm:
-                        c_veiculo = cols_norm[k]
-                        break
-                if not c_veiculo:
-                    c_veiculo = df_raw.columns[1] if len(df_raw.columns) >= 2 else df_raw.columns[0]
-
-                c_pernoite = None
-                for k in ["local de pernoite", "pernoite", "local", "cidade", "base", "unidade"]:
-                    if k in cols_norm:
-                        c_pernoite = cols_norm[k]
-                        break
-
-                df_veiculos = pd.DataFrame()
-                df_veiculos["placa"] = df_raw[c_placa].dropna().astype(str).str.strip().str.upper()
-                df_veiculos["veiculo"] = df_raw[c_veiculo].fillna("Não informado").astype(str).str.strip()
-                
-                if c_pernoite:
-                    df_veiculos["local_pernoite"] = df_raw[c_pernoite].fillna("Não informado").astype(str).str.strip()
-                else:
-                    df_veiculos["local_pernoite"] = "Geral"
-
-                df_veiculos = df_veiculos[df_veiculos["placa"].str.len() >= 5].drop_duplicates(subset=["placa"])
-                return df_veiculos
-        except Exception:
-            continue
-    return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
-
-def carregar_lancamentos_existentes():
+def carregar_dados_viagens():
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
     ]
+    df_raw = pd.DataFrame()
     for url in urls:
         try:
-            df = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
-            if not df.empty:
-                return df
+            df_temp = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
+            if not df_temp.empty and len(df_temp.columns) >= 7:
+                df_raw = df_temp
+                break
         except Exception:
             continue
-    return pd.DataFrame()
 
-def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
-    if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
-        return False, ""
+    if df_raw.empty:
+        return pd.DataFrame()
 
-    placa_limpa_alvo = limpar_placa(placa)
-    condutor_norm_alvo = normalizar_texto(condutor)
-    data_ini_alvo = str(data_ini).strip()
-    km_ini_alvo = str(int(km_ini)).strip() if km_ini is not None else ""
-    rv_alvo = str(rv_codigo).strip().upper()
+    col_names = [
+        "data_inicial", "horario_inicial", "km_inicial",
+        "data_final", "horario_final", "km_final",
+        "condutor", "destino", "placa", "veiculo",
+        "km_percorrido", "data_registro", "rv"
+    ]
 
-    for _, row in df_lancamentos.iterrows():
-        rv_row = str(row.iloc[12]).strip().upper() if pd.notna(row.iloc[12]) else ""
-        placa_row = limpar_placa(row.iloc[8]) if pd.notna(row.iloc[8]) else ""
-        cond_row = normalizar_texto(row.iloc[6]) if pd.notna(row.iloc[6]) else ""
-        data_row = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
-        km_row = str(row.iloc[2]).split(".")[0].strip() if pd.notna(row.iloc[2]) else ""
-
-        if rv_row and rv_row == rv_alvo:
-            return True, f"O Registro de Viagem {rv_alvo} já existe na planilha."
-
-        if (placa_row == placa_limpa_alvo and 
-            cond_row == condutor_norm_alvo and 
-            data_row == data_ini_alvo and 
-            km_row == km_ini_alvo):
-            return True, f"Já existe uma viagem registrada para este condutor e veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
-
-    return False, ""
-
-def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
-    placa_limpa = limpar_placa(placa)
-    prefixo = f"RV-{placa_limpa}-{ano_atual}-"
-    maior_seq = 0
-
-    if not df_lancamentos.empty and len(df_lancamentos.columns) >= 13:
-        coluna_rv = df_lancamentos.iloc[:, 12].dropna().astype(str)
-        for val in coluna_rv:
-            val = val.strip().upper()
-            if val.startswith(prefixo) or val.startswith(f"RV-{placa_limpa}_{ano_atual}-"):
-                partes = val.split("-")
-                if len(partes) == 4 and partes[3].isdigit():
-                    num = int(partes[3])
-                    if num > maior_seq:
-                        maior_seq = num
-                elif len(partes) == 3 and partes[2].isdigit():
-                    num = int(partes[2])
-                    if num > maior_seq:
-                        maior_seq = num
-
-    proximo_seq = maior_seq + 1
-    return f"{prefixo}{proximo_seq:04d}"
-
-def enviar_requisicao_apps_script(payload):
-    try:
-        corpo = json.dumps(payload, ensure_ascii=False)
-        headers = {
-            "Content-Type": "text/plain;charset=utf-8",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-        }
-        with requests.Session() as session:
-            resposta = session.post(
-                WEBHOOK_URL,
-                data=corpo.encode("utf-8"),
-                headers=headers,
-                timeout=35,
-                allow_redirects=True
-            )
-        if resposta.status_code == 200:
-            try:
-                ret = resposta.json()
-                if ret.get("status") == "success":
-                    return True, ret.get("message", "Operação realizada!")
-                return False, ret.get("message", "Erro retornado pelo script.")
-            except Exception:
-                if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
-                    return True, "Operação realizada com sucesso!"
-                return True, "Registro atualizado!"
-        elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, configure 'Quem tem acesso' para 'Qualquer pessoa'."
+    df = pd.DataFrame()
+    for i, nome in enumerate(col_names):
+        if i < len(df_raw.columns):
+            df[nome] = df_raw.iloc[:, i].fillna("").astype(str).str.strip()
         else:
-            return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
-    except Exception as e:
-        return False, f"Falha na comunicação: {str(e)}"
+            df[nome] = ""
+
+    df["placa"] = df["placa"].str.upper()
+    df["condutor"] = df["condutor"].str.strip()
+    df["veiculo"] = df["veiculo"].str.strip()
+    df["rv"] = df["rv"].str.upper()
+
+    def converter_numero(val):
+        try:
+            val_limpo = str(val).replace(".", "").replace(",", ".").strip()
+            return float(val_limpo) if val_limpo and val_limpo.lower() != "nan" else np.nan
+        except Exception:
+            return np.nan
+
+    df["km_inicial_num"] = df["km_inicial"].apply(converter_numero)
+    df["km_final_num"] = df["km_final"].apply(converter_numero)
+    df["km_percorrido_num"] = df["km_percorrido"].apply(converter_numero)
+
+    mascara_recalc = df["km_percorrido_num"].isna() & df["km_inicial_num"].notna() & df["km_final_num"].notna()
+    df.loc[mascara_recalc, "km_percorrido_num"] = df.loc[mascara_recalc, "km_final_num"] - df.loc[mascara_recalc, "km_inicial_num"]
+    df["km_percorrido_num"] = df["km_percorrido_num"].apply(lambda x: max(x, 0) if pd.notna(x) else np.nan)
+
+    df["data_ini_dt"] = pd.to_datetime(df["data_inicial"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
+    df["data_fim_dt"] = pd.to_datetime(df["data_final"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
+
+    def definir_status(row):
+        tem_fim = (row["data_final"] != "" and row["data_final"].lower() != "nan") or (pd.notna(row["km_final_num"]) and row["km_final_num"] > 0)
+        return "Concluída" if tem_fim else "Em Aberto"
+
+    df["status"] = df.apply(definir_status, axis=1)
+    df["rotulo_veiculo"] = df.apply(
+        lambda r: f"{r['placa']} - {r['veiculo']}" if r['veiculo'] else r['placa'], axis=1
+    )
+
+    return df
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (ALINHAMENTO CENTRAL UNIVERSAL + MARGEM 2PX)
+# 5. TELA DE LOGIN COM SESSÃO PERSISTENTE
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
-    caminho_veiculo = obter_caminho_imagem_veiculo()
-    
-    with st.form("form_login"):
-        # 1. Logotipo centralizado
+    col1, col2, col3 = st.columns([1, 1.2, 1])
+    with col2:
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=110)
+                st.image(logo_img, width=160)
             except Exception:
-                st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
+                st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
         else:
-            st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
+            st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
 
-        # 2. Imagem da frota centralizada (largura 264px)
-        if caminho_veiculo:
-            try:
-                img_veiculo = Image.open(caminho_veiculo)
-                st.image(img_veiculo, width=264)
-            except Exception:
-                pass
+        st.markdown("<p style='text-align:center; color:#64748B; font-weight:500;'>Acesso ao Painel de Frotas</p>", unsafe_allow_html=True)
 
-        # Margem de exatamente 2px antes do campo de usuário
-        st.markdown("<div style='height: 2px; margin: 0; padding: 0;'></div>", unsafe_allow_html=True)
+        with st.form("form_login_dash"):
+            usuario_digitado = st.text_input("Usuário Gestor:", placeholder="Digite seu usuário").strip().lower()
+            senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
+            btn_login = st.form_submit_button("Acessar Painel Gerencial")
 
-        usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
-        senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
-        btn_login = st.form_submit_button("Entrar no Sistema")
-        
-        if btn_login:
-            if df_usuarios.empty:
-                st.error("Não foi possível carregar os condutores da planilha.")
-                return
+            if btn_login:
+                if df_usuarios.empty:
+                    st.error("Lista de usuários inacessível.")
+                    return
 
-            usuario_valido = df_usuarios[
-                (df_usuarios["usuario"] == usuario_digitado) & 
-                (df_usuarios["senha"] == senha_digitada)
-            ]
+                usuario_valido = df_usuarios[
+                    (df_usuarios["usuario"] == usuario_digitado) & 
+                    (df_usuarios["senha"] == senha_digitada)
+                ]
 
-            if not usuario_valido.empty:
-                row_user = usuario_valido.iloc[0]
-                st.session_state["autenticado"] = True
-                st.session_state["usuario_logado"] = usuario_digitado
-                st.session_state["nome_condutor"] = row_user["nome"]
-                st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
-                st.query_params["u"] = usuario_digitado
-                st.rerun()
-            else:
-                st.error("Usuário ou senha incorretos.")
+                if not usuario_valido.empty:
+                    st.session_state["dash_autenticado"] = True
+                    st.session_state["dash_usuario"] = usuario_digitado
+                    st.session_state["dash_nome"] = usuario_valido.iloc[0]["nome"]
+                    st.query_params["u"] = usuario_digitado
+                    st.rerun()
+                else:
+                    st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (TELA DE PREENCHIMENTO DA VIAGEM)
+# 6. APLICATIVO DO DASHBOARD
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
 
-    if not st.session_state.get("autenticado", False):
+    if not st.session_state.get("dash_autenticado", False):
         usuario_url = st.query_params.get("u", None)
         if usuario_url and not df_usuarios.empty:
             usuario_url = str(usuario_url).strip().lower()
             usuario_valido = df_usuarios[df_usuarios["usuario"] == usuario_url]
             if not usuario_valido.empty:
-                row_user = usuario_valido.iloc[0]
-                st.session_state["autenticado"] = True
-                st.session_state["usuario_logado"] = usuario_url
-                st.session_state["nome_condutor"] = row_user["nome"]
-                st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
+                st.session_state["dash_autenticado"] = True
+                st.session_state["dash_usuario"] = usuario_url
+                st.session_state["dash_nome"] = usuario_valido.iloc[0]["nome"]
 
-    if not st.session_state.get("autenticado", False):
+    if not st.session_state.get("dash_autenticado", False):
         tela_login(df_usuarios)
         return
 
-    usuario_atual = st.session_state.get("usuario_logado")
-    nome_condutor = st.session_state.get("nome_condutor", "Condutor")
-    acesso_local = st.session_state.get("acesso_local", "Geral")
+    nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    df_lanc = carregar_lancamentos_existentes()
+    opcoes_menu = ["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"]
 
-    viagens_abertas_por_condutor = {}
-    veiculos_em_uso = {}
+    if "pagina_selecionada" not in st.session_state:
+        st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    if not df_lanc.empty and len(df_lanc.columns) >= 13:
-        for _, row in df_lanc.iterrows():
-            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
-            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
-            cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
-            placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
-            rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
-
-            if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
-                info_aberta = {
-                    "rv": rv_row,
-                    "condutor": cond_row,
-                    "placa": placa_row,
-                    "veiculo": str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else "",
-                    "data_inicial": str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else "",
-                    "horario_inicial": str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "",
-                    "km_inicial": str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "0",
-                    "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
-                }
-                
-                placa_k = limpar_placa(placa_row)
-                if placa_k:
-                    veiculos_em_uso[placa_k] = info_aberta
-
-                if cond_row:
-                    viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
-
-    condutor_chave = normalizar_texto(nome_condutor)
-    viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
-
-    # Menu Lateral
     with st.sidebar:
-        st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
-        st.caption(f"📍 **Base de Acesso:** {acesso_local}")
-        if viagem_pendente_condutor:
-            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
-        if st.button("🚪 Sair do Sistema"):
-            st.session_state.clear()
-            st.query_params.clear()
-            st.rerun()
-
-    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
-    agora = obter_agora_brasil()
-    ano_atual = agora.strftime("%Y")
-
-    # =========================================================================
-    # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FORÇA O START FINAL)
-    # =========================================================================
-    if viagem_pendente_condutor is not None:
-        dados_ativos = viagem_pendente_condutor
-
-        st.warning("⚠️ **Você possui uma viagem em andamento aberta na planilha!** Finalize o retorno para liberar novos lançamentos.")
-        st.markdown(f"""
-            <div class="card-active-trip">
-                <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
-                <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
-                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
-                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
-                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
-            </div>
-        """, unsafe_allow_html=True)
-
-        st.subheader("Start Final (Retorno do Veículo)")
-        with st.form("form_start_final"):
-            col_df, col_hf = st.columns(2)
-            with col_df:
-                data_fim = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
-            with col_hf:
-                hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
-
-            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
-            km_fim = st.number_input(
-                "Km Final:", 
-                value=None, 
-                placeholder="Digite o Km Final...", 
-                min_value=km_inicial_val, 
-                step=1.0, 
-                format="%.0f", 
-                key="km_fim_input"
-            )
-
-            destino_atualizado = st.text_input(
-                "Destino / Rota realizada:", 
-                value=dados_ativos.get("destino", "")
-            )
-
-            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
-
-        if btn_start_final:
-            if km_fim is None:
-                st.error("⚠️ Por favor, preencha o Km Final.")
-                return
-            if km_fim < km_inicial_val:
-                st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
-                return
-
-            km_percorrido = int(km_fim - km_inicial_val)
-
-            chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
-            if st.session_state.get("ultima_transacao") == chave_transacao_final:
-                st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
-                return
-            st.session_state["ultima_transacao"] = chave_transacao_final
-
-            payload_finalizar = {
-                "acao": "finalizar",
-                "gid_destino": GID_LANCAMENTOS,
-                "rv": dados_ativos.get("rv"),
-                "data_final": data_fim.strftime("%d/%m/%Y"),
-                "horario_final": hora_fim.strftime("%H:%M:%S"),
-                "km_final": int(km_fim),
-                "km_percorrido": km_percorrido,
-                "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
-            }
-
-            with st.spinner("Atualizando e concluindo a viagem na planilha..."):
-                sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
-
-            if sucesso:
-                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
-                st.balloons()
-                st.cache_data.clear()
-                time.sleep(2)
-                st.rerun()
-            else:
-                st.session_state["ultima_transacao"] = None
-                st.error(f"❌ Falha ao finalizar na planilha: {msg}")
-
-    # =========================================================================
-    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (PREENCHIMENTO DOS DADOS DA VIAGEM)
-    # =========================================================================
-    else:
-        df_veiculos_todos = carregar_veiculos()
-        if df_veiculos_todos.empty:
-            st.error("Nenhum veículo disponível na base. Verifique a planilha.")
-            return
-
-        acesso_norm = normalizar_texto(acesso_local)
-        
-        if acesso_norm in ["geral", "todas", "todos", "adm", "admin", ""]:
-            df_veiculos = df_veiculos_todos.copy()
-            st.caption("🌐 **Acesso Geral:** Todos os veículos da frota estão disponíveis para escolha.")
+        caminho_logo = obter_caminho_logotipo()
+        if caminho_logo:
+            try:
+                logo_img = Image.open(caminho_logo)
+                st.image(logo_img, width=150)
+            except Exception:
+                st.markdown("### ☕")
         else:
-            df_veiculos = df_veiculos_todos[
-                df_veiculos_todos["local_pernoite"].apply(lambda loc: acesso_norm in normalizar_texto(loc))
-            ].copy()
-            st.caption(f"📍 **Acesso Restrito:** Exibindo veículos com pernoite em **{acesso_local}**.")
+            st.markdown("### ☕")
 
-        if df_veiculos.empty:
-            st.warning(f"⚠️ Nenhum veículo cadastrado com pernoite para sua localidade ({acesso_local}). Contate o gestor de frota.")
-            return
+        st.markdown(f"👤 **Gestor:**\n**{nome_gestor}**")
+        st.markdown("---")
 
-        st.subheader("1. Seleção do Veículo")
-        
-        df_veiculos["rotulo_completo"] = df_veiculos.apply(
-            lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
-            axis=1
+        st.markdown("#### 📌 **Navegação**")
+        idx_selecionado = opcoes_menu.index(st.session_state["pagina_selecionada"]) if st.session_state["pagina_selecionada"] in opcoes_menu else 0
+        pagina_sidebar = st.radio(
+            "Módulos:",
+            options=opcoes_menu,
+            index=idx_selecionado,
+            key="radio_nav_sidebar"
         )
-        opcoes = ["-- Selecione um veículo --"] + df_veiculos["rotulo_completo"].tolist()
-        veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
+        st.session_state["pagina_selecionada"] = pagina_sidebar
 
-        if veiculo_escolhido != "-- Selecione um veículo --":
-            dados_veiculo = df_veiculos[df_veiculos["rotulo_completo"] == veiculo_escolhido].iloc[0]
-            placa = dados_veiculo["placa"]
-            modelo = dados_veiculo["veiculo"]
-            cidade_veiculo = dados_veiculo.get("local_pernoite", "Não informado")
-            placa_limpa = limpar_placa(placa)
+        st.markdown("---")
+        col_btn1, col_btn2 = st.columns(2)
+        with col_btn1:
+            if st.button("🔄 Atualizar"):
+                st.cache_data.clear()
+                st.rerun()
+        with col_btn2:
+            if st.button("🚪 Sair"):
+                st.session_state.clear()
+                st.query_params.clear()
+                st.rerun()
 
-            if placa_limpa in veiculos_em_uso:
-                ocupante = veiculos_em_uso[placa_limpa]
-                st.error(f"🚫 **Veículo Indisponível!** O veículo de placa **{placa}** já está em viagem aberta iniciada por **{ocupante['condutor']}** em {ocupante['data_inicial']} às {ocupante['horario_inicial']}.")
-                st.info(f"Código da viagem aberta em andamento: **{ocupante['rv']}**. Escolha outro veículo ou aguarde a finalização.")
-                return
+    df_base = carregar_dados_viagens()
 
-            codigo_rv_previsto = gerar_proximo_rv(df_lanc, placa, ano_atual)
+    if df_base.empty:
+        st.warning("Nenhum registro de viagem encontrado na planilha.")
+        return
 
+    hoje_brasil = obter_agora_brasil().date()
+
+    # =========================================================================
+    # PÁGINA 1: VISÃO GERAL & KPIS
+    # =========================================================================
+    if st.session_state["pagina_selecionada"] == "📊 Visão Geral & KPIs":
+        renderizar_cabecalho_com_logo("Visão Geral, Controle de Veículos em Trânsito e Indicadores")
+
+        total_viagens = len(df_base)
+        viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
+        total_em_aberto = len(viagens_abertas_df)
+
+        viagens_concluidas = df_base[df_base["status"] == "Concluída"]
+        total_km_rodado = viagens_concluidas["km_percorrido_num"].sum()
+        media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
+        total_concluidas = len(viagens_concluidas)
+
+        kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+        with kpi1:
             st.markdown(f"""
-                <div class="card-vehicle-info">
-                    <b>🎫 Registro de Viagem:</b> {codigo_rv_previsto}<br>
-                    <b>👤 Condutor:</b> {nome_condutor}<br>
-                    <b>🚙 Veículo:</b> {modelo}<br>
-                    <b>🔢 Placa:</b> {placa}<br>
-                    <b>📍 Base/Pernoite:</b> {cidade_veiculo}
+                <div class="kpi-card" style="border-left: 4px solid #2563EB;">
+                    <p class="kpi-title">Total de Viagens</p>
+                    <p class="kpi-value">{total_viagens}</p>
+                    <p class="kpi-caption">Histórico acumulado</p>
                 </div>
             """, unsafe_allow_html=True)
 
-            st.subheader("2. Start Inicial (Saída do Veículo)")
-            with st.form("form_start_inicial"):
-                col_d, col_h = st.columns(2)
-                with col_d:
-                    data_ini = st.date_input("Data Inicial:", value=agora.date(), format="DD/MM/YYYY")
-                with col_h:
-                    hora_ini = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
+        with kpi2:
+            cor_aberto = "#F59E0B" if total_em_aberto > 0 else "#10B981"
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid {cor_aberto};">
+                    <p class="kpi-title">Veículos em Aberto</p>
+                    <p class="kpi-value" style="color: {'#B45309' if total_em_aberto > 0 else '#065F46'};">{total_em_aberto}</p>
+                    <p class="kpi-caption">Em trânsito agora</p>
+                </div>
+            """, unsafe_allow_html=True)
 
-                km_ini = st.number_input(
-                    "Km Inicial:", 
-                    value=None, 
-                    placeholder="Digite o Km Inicial...", 
-                    min_value=0.0, 
-                    step=1.0, 
-                    format="%.0f", 
-                    key="km_ini_input"
+        with kpi3:
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #10B981;">
+                    <p class="kpi-title">Km Total Rodado</p>
+                    <p class="kpi-value">{total_km_rodado:,.0f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-caption">Viagens concluídas</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with kpi4:
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #6366F1;">
+                    <p class="kpi-title">Média Km / Viagem</p>
+                    <p class="kpi-value">{media_km_geral:,.1f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-caption">Média por percurso</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with kpi5:
+            perc_conc = (total_concluidas / total_viagens * 100) if total_viagens > 0 else 0
+            st.markdown(f"""
+                <div class="kpi-card" style="border-left: 4px solid #0EA5E9;">
+                    <p class="kpi-title">Viagens Concluídas</p>
+                    <p class="kpi-value">{total_concluidas}</p>
+                    <p class="kpi-caption">{perc_conc:.0f}% de finalização</p>
+                </div>
+            """, unsafe_allow_html=True)
+
+        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+
+        st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
+        if viagens_abertas_df.empty:
+            st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
+        else:
+            grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
+            for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
+                col_target = grid_abertos[idx % 3]
+                with col_target:
+                    st.markdown(f"""
+                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
+                                <span class="badge-open">EM TRÂNSITO</span>
+                            </div>
+                            <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
+                            <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
+                            <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
+                                <b>Condutor:</b> {v_aberta['condutor']}<br>
+                                <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
+                                <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
+                                <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
+                                <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
+                            </div>
+                        </div>
+                    """, unsafe_allow_html=True)
+
+        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+
+        st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
+        g_col1, g_col2 = st.columns(2)
+
+        with g_col1:
+            st.markdown("##### 🏆 **Km Total Acumulado por Veículo**")
+            if not viagens_concluidas.empty:
+                df_acumulado_veiculo = (
+                    viagens_concluidas.groupby("placa")["km_percorrido_num"]
+                    .sum()
+                    .reset_index()
+                    .rename(columns={"km_percorrido_num": "Km Total Acumulado", "placa": "Placa"})
+                    .sort_values(by="Km Total Acumulado", ascending=False)
                 )
-                destino_ini = st.text_input("Destino / Rota planejada:", placeholder="Ex: Rota Araraquara, São Carlos...")
 
-                btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)")
+                st.bar_chart(
+                    data=df_acumulado_veiculo,
+                    x="Placa",
+                    y="Km Total Acumulado",
+                    color="#2563EB",
+                    use_container_width=True
+                )
+            else:
+                st.caption("Sem dados suficientes para calcular valores acumulados.")
 
-            if btn_start_inicial:
-                if km_ini is None or km_ini <= 0:
-                    st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
-                    return
-                if not destino_ini.strip():
-                    st.error("⚠️ Por favor, informe o Destino da viagem.")
-                    return
-
-                # Verificação anti-duplicidade em tempo real
-                df_lanc_tempo_real = carregar_lancamentos_existentes()
-                duplicado, motivo_duplicado = verificar_lancamento_duplicado(
-                    df_lanc_tempo_real,
-                    rv_codigo=codigo_rv_previsto,
-                    placa=placa,
-                    condutor=nome_condutor,
-                    data_ini=data_ini.strftime("%d/%m/%Y"),
-                    km_ini=km_ini
+        with g_col2:
+            st.markdown("##### 🚙 **Média de Km por Veículo**")
+            if not viagens_concluidas.empty:
+                df_media_veiculo = (
+                    viagens_concluidas.groupby("placa")["km_percorrido_num"]
+                    .agg(Media_Km="mean")
+                    .reset_index()
+                    .rename(columns={"placa": "Placa", "Media_Km": "Média Km/Viagem"})
+                    .sort_values(by="Média Km/Viagem", ascending=False)
                 )
 
-                if duplicado:
-                    st.error(f"🚫 **Lançamento Duplicado Impedido:** {motivo_duplicado}")
-                    st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
-                    return
+                st.bar_chart(
+                    data=df_media_veiculo,
+                    x="Placa",
+                    y="Média Km/Viagem",
+                    color="#059669",
+                    use_container_width=True
+                )
+            else:
+                st.caption("Sem dados suficientes para calcular médias.")
 
-                chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
-                if st.session_state.get("ultima_transacao") == chave_transacao_ini:
-                    st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
-                    return
-                st.session_state["ultima_transacao"] = chave_transacao_ini
+        st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
-                payload_iniciar = {
-                    "acao": "iniciar",
-                    "gid_destino": GID_LANCAMENTOS,
-                    "rv": codigo_rv_previsto,
-                    "condutor": nome_condutor,
-                    "usuario": usuario_atual,
-                    "placa": placa,
-                    "veiculo": modelo,
-                    "data_inicial": data_ini.strftime("%d/%m/%Y"),
-                    "horario_inicial": hora_ini.strftime("%H:%M:%S"),
-                    "km_inicial": int(km_ini),
-                    "destino": destino_ini.strip(),
-                    "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
+        st.markdown("### 📅 **Carros Utilizados no Dia**")
+        
+        c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
+        with c_dia_col1:
+            dia_selecionado = st.date_input(
+                "Filtrar data de operação:",
+                value=hoje_brasil,
+                format="DD/MM/YYYY",
+                key="filtro_dia_atual"
+            )
+        
+        with c_dia_col2:
+            st.caption(f"Exibindo deslocamentos com saída registrada em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+
+        df_carros_dia = df_base[df_base["data_ini_dt"].dt.date == dia_selecionado].copy()
+
+        if df_carros_dia.empty:
+            st.info(f"ℹ️ Nenhum registro de veículo em atividade na data de **{dia_selecionado.strftime('%d/%m/%Y')}**.")
+        else:
+            qtd_carros_dia = df_carros_dia["placa"].nunique()
+            km_dia_total = df_carros_dia[df_carros_dia["status"] == "Concluída"]["km_percorrido_num"].sum()
+
+            m1, m2, m3 = st.columns(3)
+            with m1:
+                st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
+            with m2:
+                st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
+            with m3:
+                st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
+
+            df_tabela_dia = df_carros_dia[[
+                "rv", "status", "placa", "veiculo", "condutor",
+                "horario_inicial", "km_inicial_num", "horario_final", "km_final_num",
+                "km_percorrido_num", "destino"
+            ]].copy()
+
+            df_tabela_dia.columns = [
+                "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
+                "Hora Saída", "Km Saída", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
+            ]
+
+            df_tabela_dia = df_tabela_dia.sort_values(by=["Status", "Hora Saída"], ascending=[True, False])
+
+            st.dataframe(
+                df_tabela_dia,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
+                    "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
+                    "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
                 }
+            )
 
-                with st.spinner(f"Gravando início da viagem ({codigo_rv_previsto}) na planilha..."):
-                    sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
+    # =========================================================================
+    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
+    # =========================================================================
+    elif st.session_state["pagina_selecionada"] == "🔍 Consulta & Filtros Avançados":
+        renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
 
-                if sucesso:
-                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
-                    st.cache_data.clear()
-                    time.sleep(1.5)
-                    st.rerun()
-                else:
-                    st.session_state["ultima_transacao"] = None
-                    st.error(f"❌ Falha ao iniciar viagem na planilha: {msg}")
+        st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:8px;'>🎯 Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
+        
+        f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.8, 1.8, 1.4])
+
+        with f_col1:
+            status_opcoes = ["Todos", "Em Aberto", "Concluída"]
+            status_sel = st.selectbox("Status da Viagem:", status_opcoes)
+
+        with f_col2:
+            lista_veiculos = sorted([v for v in df_base["rotulo_veiculo"].unique() if v])
+            veiculos_sel = st.multiselect(
+                "Veículo(s):",
+                options=lista_veiculos,
+                placeholder="Todos os veículos..."
+            )
+
+        with f_col3:
+            lista_condutores = sorted([c for c in df_base["condutor"].unique() if c and c.lower() != "nan"])
+            condutores_sel = st.multiselect(
+                "Condutor(es):",
+                options=lista_condutores,
+                placeholder="Todos os condutores..."
+            )
+
+        with f_col4:
+            datas_validas = df_base["data_ini_dt"].dropna()
+            min_d = datas_validas.min().date() if not datas_validas.empty else date.today() - timedelta(days=30)
+            max_d = datas_validas.max().date() if not datas_validas.empty else date.today()
+            periodo_sel = st.date_input(
+                "Período de Saída:",
+                value=(min_d, max_d),
+                format="DD/MM/YYYY"
+            )
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        df_consulta = df_base.copy()
+
+        if status_sel != "Todos":
+            df_consulta = df_consulta[df_consulta["status"] == status_sel]
+
+        if veiculos_sel:
+            df_consulta = df_consulta[df_consulta["rotulo_veiculo"].isin(veiculos_sel)]
+
+        if condutores_sel:
+            df_consulta = df_consulta[df_consulta["condutor"].isin(condutores_sel)]
+
+        if isinstance(periodo_sel, (tuple, list)) and len(periodo_sel) == 2:
+            d_inicio, d_fim = periodo_sel
+            df_consulta = df_consulta[
+                (df_consulta["data_ini_dt"].dt.date >= d_inicio) & 
+                (df_consulta["data_ini_dt"].dt.date <= d_fim)
+            ]
+
+        qtd_res = len(df_consulta)
+        df_conc_consulta = df_consulta[df_consulta["status"] == "Concluída"]
+        km_res = df_conc_consulta["km_percorrido_num"].sum()
+        media_km_res = df_conc_consulta["km_percorrido_num"].mean() if not df_conc_consulta.empty else 0
+
+        r_col1, r_col2, r_col3 = st.columns([1.2, 1.4, 1.4])
+        with r_col1:
+            st.metric("Viagens Localizadas", f"{qtd_res}")
+        with r_col2:
+            st.metric("Km Total no Filtro", f"{km_res:,.0f} km")
+        with r_col3:
+            st.metric("Média Km / Viagem", f"{media_km_res:,.1f} km")
+
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        st.markdown("#### 📋 **Extrato Detalhado de Viagens**")
+
+        if df_consulta.empty:
+            st.info("Nenhuma viagem localizada com a combinação de filtros selecionada.")
+        else:
+            df_grid = df_consulta[[
+                "rv", "status", "placa", "veiculo", "condutor",
+                "data_inicial", "horario_inicial", "km_inicial_num",
+                "data_final", "horario_final", "km_final_num", "km_percorrido_num", "destino"
+            ]].copy()
+
+            df_grid.columns = [
+                "Registro (RV)", "Status", "Placa", "Veículo", "Condutor",
+                "Data Saída", "Hora Saída", "Km Saída",
+                "Data Retorno", "Hora Retorno", "Km Retorno", "Km Rodado", "Destino"
+            ]
+
+            df_grid = df_grid.sort_values(by=["Status", "Data Saída"], ascending=[True, False])
+
+            st.dataframe(
+                df_grid,
+                use_container_width=True,
+                hide_index=True,
+                column_config={
+                    "Registro (RV)": st.column_config.TextColumn("Registro (RV)", width="medium"),
+                    "Status": st.column_config.TextColumn("Status", width="small"),
+                    "Km Saída": st.column_config.NumberColumn("Km Saída", format="%d km"),
+                    "Km Retorno": st.column_config.NumberColumn("Km Retorno", format="%d km"),
+                    "Km Rodado": st.column_config.NumberColumn("Km Rodado", format="%d km"),
+                }
+            )
+
+            csv_data = df_grid.to_csv(index=False, sep=";").encode("utf-8-sig")
+            st.download_button(
+                label="📥 Exportar Dados Filtrados (CSV / Excel)",
+                data=csv_data,
+                file_name=f"relatorio_frota_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                mime="text/csv"
+            )
+
+        if not df_conc_consulta.empty:
+            with st.expander("📊 **Visualizar Matriz Cruzada: Km Total por Veículo e por Condutor**"):
+                pivot_km = df_conc_consulta.pivot_table(
+                    index="veiculo",
+                    columns="condutor",
+                    values="km_percorrido_num",
+                    aggfunc="sum",
+                    fill_value=0
+                )
+                st.dataframe(pivot_km.style.format("{:,.0f} km"), use_container_width=True)
 
 if __name__ == "__main__":
     main()
