@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (CONTAINER BRANCO UNIFICADO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,7 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA CONTAINERS VAZIOS E TOPO EM BRANCO */
+        /* 1. ELIMINA CONTAINERS VAZIOS E TOPO EM BRANCO NATIVO */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -64,8 +64,8 @@ st.markdown("""
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            padding-top: 1.5rem !important;
-            padding-bottom: 2.5rem !important;
+            padding-top: 2rem !important;
+            padding-bottom: 3rem !important;
             margin-top: 0px !important;
             max-width: 680px !important;
         }
@@ -76,7 +76,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 2. FUNDO GERAL COM O DEGRADÊ RADIAL */
+        /* 2. FUNDO GERAL COM O DEGRADÊ RADIAL SOLICITADO */
         :root, html, body {
             background-color: #0d0722 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
@@ -96,16 +96,17 @@ st.markdown("""
             background: transparent !important;
         }
 
-        /* 3. CARD BRANCO UNIFICADO (DO LOGO ATÉ O FINAL DO FORMULÁRIO) */
-        .card-unificado {
+        /* 3. O CARD BRANCO UNIFICADO (CONTAINER NATIVO STREAMLIT) */
+        div[data-testid="stVerticalBlockBorderWrapper"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 30px 28px !important;
+            border: 1px solid rgba(255, 255, 255, 0.25) !important;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45) !important;
+            padding: 30px 28px !important;
             margin-bottom: 25px !important;
         }
 
-        /* Tira caixas isoladas dos formulários para unificar perfeitamente ao fundo branco */
+        /* Funde o formulário ao container sem bordas duplas */
         [data-testid="stForm"] {
             background-color: transparent !important;
             border: none !important;
@@ -114,7 +115,7 @@ st.markdown("""
             margin: 0px !important;
         }
 
-        /* Títulos e Textos dentro do Card Branco */
+        /* Tipografia dentro do Card Branco */
         h1, h2, h3, h4, h5, h6, p, span, label {
             color: #0F172A !important;
         }
@@ -125,6 +126,7 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
+        /* Cabeçalho Corporativo e Logo */
         .corporate-header {
             text-align: center !important;
             margin-bottom: 1.2rem !important;
@@ -145,6 +147,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
+        /* Cards Informativos Internos */
         .card-vehicle-info {
             background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
@@ -171,7 +174,7 @@ st.markdown("""
             color: #1E3A8A !important;
         }
 
-        /* Inputs Claros e Polidos */
+        /* Inputs e Caixas de Texto */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -211,7 +214,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Botões */
+        /* Botão de Envio */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
@@ -226,7 +229,7 @@ st.markdown("""
             box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
-            margin-top: 10px !important;
+            margin-top: 12px !important;
         }
         div.stButton > button:first-child:hover,
         div[data-testid="stFormSubmitButton"] > button:hover {
@@ -296,7 +299,6 @@ def limpar_placa(placa_str):
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
-    """Carrega usuários mapeando credenciais, nome e local de acesso (cidade/pernoite)."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
@@ -333,7 +335,6 @@ def carregar_usuarios():
 
 @st.cache_data(ttl=30)
 def carregar_veiculos():
-    """Carrega veículos mapeando placa, modelo e o local de pernoite da base de frotas."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
@@ -382,7 +383,6 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    """Lê em tempo real a aba de lançamentos (GID 379222602) para verificar bloqueios e gerar RV."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
@@ -397,7 +397,6 @@ def carregar_lancamentos_existentes():
     return pd.DataFrame()
 
 def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
-    """Verifica duplicidade antes de registrar uma nova saída."""
     if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
         return False, ""
 
@@ -426,7 +425,6 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
     return False, ""
 
 def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
-    """Gera o código RV no formato RV-PPPP-AAAA-XXXX."""
     placa_limpa = limpar_placa(placa)
     prefixo = f"RV-{placa_limpa}-{ano_atual}-"
     maior_seq = 0
@@ -450,7 +448,6 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
-    """Envia comandos para o Apps Script com timeout e fallback."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
@@ -483,12 +480,10 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN (BLOCO BRANCO SÓLIDO)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    # Envolve toda a tela de login em um único bloco branco
-    with st.container():
-        st.markdown('<div class="card-unificado">', unsafe_allow_html=True)
+    with st.container(border=True):
         renderizar_cabecalho("Portal de Acesso do Condutor")
         
         with st.form("form_login"):
@@ -517,11 +512,9 @@ def tela_login(df_usuarios):
                     st.rerun()
                 else:
                     st.error("Usuário ou senha incorretos.")
-                    
-        st.markdown('</div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL
+# 6. APLICATIVO PRINCIPAL (BLOCO BRANCO SÓLIDO UNIFICADO)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -595,227 +588,224 @@ def main():
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
 
-    # Início do bloco unificado branco na tela principal
-    st.markdown('<div class="card-unificado">', unsafe_allow_html=True)
-    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
-
     # =========================================================================
-    # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FORÇA O START FINAL)
+    # CONTAINER UNIFICADO: ENGLEBA LOGOTIPO, CABEÇALHO, CARDS E FORMULÁRIO
     # =========================================================================
-    if viagem_pendente_condutor is not None:
-        dados_ativos = viagem_pendente_condutor
+    with st.container(border=True):
+        renderizar_cabecalho("Registro e Controle de Saída de Veículos")
 
-        st.warning("⚠️ **Você possui uma viagem em andamento aberta na planilha!** Finalize o retorno para liberar novos lançamentos.")
-        st.markdown(f"""
-            <div class="card-active-trip">
-                <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
-                <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
-                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
-                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
-                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
-            </div>
-        """, unsafe_allow_html=True)
+        # ---------------------------------------------------------------------
+        # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (START FINAL)
+        # ---------------------------------------------------------------------
+        if viagem_pendente_condutor is not None:
+            dados_ativos = viagem_pendente_condutor
 
-        st.subheader("Start Final (Retorno do Veículo)")
-        with st.form("form_start_final"):
-            col_df, col_hf = st.columns(2)
-            with col_df:
-                data_fim = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
-            with col_hf:
-                hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
+            st.warning("⚠️ **Você possui uma viagem em andamento aberta na planilha!** Finalize o retorno para liberar novos lançamentos.")
+            st.markdown(f"""
+                <div class="card-active-trip">
+                    <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
+                    <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
+                    <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
+                    <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
+                    <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
+                    <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
+                </div>
+            """, unsafe_allow_html=True)
 
-            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
-            km_fim = st.number_input(
-                "Km Final:", 
-                value=None, 
-                placeholder="Digite o Km Final...", 
-                min_value=km_inicial_val, 
-                step=1.0, 
-                format="%.0f", 
-                key="km_fim_input"
-            )
+            st.subheader("Start Final (Retorno do Veículo)")
+            with st.form("form_start_final"):
+                col_df, col_hf = st.columns(2)
+                with col_df:
+                    data_fim = st.date_input("Data Final:", value=agora.date(), format="DD/MM/YYYY")
+                with col_hf:
+                    hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            destino_atualizado = st.text_input(
-                "Destino / Rota realizada:", 
-                value=dados_ativos.get("destino", "")
-            )
+                km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
+                km_fim = st.number_input(
+                    "Km Final:", 
+                    value=None, 
+                    placeholder="Digite o Km Final...", 
+                    min_value=km_inicial_val, 
+                    step=1.0, 
+                    format="%.0f", 
+                    key="km_fim_input"
+                )
 
-            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
+                destino_atualizado = st.text_input(
+                    "Destino / Rota realizada:", 
+                    value=dados_ativos.get("destino", "")
+                )
 
-        if btn_start_final:
-            if km_fim is None:
-                st.error("⚠️ Por favor, preencha o Km Final.")
-            elif km_fim < km_inicial_val:
-                st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
-            else:
-                km_percorrido = int(km_fim - km_inicial_val)
+                btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
 
-                chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
-                if st.session_state.get("ultima_transacao") == chave_transacao_final:
-                    st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
+            if btn_start_final:
+                if km_fim is None:
+                    st.error("⚠️ Por favor, preencha o Km Final.")
+                elif km_fim < km_inicial_val:
+                    st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
                 else:
-                    st.session_state["ultima_transacao"] = chave_transacao_final
+                    km_percorrido = int(km_fim - km_inicial_val)
 
-                    payload_finalizar = {
-                        "acao": "finalizar",
-                        "gid_destino": GID_LANCAMENTOS,
-                        "rv": dados_ativos.get("rv"),
-                        "data_final": data_fim.strftime("%d/%m/%Y"),
-                        "horario_final": hora_fim.strftime("%H:%M:%S"),
-                        "km_final": int(km_fim),
-                        "km_percorrido": km_percorrido,
-                        "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
-                    }
-
-                    with st.spinner("Atualizando e concluindo a viagem na planilha..."):
-                        sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
-
-                    if sucesso:
-                        st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
-                        st.balloons()
-                        st.cache_data.clear()
-                        time.sleep(2)
-                        st.rerun()
+                    chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
+                    if st.session_state.get("ultima_transacao") == chave_transacao_final:
+                        st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
                     else:
-                        st.session_state["ultima_transacao"] = None
-                        st.error(f"❌ Falha ao finalizar na planilha: {msg}")
+                        st.session_state["ultima_transacao"] = chave_transacao_final
 
-    # =========================================================================
-    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (FILTRA VEÍCULOS POR LOCALIDADE)
-    # =========================================================================
-    else:
-        df_veiculos_todos = carregar_veiculos()
-        if df_veiculos_todos.empty:
-            st.error("Nenhum veículo disponível na base. Verifique a planilha.")
-            st.markdown('</div>', unsafe_allow_html=True)
-            return
+                        payload_finalizar = {
+                            "acao": "finalizar",
+                            "gid_destino": GID_LANCAMENTOS,
+                            "rv": dados_ativos.get("rv"),
+                            "data_final": data_fim.strftime("%d/%m/%Y"),
+                            "horario_final": hora_fim.strftime("%H:%M:%S"),
+                            "km_final": int(km_fim),
+                            "km_percorrido": km_percorrido,
+                            "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
+                        }
 
-        acesso_norm = normalizar_texto(acesso_local)
-        
-        if acesso_norm in ["geral", "todas", "todos", "adm", "admin", ""]:
-            df_veiculos = df_veiculos_todos.copy()
-            st.caption("🌐 **Acesso Geral:** Todos os veículos da frota estão disponíveis para escolha.")
-        else:
-            df_veiculos = df_veiculos_todos[
-                df_veiculos_todos["local_pernoite"].apply(lambda loc: acesso_norm in normalizar_texto(loc))
-            ].copy()
-            st.caption(f"📍 **Acesso Restrito:** Exibindo veículos com pernoite em **{acesso_local}**.")
+                        with st.spinner("Atualizando e concluindo a viagem na planilha..."):
+                            sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
-        if df_veiculos.empty:
-            st.warning(f"⚠️ Nenhum veículo cadastrado com pernoite para sua localidade ({acesso_local}). Contate o gestor de frota.")
-            st.markdown('</div>', unsafe_allow_html=True)
-            return
-
-        st.subheader("1. Seleção do Veículo")
-        
-        df_veiculos["rotulo_completo"] = df_veiculos.apply(
-            lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
-            axis=1
-        )
-        opcoes = ["-- Selecione um veículo --"] + df_veiculos["rotulo_completo"].tolist()
-        veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
-
-        if veiculo_escolhido != "-- Selecione um veículo --":
-            dados_veiculo = df_veiculos[df_veiculos["rotulo_completo"] == veiculo_escolhido].iloc[0]
-            placa = dados_veiculo["placa"]
-            modelo = dados_veiculo["veiculo"]
-            cidade_veiculo = dados_veiculo.get("local_pernoite", "Não informado")
-            placa_limpa = limpar_placa(placa)
-
-            if placa_limpa in veiculos_em_uso:
-                ocupante = veiculos_em_uso[placa_limpa]
-                st.error(f"🚫 **Veículo Indisponível!** O veículo de placa **{placa}** já está em viagem aberta iniciada por **{ocupante['condutor']}** em {ocupante['data_inicial']} às {ocupante['horario_inicial']}.")
-                st.info(f"Código da viagem aberta em andamento: **{ocupante['rv']}**. Escolha outro veículo ou aguarde a finalização.")
-            else:
-                codigo_rv_previsto = gerar_proximo_rv(df_lanc, placa, ano_atual)
-
-                st.markdown(f"""
-                    <div class="card-vehicle-info">
-                        <b>🎫 Registro de Viagem:</b> {codigo_rv_previsto}<br>
-                        <b>👤 Condutor:</b> {nome_condutor}<br>
-                        <b>🚙 Veículo:</b> {modelo}<br>
-                        <b>🔢 Placa:</b> {placa}<br>
-                        <b>📍 Base/Pernoite:</b> {cidade_veiculo}
-                    </div>
-                """, unsafe_allow_html=True)
-
-                st.subheader("2. Start Inicial (Saída do Veículo)")
-                with st.form("form_start_inicial"):
-                    col_d, col_h = st.columns(2)
-                    with col_d:
-                        data_ini = st.date_input("Data Inicial:", value=agora.date(), format="DD/MM/YYYY")
-                    with col_h:
-                        hora_ini = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
-
-                    km_ini = st.number_input(
-                        "Km Inicial:", 
-                        value=None, 
-                        placeholder="Digite o Km Inicial...", 
-                        min_value=0.0, 
-                        step=1.0, 
-                        format="%.0f", 
-                        key="km_ini_input"
-                    )
-                    destino_ini = st.text_input("Destino / Rota planejada:", placeholder="Ex: Rota Araraquara, São Carlos...")
-
-                    btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)")
-
-                if btn_start_inicial:
-                    if km_ini is None or km_ini <= 0:
-                        st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
-                    elif not destino_ini.strip():
-                        st.error("⚠️ Por favor, informe o Destino da viagem.")
-                    else:
-                        df_lanc_tempo_real = carregar_lancamentos_existentes()
-                        duplicado, motivo_duplicado = verificar_lancamento_duplicado(
-                            df_lanc_tempo_real,
-                            rv_codigo=codigo_rv_previsto,
-                            placa=placa,
-                            condutor=nome_condutor,
-                            data_ini=data_ini.strftime("%d/%m/%Y"),
-                            km_ini=km_ini
-                        )
-
-                        if duplicado:
-                            st.error(f"🚫 **Lançamento Duplicado Impedido:** {motivo_duplicado}")
-                            st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
+                        if sucesso:
+                            st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
+                            st.balloons()
+                            st.cache_data.clear()
+                            time.sleep(2)
+                            st.rerun()
                         else:
-                            chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
-                            if st.session_state.get("ultima_transacao") == chave_transacao_ini:
-                                st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
+                            st.session_state["ultima_transacao"] = None
+                            st.error(f"❌ Falha ao finalizar na planilha: {msg}")
+
+        # ---------------------------------------------------------------------
+        # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (START INICIAL)
+        # ---------------------------------------------------------------------
+        else:
+            df_veiculos_todos = carregar_veiculos()
+            if df_veiculos_todos.empty:
+                st.error("Nenhum veículo disponível na base. Verifique a planilha.")
+                return
+
+            acesso_norm = normalizar_texto(acesso_local)
+            
+            if acesso_norm in ["geral", "todas", "todos", "adm", "admin", ""]:
+                df_veiculos = df_veiculos_todos.copy()
+                st.caption("🌐 **Acesso Geral:** Todos os veículos da frota estão disponíveis para escolha.")
+            else:
+                df_veiculos = df_veiculos_todos[
+                    df_veiculos_todos["local_pernoite"].apply(lambda loc: acesso_norm in normalizar_texto(loc))
+                ].copy()
+                st.caption(f"📍 **Acesso Restrito:** Exibindo veículos com pernoite em **{acesso_local}**.")
+
+            if df_veiculos.empty:
+                st.warning(f"⚠️ Nenhum veículo cadastrado com pernoite para sua localidade ({acesso_local}). Contate o gestor de frota.")
+                return
+
+            st.subheader("1. Seleção do Veículo")
+            
+            df_veiculos["rotulo_completo"] = df_veiculos.apply(
+                lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
+                axis=1
+            )
+            opcoes = ["-- Selecione um veículo --"] + df_veiculos["rotulo_completo"].tolist()
+            veiculo_escolhido = st.selectbox("Veículo da Frota:", options=opcoes, key="select_veiculo")
+
+            if veiculo_escolhido != "-- Selecione um veículo --":
+                dados_veiculo = df_veiculos[df_veiculos["rotulo_completo"] == veiculo_escolhido].iloc[0]
+                placa = dados_veiculo["placa"]
+                modelo = dados_veiculo["veiculo"]
+                cidade_veiculo = dados_veiculo.get("local_pernoite", "Não informado")
+                placa_limpa = limpar_placa(placa)
+
+                if placa_limpa in veiculos_em_uso:
+                    ocupante = veiculos_em_uso[placa_limpa]
+                    st.error(f"🚫 **Veículo Indisponível!** O veículo de placa **{placa}** já está em viagem aberta iniciada por **{ocupante['condutor']}** em {ocupante['data_inicial']} às {ocupante['horario_inicial']}.")
+                    st.info(f"Código da viagem aberta em andamento: **{ocupante['rv']}**. Escolha outro veículo ou aguarde a finalização.")
+                else:
+                    codigo_rv_previsto = gerar_proximo_rv(df_lanc, placa, ano_atual)
+
+                    st.markdown(f"""
+                        <div class="card-vehicle-info">
+                            <b>🎫 Registro de Viagem:</b> {codigo_rv_previsto}<br>
+                            <b>👤 Condutor:</b> {nome_condutor}<br>
+                            <b>🚙 Veículo:</b> {modelo}<br>
+                            <b>🔢 Placa:</b> {placa}<br>
+                            <b>📍 Base/Pernoite:</b> {cidade_veiculo}
+                        </div>
+                    """, unsafe_allow_html=True)
+
+                    st.subheader("2. Start Inicial (Saída do Veículo)")
+                    with st.form("form_start_inicial"):
+                        col_d, col_h = st.columns(2)
+                        with col_d:
+                            data_ini = st.date_input("Data Inicial:", value=agora.date(), format="DD/MM/YYYY")
+                        with col_h:
+                            hora_ini = st.time_input("Horário Inicial:", value=agora.time().replace(microsecond=0))
+
+                        km_ini = st.number_input(
+                            "Km Inicial:", 
+                            value=None, 
+                            placeholder="Digite o Km Inicial...", 
+                            min_value=0.0, 
+                            step=1.0, 
+                            format="%.0f", 
+                            key="km_ini_input"
+                        )
+                        destino_ini = st.text_input("Destino / Rota planejada:", placeholder="Ex: Rota Araraquara, São Carlos...")
+
+                        btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)")
+
+                    if btn_start_inicial:
+                        if km_ini is None or km_ini <= 0:
+                            st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
+                        elif not destino_ini.strip():
+                            st.error("⚠️ Por favor, informe o Destino da viagem.")
+                        else:
+                            df_lanc_tempo_real = carregar_lancamentos_existentes()
+                            duplicado, motivo_duplicado = verificar_lancamento_duplicado(
+                                df_lanc_tempo_real,
+                                rv_codigo=codigo_rv_previsto,
+                                placa=placa,
+                                condutor=nome_condutor,
+                                data_ini=data_ini.strftime("%d/%m/%Y"),
+                                km_ini=km_ini
+                            )
+
+                            if duplicado:
+                                st.error(f"🚫 **Lançamento Duplicado Impedido:** {motivo_duplicado}")
+                                st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                             else:
-                                st.session_state["ultima_transacao"] = chave_transacao_ini
-
-                                payload_iniciar = {
-                                    "acao": "iniciar",
-                                    "gid_destino": GID_LANCAMENTOS,
-                                    "rv": codigo_rv_previsto,
-                                    "condutor": nome_condutor,
-                                    "usuario": usuario_atual,
-                                    "placa": placa,
-                                    "veiculo": modelo,
-                                    "data_inicial": data_ini.strftime("%d/%m/%Y"),
-                                    "horario_inicial": hora_ini.strftime("%H:%M:%S"),
-                                    "km_inicial": int(km_ini),
-                                    "destino": destino_ini.strip(),
-                                    "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
-                                }
-
-                                with st.spinner(f"Gravando início da viagem ({codigo_rv_previsto}) na planilha..."):
-                                    sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
-
-                                if sucesso:
-                                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
-                                    st.cache_data.clear()
-                                    time.sleep(1.5)
-                                    st.rerun()
+                                chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
+                                if st.session_state.get("ultima_transacao") == chave_transacao_ini:
+                                    st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
                                 else:
-                                    st.session_state["ultima_transacao"] = None
-                                    st.error(f"❌ Falha ao iniciar viagem na planilha: {msg}")
+                                    st.session_state["ultima_transacao"] = chave_transacao_ini
 
-    # Fecha o bloco unificado branco na tela principal
-    st.markdown('</div>', unsafe_allow_html=True)
+                                    payload_iniciar = {
+                                        "acao": "iniciar",
+                                        "gid_destino": GID_LANCAMENTOS,
+                                        "rv": codigo_rv_previsto,
+                                        "condutor": nome_condutor,
+                                        "usuario": usuario_atual,
+                                        "placa": placa,
+                                        "veiculo": modelo,
+                                        "data_inicial": data_ini.strftime("%d/%m/%Y"),
+                                        "horario_inicial": hora_ini.strftime("%H:%M:%S"),
+                                        "km_inicial": int(km_ini),
+                                        "destino": destino_ini.strip(),
+                                        "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
+                                    }
+
+                                    with st.spinner(f"Gravando início da viagem ({codigo_rv_previsto}) na planilha..."):
+                                        sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
+
+                                    if sucesso:
+                                        st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
+                                        st.cache_data.clear()
+                                        time.sleep(1.5)
+                                        st.rerun()
+                                    else:
+                                        st.session_state["ultima_transacao"] = None
+                                        st.error(f"❌ Falha ao iniciar viagem na planilha: {msg}")
 
 if __name__ == "__main__":
     main()
