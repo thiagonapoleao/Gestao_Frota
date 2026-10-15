@@ -22,16 +22,11 @@ def obter_agora_brasil():
 # -------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (DEGRADÊ + CONTAINER BRANCO UNIFICADO)
 # -------------------------------------------------------------
-if "sidebar_aberta" not in st.session_state:
-    st.session_state["sidebar_aberta"] = False
-
-estado_sidebar = "expanded" if st.session_state.get("sidebar_aberta") else "collapsed"
-
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state=estado_sidebar
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -53,7 +48,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER E BARRAS PADRÃO DO STREAMLIT */
+        /* 2. REMOVE HEADER PADRÃO DO STREAMLIT */
         header[data-testid="stHeader"] {
             background-color: transparent !important;
         }
@@ -87,7 +82,7 @@ st.markdown("""
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 24px 28px 36px 28px !important;
+            padding: 32px 30px 38px 30px !important;
             margin-top: 1.5rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
@@ -96,32 +91,41 @@ st.markdown("""
             position: relative !important;
         }
 
-        /* Botão Minimalista de 3 tracinhos (Hamburguer) */
-        div[data-testid="stButton"].menu-toggle-btn > button {
+        /* 5. MOVIMENTA AS SETINHAS NATIVAS DO MENU PARA DENTRO DO CONTAINER BRANCO */
+        div[data-testid="stSidebarCollapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] {
+            display: flex !important;
+            position: absolute !important;
+            top: 22px !important;
+            left: 22px !important;
+            z-index: 9999 !important;
             background: #F8FAFC !important;
-            color: #1E293B !important;
-            -webkit-text-fill-color: #1E293B !important;
             border: 1px solid #CBD5E1 !important;
             border-radius: 8px !important;
-            width: 42px !important;
-            height: 38px !important;
-            min-width: 42px !important;
-            padding: 0 !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            font-size: 1.25rem !important;
-            font-weight: 700 !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+            padding: 4px 6px !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
             transition: all 0.2s ease-in-out !important;
-            margin: 0 !important;
         }
-        div[data-testid="stButton"].menu-toggle-btn > button:hover {
+
+        div[data-testid="stSidebarCollapsedControl"]:hover {
             background: #EFF6FF !important;
-            color: #2563EB !important;
-            -webkit-text-fill-color: #2563EB !important;
             border-color: #93C5FD !important;
-            transform: scale(1.03) !important;
+            transform: scale(1.05) !important;
+        }
+
+        div[data-testid="stSidebarCollapsedControl"] button {
+            color: #1E293B !important;
+            background: transparent !important;
+            border: none !important;
+            height: auto !important;
+            width: auto !important;
+            padding: 0px !important;
+        }
+
+        div[data-testid="stSidebarCollapsedControl"] svg {
+            fill: #1E293B !important;
+            width: 20px !important;
+            height: 20px !important;
         }
 
         /* Tipografia Base */
@@ -660,18 +664,7 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # ---------------------------------------------------------
-    # BOTÃO MINIMALISTA DE 3 TRACINHOS (☰) NO TOPO DO CONTAINER
-    # ---------------------------------------------------------
-    col_menu_btn, _ = st.columns([0.15, 0.85])
-    with col_menu_btn:
-        st.markdown('<div class="menu-toggle-btn">', unsafe_allow_html=True)
-        if st.button("☰", help="Abrir ou fechar menu lateral", key="btn_hamburguer"):
-            st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    # Cabeçalho Principal
+    # Cabeçalho Principal (as 2 setinhas nativas ficam posicionadas no topo esquerdo do container)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
