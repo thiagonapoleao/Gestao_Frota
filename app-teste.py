@@ -48,13 +48,16 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER PADRÃO DO STREAMLIT */
+        /* 2. REMOVE HEADER E ITENS DESNECESSÁRIOS, MANTENDO O BOTÃO DA SIDEBAR VISÍVEL */
         header[data-testid="stHeader"] {
-            background-color: transparent !important;
+            background: transparent !important;
+            height: 0px !important;
+            min-height: 0px !important;
+            border: none !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
+        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
             display: none !important;
             visibility: hidden !important;
         }
@@ -82,8 +85,8 @@ st.markdown("""
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 32px 30px 38px 30px !important;
-            margin-top: 1.5rem !important;
+            padding: 34px 30px 38px 30px !important;
+            margin-top: 1.8rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
@@ -91,39 +94,52 @@ st.markdown("""
             position: relative !important;
         }
 
-        /* 5. MOVIMENTA AS SETINHAS NATIVAS DO MENU PARA DENTRO DO CONTAINER BRANCO */
+        /* 5. REPOSICIONAMENTO DAS 2 SETINHAS NATIVAS DO STREAMLIT (>> / <<) DENTRO DO CONTAINER */
         div[data-testid="stSidebarCollapsedControl"],
-        [data-testid="stSidebarCollapsedControl"] {
+        [data-testid="stSidebarCollapsedControl"],
+        div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"],
+        div[data-testid="stHeader"] button[aria-label*="sidebar"],
+        div[data-testid="stHeader"] button[aria-label*="Sidebar"] {
             display: flex !important;
-            position: absolute !important;
-            top: 22px !important;
-            left: 22px !important;
-            z-index: 9999 !important;
-            background: #F8FAFC !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            position: fixed !important;
+            top: 2.5rem !important;
+            left: calc(50% - 340px + 18px) !important; /* Alinhado ao canto interno esquerdo do container (largura 680px) */
+            z-index: 1000 !important;
+            background-color: #F8FAFC !important;
             border: 1px solid #CBD5E1 !important;
             border-radius: 8px !important;
-            padding: 4px 6px !important;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06) !important;
+            width: 36px !important;
+            height: 36px !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
             transition: all 0.2s ease-in-out !important;
+            cursor: pointer !important;
         }
 
-        div[data-testid="stSidebarCollapsedControl"]:hover {
-            background: #EFF6FF !important;
+        /* Ajuste para telas menores/mobile onde o container ocupa a largura toda */
+        @media (max-width: 720px) {
+            div[data-testid="stSidebarCollapsedControl"],
+            [data-testid="stSidebarCollapsedControl"],
+            div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"] {
+                left: 1.8rem !important;
+                top: 2.4rem !important;
+            }
+        }
+
+        div[data-testid="stSidebarCollapsedControl"]:hover,
+        div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"]:hover {
+            background-color: #EFF6FF !important;
             border-color: #93C5FD !important;
-            transform: scale(1.05) !important;
+            transform: scale(1.06) !important;
         }
 
-        div[data-testid="stSidebarCollapsedControl"] button {
-            color: #1E293B !important;
-            background: transparent !important;
-            border: none !important;
-            height: auto !important;
-            width: auto !important;
-            padding: 0px !important;
-        }
-
-        div[data-testid="stSidebarCollapsedControl"] svg {
+        div[data-testid="stSidebarCollapsedControl"] svg,
+        div[data-testid="stHeader"] button[data-testid="baseButton-headerNoPadding"] svg {
             fill: #1E293B !important;
+            color: #1E293B !important;
             width: 20px !important;
             height: 20px !important;
         }
@@ -664,7 +680,7 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # Cabeçalho Principal (as 2 setinhas nativas ficam posicionadas no topo esquerdo do container)
+    # Cabeçalho Principal (as setinhas ficam ancoradas no canto superior esquerdo deste container)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
