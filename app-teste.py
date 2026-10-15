@@ -113,10 +113,10 @@ st.markdown("""
         /* Cabeçalho interno */
         .corporate-header {
             background: transparent !important;
-            padding: 10px 0 20px 0 !important;
+            padding: 10px 0 12px 0 !important;
             text-align: center !important;
             border-bottom: 1px solid #E2E8F0 !important;
-            margin-bottom: 1.5rem !important;
+            margin-bottom: 1.2rem !important;
         }
         .corporate-title {
             font-size: 1.45rem !important;
@@ -130,6 +130,15 @@ st.markdown("""
             color: #64748B !important;
             margin: 0 !important;
             font-weight: 500 !important;
+        }
+
+        /* Centralizador para imagem da Frota */
+        .frota-banner-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            width: 100%;
         }
 
         /* Remove bordas duplicadas do st.form dentro do container branco */
@@ -248,11 +257,21 @@ GID_VEICULOS = "0"               # Aba Frota
 GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO CORPORATIVO
+# 3. SUPORTE A LOGOTIPO CORPORATIVO E IMAGEM DA FROTA
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     nomes = ["Logotipo", "logotipo", "Logo", "logo"]
+    for nome in nomes:
+        for ext in extensoes:
+            caminho = f"{nome}{ext}"
+            if os.path.exists(caminho) and not os.path.isdir(caminho):
+                return caminho
+    return None
+
+def obter_caminho_imagem_frota():
+    extensoes = [".png", ".jpg", ".jpeg", ".webp", ".svg", ""]
+    nomes = ["Frota", "frota", "FROTA"]
     for nome in nomes:
         for ext in extensoes:
             caminho = f"{nome}{ext}"
@@ -469,10 +488,22 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN (COM IMAGEM FROTA CENTRALIZADA)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
+    
+    # Exibe a imagem Frota centralizada logo abaixo do logotipo/cabeçalho
+    caminho_frota = obter_caminho_imagem_frota()
+    if caminho_frota:
+        try:
+            img_frota = Image.open(caminho_frota)
+            col_esq, col_centro, col_dir = st.columns([1, 2.5, 1])
+            with col_centro:
+                st.image(img_frota, use_container_width=True)
+        except Exception:
+            pass
+
     with st.form("form_login"):
         st.subheader("Identificação do Condutor")
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
@@ -686,7 +717,6 @@ def main():
 
         st.subheader("1. Seleção do Veículo")
         
-        # Formatação das opções de veículo
         df_veiculos["rotulo_completo"] = df_veiculos.apply(
             lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
             axis=1
