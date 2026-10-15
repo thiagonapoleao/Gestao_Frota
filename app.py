@@ -124,7 +124,7 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
         }
 
-        /* Tipografia de alto contraste */
+        /* Tipografia */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -316,7 +316,7 @@ GID_VEICULOS = "0"               # Aba Frota
 GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A ARQUIVOS LOCAIS (LOGOTIPO E IMAGEM DO VEÍCULO/FROTA)
+# 3. SUPORTE A ARQUIVOS LOCAIS
 # -------------------------------------------------------------
 def obter_caminho_arquivo(nomes_possiveis):
     """Busca um arquivo existente no mesmo diretório do script."""
@@ -340,7 +340,7 @@ def obter_caminho_imagem_veiculo():
     ])
 
 def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
-    """Renderiza apenas o logotipo e os títulos na página interna (SEM a imagem da frota)."""
+    """Renderiza apenas o logotipo e títulos (SEM a imagem da frota)."""
     caminho_logo = obter_caminho_logotipo()
 
     if caminho_logo:
@@ -458,9 +458,11 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
+    # Cache buster dinâmico para garantir que os dados venham frescos
+    timestamp_param = int(time.time())
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&_t={timestamp_param}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&_t={timestamp_param}"
     ]
     for url in urls:
         try:
@@ -571,7 +573,6 @@ def tela_login(df_usuarios):
         else:
             st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
-        # Imagem da frota mantida exclusivamente no Login
         if caminho_veiculo:
             try:
                 img_veiculo = Image.open(caminho_veiculo)
@@ -628,7 +629,7 @@ def main():
         tela_login(df_usuarios)
         return
 
-    usuario_atual = st.session_state.get("usuario_logado")
+    usuario_atual = st.session_state.get("usuario_logado", "")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
@@ -645,19 +646,13 @@ def main():
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            # Condição robusta para detectar viagem em aberto
+            # Verificação se o registro está finalizado ou em aberto
             tem_retorno = (
-                data_fim != "" and 
-                data_fim.lower() != "nan" and 
-                data_fim.lower() != "none"
-            ) or (
-                km_fim != "" and 
-                km_fim.lower() != "nan" and 
-                km_fim.lower() != "none" and 
-                km_fim != "0"
+                (data_fim != "" and data_fim.lower() != "nan" and data_fim.lower() != "none") or
+                (km_fim != "" and km_fim.lower() != "nan" and km_fim.lower() != "none" and km_fim != "0")
             )
 
-            if not tem_retorno:
+            if not tem_retorno and rv_row:
                 info_aberta = {
                     "rv": rv_row,
                     "condutor": cond_row,
@@ -677,7 +672,14 @@ def main():
                     viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
 
     condutor_chave = normalizar_texto(nome_condutor)
-    viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
+    usuario_chave = normalizar_texto(usuario_atual)
+
+    # Identificação por múltiplos cruzamentos: Planilha por nome, por login ou por Session State garantido
+    viagem_pendente_condutor = (
+        viagens_abertas_por_condutor.get(condutor_chave) or 
+        viagens_abertas_por_condutor.get(usuario_chave) or
+        st.session_state.get("viagem_aberta_local", None)
+    )
 
     # Menu Lateral
     with st.sidebar:
@@ -817,6 +819,8 @@ def main():
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
+                st.session_state["viagem_aberta_local"] = None
+                st.session_state["ultima_transacao"] = None
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
                 st.balloons()
                 st.cache_data.clear()
@@ -954,9 +958,20 @@ def main():
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
+                    # Salva imediatamente no estado da sessão para garantir o Card Resumo na tela no mesmo instante
+                    st.session_state["viagem_aberta_local"] = {
+                        "rv": codigo_rv_previsto,
+                        "condutor": nome_condutor,
+                        "placa": placa,
+                        "veiculo": modelo,
+                        "data_inicial": data_ini.strftime("%d/%m/%Y"),
+                        "horario_inicial": hora_ini.strftime("%H:%M:%S"),
+                        "km_inicial": int(km_ini),
+                        "destino": destino_ini.strip()
+                    }
                     st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
                     st.cache_data.clear()
-                    time.sleep(1.5)
+                    time.sleep(1.2)
                     st.rerun()
                 else:
                     st.session_state["ultima_transacao"] = None
