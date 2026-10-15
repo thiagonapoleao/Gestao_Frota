@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (FRONT-END SENIOR ARCHITECTURE)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (MARGEM ZERO ENTRE IMAGEM E USUÁRIO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,7 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINAÇÃO TOTAL DE ELEMENTOS FANTASMAS SUPERIORES */
+        /* 1. ELIMINAÇÃO DE CABEÇALHOS E DIVS FANTASMAS SUPERIORES */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         header[data-testid="stHeader"],
@@ -66,13 +66,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
-        /* 2. GRADIENTE RADIAL FIXO EXCLUSIVAMENTE NO CANVAS GLOBAL */
+        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL PERSONALIZADO */
         :root, html, body {
             background-color: #0b0217 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
@@ -82,30 +76,29 @@ st.markdown("""
         }
 
         .stApp, [data-testid="stAppViewContainer"] {
-            background: transparent !important;
+            background-color: #0b0217 !important;
+            background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
+            background-attachment: fixed !important;
             color: #0F172A !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
 
-        /* 3. TRANSFORMA O CONTAINER CENTRAL DO STREAMLIT NO CARD BRANCO UNIFICADO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
-            background-color: #FFFFFF !important;
-            border-radius: 20px !important;
-            box-shadow: 0 20px 50px rgba(11, 2, 23, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
-            padding: 26px 26px 32px 26px !important;
-            margin-top: 1.2rem !important;
-            margin-bottom: 2rem !important;
-            max-width: 660px !important;
+            background: transparent !important;
+            padding-top: 0.6rem !important;
+            padding-bottom: 2rem !important;
+            margin-top: 0px !important;
+            max-width: 680px !important;
         }
 
-        /* Garante que todos os blocos internos herdem o branco */
-        div[data-testid="stVerticalBlock"] {
-            background-color: transparent !important;
+        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
+        [data-testid="manage-app-button"] {
+            display: none !important;
+            visibility: hidden !important;
         }
 
-        /* Tipografia de alto contraste dentro do card branco */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -113,15 +106,21 @@ st.markdown("""
             color: #334155 !important;
             font-weight: 600 !important;
             font-size: 0.88rem !important;
-            margin-bottom: 4px !important;
+            margin-bottom: 3px !important;
         }
 
-        .card-header-block {
-            text-align: center;
-            margin-bottom: 0.8rem;
+        /* Container do Cabeçalho Operacional */
+        .corporate-header {
+            background: #FFFFFF !important;
+            padding: 16px 20px !important;
+            border-radius: 16px !important;
+            text-align: center !important;
+            border: 1px solid rgba(255, 255, 255, 0.7) !important;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.25) !important;
+            margin-bottom: 1.2rem !important;
         }
         .corporate-title {
-            font-size: 1.35rem !important;
+            font-size: 1.30rem !important;
             font-weight: 800 !important;
             color: #1E3A8A !important;
             margin: 4px 0 2px 0 !important;
@@ -134,7 +133,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* 4. CENTRALIZAÇÃO DA IMAGEM E DO LOGO */
+        /* CENTRALIZAÇÃO UNIVERSAL E MARGEM ZERO PARA A IMAGEM */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
@@ -155,23 +154,23 @@ st.markdown("""
             margin-bottom: 0px !important;
         }
 
+        /* ZERA A MARGEM DO ELEMENT CONTAINER DA IMAGEM E DO INPUT LOGO ABAIXO */
         div[data-testid="element-container"]:has(> div[data-testid="stImage"]) {
             margin-bottom: 0px !important;
             padding-bottom: 0px !important;
         }
 
-        /* 5. FORMULÁRIOS OPERACIONAIS DENTRO DO CARD BRANCO */
+        /* Formulários (Login e Viagem) */
         [data-testid="stForm"] {
-            background-color: #F8FAFC !important;
-            border: 1px solid #E2E8F0 !important;
-            border-radius: 14px !important;
-            box-shadow: none !important;
-            padding: 20px 20px !important;
-            margin-top: 10px !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid rgba(255, 255, 255, 0.9) !important;
+            border-radius: 16px !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25) !important;
+            padding: 22px 24px !important;
         }
 
         .card-vehicle-info {
-            background-color: #F8FAFC !important;
+            background-color: #FFFFFF !important;
             border: 1px solid #DBEAFE !important;
             border-left: 5px solid #2563EB !important;
             padding: 14px 16px !important;
@@ -180,21 +179,23 @@ st.markdown("""
             color: #334155 !important;
             line-height: 1.6 !important;
             font-size: 0.90rem !important;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08) !important;
         }
 
         .card-active-trip {
-            background-color: #F0FDF4 !important;
-            border: 1px solid #BBF7D0 !important;
-            border-left: 5px solid #16A34A !important;
+            background-color: #FFFFFF !important;
+            border: 1px solid #BFDBFE !important;
+            border-left: 5px solid #2563EB !important;
             padding: 16px !important;
             border-radius: 12px !important;
             margin-bottom: 1.3rem !important;
-            color: #14532D !important;
+            color: #1E3A8A !important;
             line-height: 1.65 !important;
             font-size: 0.92rem !important;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10) !important;
         }
         .card-active-trip b {
-            color: #14532D !important;
+            color: #1E3A8A !important;
         }
 
         /* Inputs e controles */
@@ -207,7 +208,7 @@ st.markdown("""
         div[data-testid="stTimeInput"] > div,
         div[data-testid="stNumberInput"] > div,
         div[data-testid="stNumberInputContainer"] {
-            background-color: #FFFFFF !important;
+            background-color: #F8FAFC !important;
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 8px !important;
@@ -218,6 +219,7 @@ st.markdown("""
         div[data-testid="stNumberInputContainer"]:focus-within {
             border-color: #2563EB !important;
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.20) !important;
+            background-color: #FFFFFF !important;
         }
 
         input[type="text"], 
@@ -296,32 +298,31 @@ def obter_caminho_imagem_veiculo():
         "banner", "Banner"
     ])
 
-def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
+def renderizar_cabecalho(subtitulo="Gestão e Controle Operacional de Frotas"):
     caminho_logo = obter_caminho_logotipo()
     caminho_veiculo = obter_caminho_imagem_veiculo()
 
-    if caminho_logo:
-        try:
-            logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=110)
-        except Exception:
-            st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-    else:
-        st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
-
+    st.markdown('<div class="corporate-header">', unsafe_allow_html=True)
+    
+    col_l, col_m, col_r = st.columns([1, 1.4, 1])
+    with col_m:
+        if caminho_logo:
+            try:
+                logo_img = Image.open(caminho_logo)
+                st.image(logo_img, width=115)
+            except Exception:
+                st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+        else:
+            st.markdown('<div class="corporate-title">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+            
     if caminho_veiculo:
         try:
             img_frota = Image.open(caminho_veiculo)
             st.image(img_frota, width=317)
         except Exception:
             pass
-
-    st.markdown(f"""
-        <div class="card-header-block">
-            <div class="corporate-title">Registro e Controle de Saída de Veículos</div>
-            <p class="corporate-subtitle">{subtitulo}</p>
-        </div>
-    """, unsafe_allow_html=True)
+            
+    st.markdown(f'<p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
@@ -519,13 +520,14 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM 317PX + MARGEM 0PX)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
     caminho_veiculo = obter_caminho_imagem_veiculo()
     
     with st.form("form_login"):
+        # 1. Logotipo centralizado
         if caminho_logo:
             try:
                 logo_img = Image.open(caminho_logo)
@@ -535,6 +537,7 @@ def tela_login(df_usuarios):
         else:
             st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
 
+        # 2. Imagem da frota ampliada em 20% (317px), centralizada e sem margem inferior
         if caminho_veiculo:
             try:
                 img_veiculo = Image.open(caminho_veiculo)
@@ -568,7 +571,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (TELA DA VIAGEM NO CONTAINER BRANCO)
+# 6. APLICATIVO PRINCIPAL (TELA DE PREENCHIMENTO DA VIAGEM)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -639,15 +642,13 @@ def main():
             st.query_params.clear()
             st.rerun()
 
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
 
-    # -------------------------------------------------------------
-    # 7. CONTEÚDO DENTRO DO CARD BRANCO UNIFICADO
-    # -------------------------------------------------------------
-    renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
-
-    # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FINALIZAÇÃO)
+    # =========================================================================
+    # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FORÇA O START FINAL)
+    # =========================================================================
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
 
@@ -729,7 +730,9 @@ def main():
                 st.session_state["ultima_transacao"] = None
                 st.error(f"❌ Falha ao finalizar na planilha: {msg}")
 
-    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (NOVO REGISTRO / SAÍDA)
+    # =========================================================================
+    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (PREENCHIMENTO DOS DADOS DA VIAGEM)
+    # =========================================================================
     else:
         df_veiculos_todos = carregar_veiculos()
         if df_veiculos_todos.empty:
