@@ -31,7 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINAÇÃO DE ELEMENTOS FANTASMAS SUPERIORES */
+        /* 1. ELIMINAÇÃO DE ELEMENTOS FANTASMAS E DO BOTÃO FLUTUANTE FORA DO CARD */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
         div[data-testid="stDecoration"],
@@ -50,6 +50,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
+        /* Oculta botão nativo de toggle externo para usar o botão interno no card */
         [data-testid="collapsedControl"] {
             display: none !important;
         }
@@ -70,7 +71,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL ESCURO */
+        /* 2. PLANO DE FUNDO GERAL EM GRADIENTE RADIAL ESCURO */
         :root, html, body {
             background-color: #0b0217 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
@@ -102,6 +103,16 @@ st.markdown("""
             background-color: transparent !important;
         }
 
+        /* Barra de Controle de Menu Interna ao Card */
+        .card-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 12px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid #F1F5F9;
+        }
+
         .user-status-pill {
             background: #EFF6FF;
             color: #1E40AF;
@@ -115,6 +126,7 @@ st.markdown("""
             gap: 6px;
         }
 
+        /* Painel deslizante interno para o Menu */
         .internal-menu-panel {
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
@@ -124,7 +136,7 @@ st.markdown("""
             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
         }
 
-        /* Tipografia */
+        /* Tipografia de alto contraste */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -137,8 +149,7 @@ st.markdown("""
 
         .card-header-block {
             text-align: center;
-            margin-bottom: 1rem;
-            margin-top: 0.4rem;
+            margin-bottom: 0.8rem;
         }
         .corporate-title {
             font-size: 1.35rem !important;
@@ -202,23 +213,19 @@ st.markdown("""
             font-size: 0.90rem !important;
         }
 
-        /* CARD RESUMO DA VIAGEM ATIVA: VERDE/AZUL CORPORATIVO */
         .card-active-trip {
-            background: linear-gradient(135deg, #F0FDF4 0%, #E0F2FE 100%) !important;
-            border: 1px solid #93C5FD !important;
-            border-left: 6px solid #16A34A !important;
-            padding: 18px 20px !important;
-            border-radius: 14px !important;
-            margin-bottom: 1.4rem !important;
-            margin-top: 0.8rem !important;
-            color: #0F172A !important;
-            line-height: 1.75 !important;
-            font-size: 0.95rem !important;
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.10) !important;
+            background-color: #F0FDF4 !important;
+            border: 1px solid #BBF7D0 !important;
+            border-left: 5px solid #16A34A !important;
+            padding: 16px !important;
+            border-radius: 12px !important;
+            margin-bottom: 1.3rem !important;
+            color: #14532D !important;
+            line-height: 1.65 !important;
+            font-size: 0.92rem !important;
         }
         .card-active-trip b {
-            color: #1E3A8A !important;
-            font-weight: 700 !important;
+            color: #14532D !important;
         }
 
         /* Inputs e controles */
@@ -279,6 +286,7 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
         }
 
+        /* Estilo sutil para o botão de alternância do menu no card */
         .btn-menu-card button {
             background: #F1F5F9 !important;
             color: #334155 !important;
@@ -317,9 +325,10 @@ GID_VEICULOS = "0"               # Aba Frota
 GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A ARQUIVOS LOCAIS
+# 3. SUPORTE A ARQUIVOS LOCAIS (LOGOTIPO E IMAGEM DO VEÍCULO/FROTA)
 # -------------------------------------------------------------
 def obter_caminho_arquivo(nomes_possiveis):
+    """Busca um arquivo existente no mesmo diretório do script."""
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     for nome in nomes_possiveis:
         for ext in extensoes:
@@ -332,6 +341,7 @@ def obter_caminho_logotipo():
     return obter_caminho_arquivo(["Logotipo", "logotipo", "Logo", "logo"])
 
 def obter_caminho_imagem_veiculo():
+    """Busca a imagem do veículo/frota localizada na mesma pasta do app."""
     return obter_caminho_arquivo([
         "veiculo", "veiculos", "Veiculo", "Veiculos",
         "frota", "Frota", "carro", "carros", "Carro", "Carros",
@@ -339,8 +349,8 @@ def obter_caminho_imagem_veiculo():
     ])
 
 def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
-    """Renderiza logotipo e títulos (SEM imagem da frota)."""
     caminho_logo = obter_caminho_logotipo()
+    caminho_veiculo = obter_caminho_imagem_veiculo()
 
     if caminho_logo:
         try:
@@ -350,6 +360,13 @@ def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Fr
             st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+
+    if caminho_veiculo:
+        try:
+            img_frota = Image.open(caminho_veiculo)
+            st.image(img_frota, width=317)
+        except Exception:
+            pass
 
     st.markdown(f"""
         <div class="card-header-block">
@@ -368,14 +385,8 @@ def normalizar_texto(texto):
     return texto.strip().lower()
 
 def limpar_placa(placa_str):
+    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
-
-def _eh_vazio_ou_nulo(val):
-    """Verifica com precisão se o campo está vazio ou nulo."""
-    if val is None:
-        return True
-    s = str(val).strip().lower()
-    return s in ["", "nan", "none", "null", "nat", "0", "0.0", "undefined", "-", "s/n"]
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
@@ -463,10 +474,9 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    t_anti_cache = int(time.time())
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&_nocache={t_anti_cache}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&_nocache={t_anti_cache}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
     ]
     for url in urls:
         try:
@@ -476,58 +486,6 @@ def carregar_lancamentos_existentes():
         except Exception:
             continue
     return pd.DataFrame()
-
-def extrair_viagens_abertas(df_lanc):
-    abertos_por_condutor = {}
-    veiculos_ocupados = {}
-
-    if df_lanc.empty:
-        return abertos_por_condutor, veiculos_ocupados
-
-    col_map = {normalizar_texto(c): c for c in df_lanc.columns}
-    
-    col_data_ini = col_map.get("data inicial", col_map.get("data_inicial", df_lanc.columns[0]))
-    col_hora_ini = col_map.get("horario inicial", col_map.get("horario_inicial", df_lanc.columns[1] if len(df_lanc.columns) > 1 else df_lanc.columns[0]))
-    col_km_ini = col_map.get("km inicial", col_map.get("km_inicial", df_lanc.columns[2] if len(df_lanc.columns) > 2 else df_lanc.columns[0]))
-    col_data_fim = col_map.get("data final", col_map.get("data_final", df_lanc.columns[3] if len(df_lanc.columns) > 3 else df_lanc.columns[0]))
-    col_hora_fim = col_map.get("horario final", col_map.get("horario_final", df_lanc.columns[4] if len(df_lanc.columns) > 4 else df_lanc.columns[0]))
-    col_km_fim = col_map.get("km final", col_map.get("km_final", df_lanc.columns[5] if len(df_lanc.columns) > 5 else df_lanc.columns[0]))
-    col_condutor = col_map.get("condutor", col_map.get("motorista", df_lanc.columns[6] if len(df_lanc.columns) > 6 else df_lanc.columns[0]))
-    col_destino = col_map.get("destino", col_map.get("rota", df_lanc.columns[7] if len(df_lanc.columns) > 7 else df_lanc.columns[0]))
-    col_placa = col_map.get("placa", df_lanc.columns[8] if len(df_lanc.columns) > 8 else df_lanc.columns[0])
-    col_veiculo = col_map.get("veiculo", col_map.get("modelo", df_lanc.columns[9] if len(df_lanc.columns) > 9 else df_lanc.columns[0]))
-    col_rv = col_map.get("rv", col_map.get("registro", df_lanc.columns[12] if len(df_lanc.columns) > 12 else df_lanc.columns[-1]))
-
-    for _, row in df_lanc.iterrows():
-        val_data_fim = row.get(col_data_fim, "")
-        val_km_fim = row.get(col_km_fim, "")
-        val_cond = str(row.get(col_condutor, "")).strip()
-        val_placa = str(row.get(col_placa, "")).strip()
-        val_rv = str(row.get(col_rv, "")).strip()
-
-        # Condição aprimorada: só é finalizada se houver data OU km final preenchidos
-        tem_fim = not (_eh_vazio_ou_nulo(val_data_fim) and _eh_vazio_ou_nulo(val_km_fim))
-
-        if not tem_fim and val_rv:
-            info = {
-                "rv": val_rv,
-                "condutor": val_cond,
-                "placa": val_placa,
-                "veiculo": str(row.get(col_veiculo, "")).strip(),
-                "data_inicial": str(row.get(col_data_ini, "")).strip(),
-                "horario_inicial": str(row.get(col_hora_ini, "")).strip(),
-                "km_inicial": str(row.get(col_km_ini, "0")).strip(),
-                "destino": str(row.get(col_destino, "")).strip()
-            }
-
-            p_limpa = limpar_placa(val_placa)
-            if p_limpa:
-                veiculos_ocupados[p_limpa] = info
-
-            if val_cond:
-                abertos_por_condutor[normalizar_texto(val_cond)] = info
-
-    return abertos_por_condutor, veiculos_ocupados
 
 def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
     if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
@@ -613,7 +571,7 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM DA FROTA 317PX)
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     caminho_logo = obter_caminho_logotipo()
@@ -663,7 +621,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (TELA DA VIAGEM)
+# 6. APLICATIVO PRINCIPAL (BOTÃO DE MENU EMBUTIDO NO CARD)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -685,34 +643,51 @@ def main():
         tela_login(df_usuarios)
         return
 
-    usuario_atual = st.session_state.get("usuario_logado", "")
+    usuario_atual = st.session_state.get("usuario_logado")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
-    # Identificação Primária: Session State Soberana
-    viagem_pendente_condutor = st.session_state.get("viagem_ativa", None)
-
-    # Identificação Secundária: Leitura da Planilha caso não esteja na sessão
     df_lanc = carregar_lancamentos_existentes()
-    viagens_abertas_por_condutor, veiculos_em_uso = extrair_viagens_abertas(df_lanc)
+
+    viagens_abertas_por_condutor = {}
+    veiculos_em_uso = {}
+
+    if not df_lanc.empty and len(df_lanc.columns) >= 13:
+        for _, row in df_lanc.iterrows():
+            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
+            cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+            placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
+            rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
+
+            if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
+                info_aberta = {
+                    "rv": rv_row,
+                    "condutor": cond_row,
+                    "placa": placa_row,
+                    "veiculo": str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else "",
+                    "data_inicial": str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else "",
+                    "horario_inicial": str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "",
+                    "km_inicial": str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "0",
+                    "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
+                }
+                
+                placa_k = limpar_placa(placa_row)
+                if placa_k:
+                    veiculos_em_uso[placa_k] = info_aberta
+
+                if cond_row:
+                    viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
 
     condutor_chave = normalizar_texto(nome_condutor)
-    usuario_chave = normalizar_texto(usuario_atual)
+    viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
-    if not viagem_pendente_condutor:
-        viagem_pendente_condutor = (
-            viagens_abertas_por_condutor.get(condutor_chave) or 
-            viagens_abertas_por_condutor.get(usuario_chave)
-        )
-        if viagem_pendente_condutor:
-            st.session_state["viagem_ativa"] = viagem_pendente_condutor
-
-    # Menu Lateral
+    # Sidebar tradicional mantida para navegação expandida
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
         st.caption(f"📍 **Base de Acesso:** {acesso_local}")
         if viagem_pendente_condutor:
-            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor.get('placa')}**\n(RV: {viagem_pendente_condutor.get('rv')})")
+            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
         if st.button("🚪 Sair do Sistema", key="btn_logout_sidebar"):
             st.session_state.clear()
             st.query_params.clear()
@@ -725,7 +700,7 @@ def main():
     # 7. CONTEÚDO PRINCIPAL (DENTRO DO CARD BRANCO UNIFICADO)
     # -------------------------------------------------------------
     
-    # 1. BOTÃO DE ACESSO AO MENU EMBUTIDO NO TOPO DO CARD
+    # 1. BOTÃO DE ACESSO AO MENU EMBUTIDO DIRETAMENTE NO TOPO DO CARD
     col_menu_btn, col_user_info = st.columns([1.1, 2.2])
     
     with col_menu_btn:
@@ -743,6 +718,7 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
+    # Painel interno do menu que abre/fecha pelo botão dentro do card
     if st.session_state.get("menu_aberto", False):
         st.markdown(f"""
             <div class="internal-menu-panel">
@@ -762,29 +738,22 @@ def main():
                 st.rerun()
         st.markdown("<hr style='margin: 12px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
-    # 2. Cabeçalho interno (Logo e Título - SEM a imagem da frota)
+    # 2. Cabeçalho interno (Logo, Banner da frota e Título)
     renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
 
-    # =========================================================================
-    # CENÁRIO 1: CONDUTOR EM VIAGEM ABERTA (CARD RESUMO + FORM FINAL)
-    # =========================================================================
+    # CENÁRIO 1: O CONDUTOR TEM UMA VIAGEM ABERTA (FINALIZAÇÃO)
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
 
-        st.warning("⚠️ **Você possui uma viagem em andamento!** Finalize o retorno abaixo para liberar novos lançamentos.")
-        
-        # CARD COM AS INFORMAÇÕES DETALHADAS APÓS O START INICIAL (VERDE/AZUL CORPORATIVO)
+        st.warning("⚠️ **Você possui uma viagem em andamento aberta na planilha!** Finalize o retorno para liberar novos lançamentos.")
         st.markdown(f"""
             <div class="card-active-trip">
-                <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: #15803D; border-bottom: 1px solid #93C5FD; padding-bottom: 4px;">
-                    📋 Resumo da Viagem em Andamento
-                </div>
-                <b>🎫 Registro de Viagem (RV):</b> {dados_ativos.get('rv')}<br>
+                <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
                 <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
-                <b>🚙 Veículo & Placa:</b> {dados_ativos.get('veiculo')} — <b>{dados_ativos.get('placa')}</b><br>
-                <b>⏱️ Data e Horário de Início:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial de Saída:</b> {dados_ativos.get('km_inicial')} km<br>
-                <b>📍 Destino / Rota Informada:</b> {dados_ativos.get('destino') or 'Não informado'}
+                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
+                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
+                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
+                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
             </div>
         """, unsafe_allow_html=True)
 
@@ -796,7 +765,7 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = float(str(dados_ativos.get("km_inicial") or 0).replace(",", "."))
+            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -845,21 +814,16 @@ def main():
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                # Libera o estado da sessão imediatamente para voltar ao Cenário 2
-                st.session_state["viagem_ativa"] = None
-                st.session_state["ultima_transacao"] = None
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
                 st.balloons()
                 st.cache_data.clear()
-                time.sleep(1.5)
+                time.sleep(2)
                 st.rerun()
             else:
                 st.session_state["ultima_transacao"] = None
                 st.error(f"❌ Falha ao finalizar na planilha: {msg}")
 
-    # =========================================================================
-    # CENÁRIO 2: CONDUTOR LIVRE (NOVO REGISTRO / START INICIAL)
-    # =========================================================================
+    # CENÁRIO 2: O CONDUTOR ESTÁ LIVRE (NOVO REGISTRO / SAÍDA)
     else:
         df_veiculos_todos = carregar_veiculos()
         if df_veiculos_todos.empty:
@@ -944,6 +908,7 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
+                # Verificação anti-duplicidade em tempo real
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -984,20 +949,9 @@ def main():
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
-                    # Persistência Ativa Soberana: Garante exibição do card imediatamente
-                    st.session_state["viagem_ativa"] = {
-                        "rv": codigo_rv_previsto,
-                        "condutor": nome_condutor,
-                        "placa": placa,
-                        "veiculo": modelo,
-                        "data_inicial": data_ini.strftime("%d/%m/%Y"),
-                        "horario_inicial": hora_ini.strftime("%H:%M:%S"),
-                        "km_inicial": int(km_ini),
-                        "destino": destino_ini.strip()
-                    }
-                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada com sucesso!")
+                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
                     st.cache_data.clear()
-                    time.sleep(1.0)
+                    time.sleep(1.5)
                     st.rerun()
                 else:
                     st.session_state["ultima_transacao"] = None
