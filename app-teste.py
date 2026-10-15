@@ -20,13 +20,16 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (DEGRADÊ + CONTAINER BRANCO UNIFICADO)
+# 1. CONTROLE E CONFIGURAÇÃO DA SIDEBAR (EXPANDIDA / RECOLHIDA)
 # -------------------------------------------------------------
+if "sidebar_aberta" not in st.session_state:
+    st.session_state["sidebar_aberta"] = False
+
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded" if st.session_state["sidebar_aberta"] else "collapsed"
 )
 
 st.markdown("""
@@ -48,10 +51,13 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER PADRÃO */
-        header[data-testid="stHeader"] {
-            background: transparent !important;
-            border: none !important;
+        /* 2. OCULTA AS SETINHAS E HEADER NATIVOS EXTERNOS */
+        header[data-testid="stHeader"],
+        div[data-testid="stSidebarCollapsedControl"],
+        [data-testid="stSidebarCollapsedControl"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0px !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -92,53 +98,34 @@ st.markdown("""
             position: relative !important;
         }
 
-        /* 5. ÁREA ANCORA DAS SETINHAS ACIMA DO LOGOTIPO */
-        #sidebar-control-anchor {
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            width: 100%;
-            min-height: 40px;
-            margin-bottom: 4px;
-        }
-
-        /* ESTILIZAÇÃO DO BOTÃO DE SETINHAS NATIVO DO STREAMLIT */
-        div[data-testid="stSidebarCollapsedControl"],
-        [data-testid="stSidebarCollapsedControl"] {
-            display: inline-flex !important;
-            visibility: visible !important;
-            position: relative !important;
-            top: 0 !important;
-            left: 0 !important;
+        /* 5. BOTÃO DAS 2 SETINHAS (>> / <<) DENTRO DO CONTAINER */
+        div[data-testid="stButton"].sidebar-toggle-arrows > button {
             background-color: #F8FAFC !important;
+            color: #1E293B !important;
+            -webkit-text-fill-color: #1E293B !important;
             border: 1px solid #CBD5E1 !important;
             border-radius: 8px !important;
-            padding: 4px 8px !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
-            transition: all 0.2s ease-in-out !important;
-            cursor: pointer !important;
-        }
-
-        div[data-testid="stSidebarCollapsedControl"]:hover {
-            background-color: #EFF6FF !important;
-            border-color: #93C5FD !important;
-            transform: scale(1.05) !important;
-        }
-
-        div[data-testid="stSidebarCollapsedControl"] button {
-            color: #1E293B !important;
-            background: transparent !important;
-            border: none !important;
-            padding: 0 !important;
+            width: 38px !important;
+            height: 34px !important;
+            min-width: 38px !important;
+            padding: 0px !important;
             display: flex !important;
             align-items: center !important;
+            justify-content: center !important;
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+            transition: all 0.2s ease-in-out !important;
+            margin: 0 !important;
+            line-height: 1 !important;
         }
 
-        div[data-testid="stSidebarCollapsedControl"] svg {
-            fill: #1E293B !important;
-            color: #1E293B !important;
-            width: 22px !important;
-            height: 22px !important;
+        div[data-testid="stButton"].sidebar-toggle-arrows > button:hover {
+            background-color: #EFF6FF !important;
+            color: #2563EB !important;
+            -webkit-text-fill-color: #2563EB !important;
+            border-color: #93C5FD !important;
+            transform: scale(1.05) !important;
         }
 
         /* Tipografia Base */
@@ -304,21 +291,6 @@ st.markdown("""
             border-color: #BFDBFE !important;
         }
     </style>
-
-    <script>
-        // Move o botão nativo de setinhas para dentro do container, acima do logotipo
-        function realocarSetinhasSidebar() {
-            try {
-                const parentDoc = window.parent.document || document;
-                const controle = parentDoc.querySelector('[data-testid="stSidebarCollapsedControl"]');
-                const destino = parentDoc.querySelector('#sidebar-control-anchor');
-                if (controle && destino && !destino.contains(controle)) {
-                    destino.appendChild(controle);
-                }
-            } catch (e) {}
-        }
-        setInterval(realocarSetinhasSidebar, 200);
-    </script>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
@@ -355,9 +327,16 @@ def obter_caminho_imagem_frota():
     return None
 
 def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_setinhas=False):
-    # Se solicitado, renderiza a âncora acima do logotipo que recebe as 2 setinhas nativas
+    # Renderiza as 2 setinhas (>> / <<) DENTRO do container branco no canto superior esquerdo
     if incluir_setinhas:
-        st.markdown('<div id="sidebar-control-anchor"></div>', unsafe_allow_html=True)
+        col_seta, _ = st.columns([0.15, 0.85])
+        with col_seta:
+            st.markdown('<div class="sidebar-toggle-arrows">', unsafe_allow_html=True)
+            icone_seta = "<<" if st.session_state.get("sidebar_aberta") else ">>"
+            if st.button(icone_seta, help="Abrir/Fechar Menu Lateral", key="btn_toggle_setinhas"):
+                st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
     caminho_logo = obter_caminho_logotipo()
     if caminho_logo:
@@ -674,7 +653,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------
-    # MENU LATERAL (SIDEBAR) - ATUALIZAR E SAIR CONCENTRADOS AQUI
+    # MENU LATERAL (SIDEBAR)
     # ---------------------------------------------------------
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
@@ -695,7 +674,7 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # Cabeçalho Principal (com a âncora que acolhe as setinhas >> diretamente acima do logo)
+    # Cabeçalho Principal (renderiza o botão com >> / << no canto superior esquerdo dentro do container branco)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_setinhas=True)
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
