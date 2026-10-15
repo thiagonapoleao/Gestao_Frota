@@ -48,7 +48,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER E CONTROLES EXTERNOS */
+        /* 2. REMOVE HEADER E ITENS EXTERNOS */
         header[data-testid="stHeader"] {
             background: transparent !important;
             height: 0px !important;
@@ -78,13 +78,16 @@ st.markdown("""
             background-size: cover !important;
         }
 
-        /* 4. CONTAINER BRANCO UNIFICADO (PADDING SUPERIOR REDUZIDO A ZERO) */
+        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO (ZERO ESPAÇO NO TOPO) */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 12px 28px 36px 28px !important;
+            padding-top: 10px !important;
+            padding-left: 28px !important;
+            padding-right: 28px !important;
+            padding-bottom: 34px !important;
             margin-top: 1.2rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
@@ -92,47 +95,46 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. BARRA DO BOTÃO SEM ESPAÇO NO TOPO */
-        .sidebar-trigger-container {
-            width: 100%;
-            display: flex;
-            justify-content: flex-start;
-            align-items: center;
-            margin: 0px 0px 4px 0px !important;
+        /* 5. ÁREA DO BOTÃO DO MENU TOTALMENTE COLADA NO TOPO */
+        .menu-top-bar {
+            display: flex !important;
+            justify-content: flex-start !important;
+            align-items: center !important;
+            margin: 0px !important;
             padding: 0px !important;
+            width: 100% !important;
         }
 
-        .btn-setinhas-menu {
-            background-color: #F8FAFC;
-            color: #1E293B;
-            border: 1px solid #CBD5E1;
-            border-radius: 8px;
-            width: 36px;
-            height: 32px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-            transition: all 0.2s ease-in-out;
-            outline: none;
-            user-select: none;
+        .btn-menu-lateral {
+            background-color: #F8FAFC !important;
+            color: #1E293B !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px !important;
+            padding: 6px 12px !important;
+            font-size: 0.90rem !important;
+            font-weight: 700 !important;
+            cursor: pointer !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+            transition: all 0.2s ease-in-out !important;
+            margin-top: 2px !important;
+            margin-bottom: 0px !important;
         }
 
-        .btn-setinhas-menu:hover {
-            background-color: #EFF6FF;
-            color: #2563EB;
-            border-color: #93C5FD;
-            transform: scale(1.05);
+        .btn-menu-lateral:hover {
+            background-color: #EFF6FF !important;
+            color: #2563EB !important;
+            border-color: #93C5FD !important;
+            transform: scale(1.03) !important;
         }
 
         /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
         .logo-wrapper {
-            margin-top: 0px !important;
+            margin-top: 2px !important;
             padding-top: 0px !important;
-            margin-bottom: 6px !important;
+            margin-bottom: 4px !important;
         }
 
         /* Tipografia Base */
@@ -333,22 +335,35 @@ def obter_caminho_imagem_frota():
                 return caminho
     return None
 
-def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_setinhas=False):
-    # Botão de 2 setinhas colado no topo do container que abre/fecha a sidebar diretamente via DOM
-    if incluir_setinhas:
+def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_botao_menu=False):
+    # 1. Botão do menu colado no topo do container branco com disparador robusto do DOM
+    if incluir_botao_menu:
         st.markdown("""
-            <div class="sidebar-trigger-container">
-                <button type="button" class="btn-setinhas-menu" title="Abrir Menu Lateral" onclick="
+            <div class="menu-top-bar">
+                <button type="button" class="btn-menu-lateral" onclick="
                     const pDoc = window.parent.document || document;
-                    const btn = pDoc.querySelector('[data-testid=stSidebarCollapsedControl] button') 
-                             || pDoc.querySelector('[data-testid=stSidebarCollapseButton] button')
-                             || pDoc.querySelector('button[aria-label*=sidebar]')
-                             || pDoc.querySelector('button[aria-label*=Sidebar]');
-                    if (btn) { btn.click(); }
-                ">&gt;&gt;</button>
+                    let btn = pDoc.querySelector('[data-testid=stSidebarCollapsedControl] button') 
+                           || pDoc.querySelector('[data-testid=stSidebarCollapseButton] button')
+                           || pDoc.querySelector('[data-testid=stSidebarCollapseButton]')
+                           || pDoc.querySelector('[data-testid=stSidebarCollapsedControl]')
+                           || pDoc.querySelector('button[aria-label*=sidebar]')
+                           || pDoc.querySelector('button[aria-label*=Sidebar]');
+                    if (btn) {
+                        btn.click();
+                    } else {
+                        const sidebar = pDoc.querySelector('section[data-testid=stSidebar]');
+                        if (sidebar) {
+                            sidebar.setAttribute('aria-expanded', 'true');
+                            sidebar.classList.remove('collapsed');
+                        }
+                    }
+                ">
+                    <span>&gt;&gt;</span> Menu
+                </button>
             </div>
         """, unsafe_allow_html=True)
 
+    # 2. Logotipo colado imediatamente após o botão
     caminho_logo = obter_caminho_logotipo()
     st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
     if caminho_logo:
@@ -564,7 +579,7 @@ def enviar_requisicao_apps_script(payload):
 # 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    renderizar_cabecalho("Portal de Acesso do Condutor", incluir_setinhas=False)
+    renderizar_cabecalho("Portal de Acesso do Condutor", incluir_botao_menu=False)
     
     caminho_frota = obter_caminho_imagem_frota()
     if caminho_frota:
@@ -687,8 +702,8 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # Cabeçalho Principal (renderiza o botão >> colado no topo do container e o logotipo logo abaixo)
-    renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_setinhas=True)
+    # Cabeçalho Principal (com o botão >> colado no topo e o logo logo abaixo)
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_botao_menu=True)
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
 
