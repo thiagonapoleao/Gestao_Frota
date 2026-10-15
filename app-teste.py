@@ -20,29 +20,22 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (SIDEBAR VISÍVEL E IMAGEM CENTRALIZADA)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (FRONT-END SENIOR ARCHITECTURE)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
     <style>
-        /* 1. MANTÉM O BOTÃO DE ABRIR/FECHAR A SIDEBAR 100% OPERACIONAL E VISÍVEL */
-        [data-testid="collapsedControl"],
-        button[kind="header"] {
-            display: flex !important;
-            visibility: visible !important;
-            color: #FFFFFF !important;
-            z-index: 1000000 !important;
-        }
-
-        /* 2. ELIMINAÇÃO DE ELEMENTOS FANTASMAS SUPERIORES */
+        /* 1. ELIMINAÇÃO TOTAL DE ELEMENTOS FANTASMAS SUPERIORES */
         .e1o1x6gp2,
         .st-emotion-cache-k2h9z6,
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
         div[data-testid="stDecoration"],
         div[data-testid="stToolbar"] {
             display: none !important;
@@ -53,11 +46,8 @@ st.markdown("""
             padding: 0px !important;
             border: none !important;
             visibility: hidden !important;
-        }
-
-        header[data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 2.2rem !important;
+            position: absolute !important;
+            top: -9999px !important;
         }
 
         div[data-testid="stMarkdownContainer"]:empty,
@@ -82,7 +72,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 3. PLANO DE FUNDO GERAL EM GRADIENTE RADIAL ESCURO */
+        /* 2. GRADIENTE RADIAL FIXO EXCLUSIVAMENTE NO CANVAS GLOBAL */
         :root, html, body {
             background-color: #0b0217 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
@@ -97,7 +87,7 @@ st.markdown("""
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
         }
 
-        /* 4. CONTAINER CENTRAL BRANCO UNIFICADO */
+        /* 3. TRANSFORMA O CONTAINER CENTRAL DO STREAMLIT NO CARD BRANCO UNIFICADO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
@@ -105,16 +95,17 @@ st.markdown("""
             border-radius: 20px !important;
             box-shadow: 0 20px 50px rgba(11, 2, 23, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
             padding: 26px 26px 32px 26px !important;
-            margin-top: 0.8rem !important;
+            margin-top: 1.2rem !important;
             margin-bottom: 2rem !important;
             max-width: 660px !important;
         }
 
+        /* Garante que todos os blocos internos herdem o branco */
         div[data-testid="stVerticalBlock"] {
             background-color: transparent !important;
         }
 
-        /* Tipografia de alto contraste */
+        /* Tipografia de alto contraste dentro do card branco */
         h1, h2, h3, h4, h5, h6, p, span, label, div {
             color: #0F172A !important;
         }
@@ -143,16 +134,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* 5. CENTRALIZAÇÃO UNIVERSAL E ALINHAMENTO DA IMAGEM */
-        .image-center-wrapper {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            width: 100% !important;
-            margin: 0 auto !important;
-            padding: 0 !important;
-        }
-
+        /* 4. CENTRALIZAÇÃO DA IMAGEM E DO LOGO */
         div[data-testid="stImage"] {
             display: flex !important;
             justify-content: center !important;
@@ -178,7 +160,7 @@ st.markdown("""
             padding-bottom: 0px !important;
         }
 
-        /* 6. FORMULÁRIOS OPERACIONAIS */
+        /* 5. FORMULÁRIOS OPERACIONAIS DENTRO DO CARD BRANCO */
         [data-testid="stForm"] {
             background-color: #F8FAFC !important;
             border: 1px solid #E2E8F0 !important;
@@ -273,15 +255,9 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
         }
 
-        /* SIDEBAR GARANTIDA */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #DBEAFE !important;
-            display: block !important;
-            visibility: visible !important;
-        }
-        section[data-testid="stSidebar"] * {
-            color: #1E293B !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -592,7 +568,7 @@ def tela_login(df_usuarios):
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (TELA DA VIAGEM)
+# 6. APLICATIVO PRINCIPAL (TELA DA VIAGEM NO CONTAINER BRANCO)
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
