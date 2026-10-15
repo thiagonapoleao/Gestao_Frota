@@ -120,7 +120,6 @@ st.markdown("""
             box-sizing: border-box !important;
         }
 
-        /* Remove completamente qualquer seta nativa */
         div[data-testid="stExpander"] summary::-webkit-details-marker,
         div[data-testid="stExpander"] summary::marker {
             display: none !important;
@@ -136,7 +135,6 @@ st.markdown("""
             height: 0px !important;
         }
 
-        /* Estilo do botão 100% centralizado de ponta a ponta */
         div[data-testid="stExpander"] summary {
             padding: 10px 18px !important;
             font-size: 0.95rem !important;
@@ -295,26 +293,35 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Botões Principais de Envio */
+        /* 7. BOTÕES DE FORMULÁRIO (INCLUINDO ENTRAR NO SISTEMA COM O MESMO DEGRADÊ EXPANDIDO) */
         div[data-testid="stFormSubmitButton"] > button {
-            background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-            background-color: #2563EB !important;
+            background-color: #110426 !important;
+            background-image: 
+                radial-gradient(at 93% 5%, hsla(267.8, 100%, 18%, 1) 0%, transparent 100%),
+                radial-gradient(at 49% 50%, hsla(264.1, 100%, 25%, 1) 0%, transparent 100%),
+                radial-gradient(at 37% 89%, hsla(240.8, 100%, 32%, 1) 0%, transparent 100%) !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 10px !important;
+            border: 1px solid rgba(147, 51, 234, 0.4) !important;
+            border-radius: 12px !important;
             height: 48px !important;
             font-size: 1rem !important;
-            font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.02em !important;
+            box-shadow: 0 4px 16px rgba(17, 4, 38, 0.3) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
             width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
+
         div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+            filter: brightness(1.15) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5) !important;
+            border-color: rgba(168, 85, 247, 0.7) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -585,6 +592,8 @@ def tela_login(df_usuarios):
         
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
+        
+        # Botão com degradê idêntico ao fundo, expandido de fora a fora
         btn_login = st.form_submit_button("Entrar no Sistema")
         
         if btn_login:
