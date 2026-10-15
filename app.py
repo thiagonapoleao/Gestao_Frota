@@ -202,22 +202,23 @@ st.markdown("""
             font-size: 0.90rem !important;
         }
 
-        /* Card Resumo da Viagem Ativa */
+        /* CARD RESUMO DA VIAGEM ATIVA COM ALTO DESTAQUE */
         .card-active-trip {
-            background-color: #F0FDF4 !important;
-            border: 1px solid #BBF7D0 !important;
-            border-left: 5px solid #16A34A !important;
-            padding: 16px 18px !important;
-            border-radius: 12px !important;
-            margin-bottom: 1.3rem !important;
+            background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important;
+            border: 1px solid #86EFAC !important;
+            border-left: 6px solid #16A34A !important;
+            padding: 18px 20px !important;
+            border-radius: 14px !important;
+            margin-bottom: 1.4rem !important;
             margin-top: 0.8rem !important;
             color: #14532D !important;
-            line-height: 1.7 !important;
-            font-size: 0.93rem !important;
-            box-shadow: 0 4px 12px rgba(22, 163, 74, 0.08) !important;
+            line-height: 1.75 !important;
+            font-size: 0.95rem !important;
+            box-shadow: 0 6px 18px rgba(22, 163, 74, 0.12) !important;
         }
         .card-active-trip b {
-            color: #14532D !important;
+            color: #064E3B !important;
+            font-weight: 700 !important;
         }
 
         /* Inputs e controles */
@@ -319,7 +320,6 @@ GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 # 3. SUPORTE A ARQUIVOS LOCAIS
 # -------------------------------------------------------------
 def obter_caminho_arquivo(nomes_possiveis):
-    """Busca um arquivo existente no mesmo diretório do script."""
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
     for nome in nomes_possiveis:
         for ext in extensoes:
@@ -332,7 +332,6 @@ def obter_caminho_logotipo():
     return obter_caminho_arquivo(["Logotipo", "logotipo", "Logo", "logo"])
 
 def obter_caminho_imagem_veiculo():
-    """Busca a imagem do veículo/frota localizada na mesma pasta do app."""
     return obter_caminho_arquivo([
         "veiculo", "veiculos", "Veiculo", "Veiculos",
         "frota", "Frota", "carro", "carros", "Carro", "Carros",
@@ -340,7 +339,6 @@ def obter_caminho_imagem_veiculo():
     ])
 
 def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
-    """Renderiza apenas o logotipo e títulos (SEM a imagem da frota)."""
     caminho_logo = obter_caminho_logotipo()
 
     if caminho_logo:
@@ -369,7 +367,6 @@ def normalizar_texto(texto):
     return texto.strip().lower()
 
 def limpar_placa(placa_str):
-    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
 
 @st.cache_data(ttl=60)
@@ -458,11 +455,10 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    # Cache buster dinâmico para garantir que os dados venham frescos
-    timestamp_param = int(time.time())
+    t_anti_cache = int(time.time())
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&_t={timestamp_param}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&_t={timestamp_param}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&_nocache={t_anti_cache}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&_nocache={t_anti_cache}"
     ]
     for url in urls:
         try:
@@ -472,6 +468,60 @@ def carregar_lancamentos_existentes():
         except Exception:
             continue
     return pd.DataFrame()
+
+def extrair_viagens_abertas(df_lanc):
+    abertos_por_condutor = {}
+    veiculos_ocupados = {}
+
+    if df_lanc.empty:
+        return abertos_por_condutor, veiculos_ocupados
+
+    col_map = {normalizar_texto(c): c for c in df_lanc.columns}
+    
+    col_data_ini = col_map.get("data inicial", col_map.get("data_inicial", df_lanc.columns[0]))
+    col_hora_ini = col_map.get("horario inicial", col_map.get("horario_inicial", df_lanc.columns[1] if len(df_lanc.columns) > 1 else df_lanc.columns[0]))
+    col_km_ini = col_map.get("km inicial", col_map.get("km_inicial", df_lanc.columns[2] if len(df_lanc.columns) > 2 else df_lanc.columns[0]))
+    col_data_fim = col_map.get("data final", col_map.get("data_final", df_lanc.columns[3] if len(df_lanc.columns) > 3 else df_lanc.columns[0]))
+    col_hora_fim = col_map.get("horario final", col_map.get("horario_final", df_lanc.columns[4] if len(df_lanc.columns) > 4 else df_lanc.columns[0]))
+    col_km_fim = col_map.get("km final", col_map.get("km_final", df_lanc.columns[5] if len(df_lanc.columns) > 5 else df_lanc.columns[0]))
+    col_condutor = col_map.get("condutor", col_map.get("motorista", df_lanc.columns[6] if len(df_lanc.columns) > 6 else df_lanc.columns[0]))
+    col_destino = col_map.get("destino", col_map.get("rota", df_lanc.columns[7] if len(df_lanc.columns) > 7 else df_lanc.columns[0]))
+    col_placa = col_map.get("placa", df_lanc.columns[8] if len(df_lanc.columns) > 8 else df_lanc.columns[0])
+    col_veiculo = col_map.get("veiculo", col_map.get("modelo", df_lanc.columns[9] if len(df_lanc.columns) > 9 else df_lanc.columns[0]))
+    col_rv = col_map.get("rv", col_map.get("registro", df_lanc.columns[12] if len(df_lanc.columns) > 12 else df_lanc.columns[-1]))
+
+    for _, row in df_lanc.iterrows():
+        val_data_fim = str(row.get(col_data_fim, "")).strip()
+        val_km_fim = str(row.get(col_km_fim, "")).strip()
+        val_cond = str(row.get(col_condutor, "")).strip()
+        val_placa = str(row.get(col_placa, "")).strip()
+        val_rv = str(row.get(col_rv, "")).strip()
+
+        tem_fim = (
+            (val_data_fim != "" and val_data_fim.lower() not in ["nan", "none", "null"]) or
+            (val_km_fim != "" and val_km_fim.lower() not in ["nan", "none", "null", "0", "0.0"])
+        )
+
+        if not tem_fim and val_rv:
+            info = {
+                "rv": val_rv,
+                "condutor": val_cond,
+                "placa": val_placa,
+                "veiculo": str(row.get(col_veiculo, "")).strip(),
+                "data_inicial": str(row.get(col_data_ini, "")).strip(),
+                "horario_inicial": str(row.get(col_hora_ini, "")).strip(),
+                "km_inicial": str(row.get(col_km_ini, "0")).strip(),
+                "destino": str(row.get(col_destino, "")).strip()
+            }
+
+            p_limpa = limpar_placa(val_placa)
+            if p_limpa:
+                veiculos_ocupados[p_limpa] = info
+
+            if val_cond:
+                abertos_por_condutor[normalizar_texto(val_cond)] = info
+
+    return abertos_por_condutor, veiculos_ocupados
 
 def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
     if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
@@ -634,59 +684,28 @@ def main():
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
     df_lanc = carregar_lancamentos_existentes()
-
-    viagens_abertas_por_condutor = {}
-    veiculos_em_uso = {}
-
-    if not df_lanc.empty and len(df_lanc.columns) >= 13:
-        for _, row in df_lanc.iterrows():
-            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
-            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
-            cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
-            placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
-            rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
-
-            # Verificação se o registro está finalizado ou em aberto
-            tem_retorno = (
-                (data_fim != "" and data_fim.lower() != "nan" and data_fim.lower() != "none") or
-                (km_fim != "" and km_fim.lower() != "nan" and km_fim.lower() != "none" and km_fim != "0")
-            )
-
-            if not tem_retorno and rv_row:
-                info_aberta = {
-                    "rv": rv_row,
-                    "condutor": cond_row,
-                    "placa": placa_row,
-                    "veiculo": str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else "",
-                    "data_inicial": str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else "",
-                    "horario_inicial": str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "",
-                    "km_inicial": str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "0",
-                    "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
-                }
-                
-                placa_k = limpar_placa(placa_row)
-                if placa_k:
-                    veiculos_em_uso[placa_k] = info_aberta
-
-                if cond_row:
-                    viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
+    viagens_abertas_por_condutor, veiculos_em_uso = extrair_viagens_abertas(df_lanc)
 
     condutor_chave = normalizar_texto(nome_condutor)
     usuario_chave = normalizar_texto(usuario_atual)
 
-    # Identificação por múltiplos cruzamentos: Planilha por nome, por login ou por Session State garantido
-    viagem_pendente_condutor = (
-        viagens_abertas_por_condutor.get(condutor_chave) or 
-        viagens_abertas_por_condutor.get(usuario_chave) or
-        st.session_state.get("viagem_aberta_local", None)
-    )
+    # Identificação por estado ativo local ou busca por nome/login
+    viagem_pendente_condutor = st.session_state.get("viagem_ativa", None)
+
+    if not viagem_pendente_condutor:
+        viagem_pendente_condutor = (
+            viagens_abertas_por_condutor.get(condutor_chave) or 
+            viagens_abertas_por_condutor.get(usuario_chave)
+        )
+        if viagem_pendente_condutor:
+            st.session_state["viagem_ativa"] = viagem_pendente_condutor
 
     # Menu Lateral
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
         st.caption(f"📍 **Base de Acesso:** {acesso_local}")
         if viagem_pendente_condutor:
-            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
+            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor.get('placa')}**\n(RV: {viagem_pendente_condutor.get('rv')})")
         if st.button("🚪 Sair do Sistema", key="btn_logout_sidebar"):
             st.session_state.clear()
             st.query_params.clear()
@@ -750,7 +769,7 @@ def main():
         # CARD COM AS INFORMAÇÕES DETALHADAS APÓS O START INICIAL
         st.markdown(f"""
             <div class="card-active-trip">
-                <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 6px; color: #166534;">
+                <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: #166534; border-bottom: 1px solid #86EFAC; padding-bottom: 4px;">
                     📋 Resumo da Viagem em Andamento
                 </div>
                 <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
@@ -770,7 +789,7 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
+            km_inicial_val = float(str(dados_ativos.get("km_inicial") or 0).replace(",", "."))
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -819,7 +838,7 @@ def main():
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.session_state["viagem_aberta_local"] = None
+                st.session_state["viagem_ativa"] = None
                 st.session_state["ultima_transacao"] = None
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
                 st.balloons()
@@ -958,8 +977,7 @@ def main():
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
-                    # Salva imediatamente no estado da sessão para garantir o Card Resumo na tela no mesmo instante
-                    st.session_state["viagem_aberta_local"] = {
+                    st.session_state["viagem_ativa"] = {
                         "rv": codigo_rv_previsto,
                         "condutor": nome_condutor,
                         "placa": placa,
@@ -969,9 +987,9 @@ def main():
                         "km_inicial": int(km_ini),
                         "destino": destino_ini.strip()
                     }
-                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
+                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada com sucesso!")
                     st.cache_data.clear()
-                    time.sleep(1.2)
+                    time.sleep(1.0)
                     st.rerun()
                 else:
                     st.session_state["ultima_transacao"] = None
