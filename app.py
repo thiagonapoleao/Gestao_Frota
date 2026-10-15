@@ -31,29 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINAÇÃO DE ELEMENTOS FANTASMAS SUPERIORES */
-        .e1o1x6gp2,
-        .st-emotion-cache-k2h9z6,
-        div[data-testid="stDecoration"],
-        div[data-testid="stToolbar"],
-        header[data-testid="stHeader"],
-        [data-testid="stHeader"],
-        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"] {
-            display: none !important;
-            height: 0px !important;
-            min-height: 0px !important;
-            max-height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            border: none !important;
-            visibility: hidden !important;
-        }
-
-        [data-testid="collapsedControl"] {
-            display: none !important;
-        }
-
+        /* 1. ELIMINA DIVS VAZIAS E ELEMENTOS FANTASMAS */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -70,158 +48,202 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. PLANO DE FUNDO EM GRADIENTE RADIAL ESCURO */
-        :root, html, body {
-            background-color: #0b0217 !important;
-            background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
+        /* 2. OCULTA A SIDEBAR NATIVA E O HEADER EXTERNO */
+        section[data-testid="stSidebar"],
+        [data-testid="stSidebar"],
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
+        div[data-testid="stSidebarCollapsedControl"],
+        [data-testid="stSidebarCollapsedControl"],
+        button[data-testid="baseButton-headerNoPadding"] {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0px !important;
+            width: 0px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
+        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        /* 3. DEGRADÊ RADIAL NO BACKGROUND GERAL */
+        :root, html, body, .stApp, [data-testid="stAppViewContainer"] {
+            background-color: #110426 !important;
+            background-image: 
+                radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
+                radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
+                radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), 
+                radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
+                radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
+                radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), 
+                radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
+                radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
+                radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
             background-attachment: fixed !important;
-            color: #0F172A !important;
-            color-scheme: light !important;
+            background-size: cover !important;
         }
 
-        .stApp, [data-testid="stAppViewContainer"] {
-            background: transparent !important;
-            color: #0F172A !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-        }
-
-        /* 3. CARD BRANCO UNIFICADO */
+        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO (COLADO NO TOPO) */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            box-shadow: 0 20px 50px rgba(11, 2, 23, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
-            padding: 24px 26px 32px 26px !important;
-            margin-top: 1rem !important;
-            margin-bottom: 2rem !important;
-            max-width: 660px !important;
+            padding-top: 10px !important;
+            padding-left: 28px !important;
+            padding-right: 28px !important;
+            padding-bottom: 34px !important;
+            margin-top: 1.2rem !important;
+            margin-bottom: 2.5rem !important;
+            max-width: 680px !important;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        div[data-testid="stVerticalBlock"] {
-            background-color: transparent !important;
+        /* 5. MENU COM APENAS OS 3 PONTINHOS - ELIMINAÇÃO TOTAL DE QUALQUER SETA */
+        div[data-testid="stExpander"] {
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px !important;
+            background-color: #F8FAFC !important;
+            margin-top: 0px !important;
+            margin-bottom: 4px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            width: fit-content !important;
+            min-width: 44px !important;
         }
 
-        .user-status-pill {
-            background: #EFF6FF;
-            color: #1E40AF;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.82rem;
-            font-weight: 700;
-            border: 1px solid #DBEAFE;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
+        /* Remove absolutamente qualquer seta, ícone ou marcador nativo */
+        div[data-testid="stExpander"] summary::-webkit-details-marker,
+        div[data-testid="stExpander"] summary::marker {
+            display: none !important;
         }
 
-        .internal-menu-panel {
-            background-color: #F8FAFC;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 16px;
-            margin-bottom: 16px;
-            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
+        div[data-testid="stExpander"] summary svg,
+        div[data-testid="stExpander"] [data-testid="stExpanderToggleIcon"],
+        div[data-testid="stExpander"] summary > span:first-child:has(svg),
+        div[data-testid="stExpander"] summary > div:first-child:has(svg) {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0px !important;
+            height: 0px !important;
         }
 
-        /* Tipografia */
-        h1, h2, h3, h4, h5, h6, p, span, label, div {
-            color: #0F172A !important;
+        div[data-testid="stExpander"] summary {
+            padding: 0px 10px !important;
+            font-size: 1.6rem !important;
+            font-weight: 900 !important;
+            color: #1E293B !important;
+            line-height: 1.1 !important;
+            letter-spacing: 2px !important;
+            list-style: none !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            user-select: none !important;
+            cursor: pointer !important;
         }
-        .stWidgetLabel p, label p {
-            color: #334155 !important;
-            font-weight: 600 !important;
-            font-size: 0.88rem !important;
+
+        div[data-testid="stExpander"] summary:hover {
+            color: #2563EB !important;
+            background-color: #EFF6FF !important;
+            border-radius: 8px !important;
+        }
+
+        div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {
+            min-width: 280px !important;
+            padding-top: 10px !important;
+        }
+
+        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
+        .logo-wrapper {
+            margin-top: 0px !important;
+            padding-top: 0px !important;
             margin-bottom: 4px !important;
         }
 
-        .card-header-block {
-            text-align: center;
-            margin-bottom: 1rem;
-            margin-top: 0.4rem;
+        /* Tipografia Base */
+        h1, h2, h3, h4, h5, h6, p, span, label {
+            color: #0F172A !important;
+        }
+
+        .stWidgetLabel p, label p {
+            color: #334155 !important;
+            font-weight: 600 !important;
+            font-size: 0.90rem !important;
+            margin-bottom: 4px !important;
+        }
+
+        /* Cabeçalho Corporativo */
+        .corporate-header {
+            background: transparent !important;
+            padding: 0 0 12px 0 !important;
+            text-align: center !important;
+            border-bottom: 1px solid #E2E8F0 !important;
+            margin-bottom: 1.3rem !important;
         }
         .corporate-title {
-            font-size: 1.35rem !important;
-            font-weight: 800 !important;
-            color: #1E3A8A !important;
+            font-size: 1.45rem !important;
+            font-weight: 700 !important;
+            color: #0F172A !important;
             margin: 4px 0 2px 0 !important;
-            letter-spacing: -0.02em !important;
+            letter-spacing: -0.025em !important;
         }
         .corporate-subtitle {
-            font-size: 0.86rem !important;
-            color: #64748B !important;
+            font-size: 1.15rem !important;
+            color: #475569 !important;
             margin: 0 !important;
-            font-weight: 500 !important;
+            font-weight: 600 !important;
+            letter-spacing: -0.015em !important;
         }
 
-        /* Centralização universal de imagens */
-        div[data-testid="stImage"] {
-            display: flex !important;
-            justify-content: center !important;
-            align-items: center !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-            margin-bottom: 0px !important;
-            padding-bottom: 0px !important;
-            width: 100% !important;
-            text-align: center !important;
-        }
-        div[data-testid="stImage"] img {
-            border-radius: 10px !important;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
-            display: block !important;
-            margin-left: auto !important;
-            margin-right: auto !important;
-            margin-bottom: 0px !important;
+        .section-subheading {
+            font-size: 1.05rem !important;
+            font-weight: 600 !important;
+            color: #1E293B !important;
+            margin-bottom: 1rem !important;
+            margin-top: 0.4rem !important;
+            letter-spacing: -0.01em !important;
         }
 
-        div[data-testid="element-container"]:has(> div[data-testid="stImage"]) {
-            margin-bottom: 0px !important;
-            padding-bottom: 0px !important;
-        }
-
-        /* Formulários operacionais */
+        /* Remove bordas duplicadas do st.form dentro do container branco */
         [data-testid="stForm"] {
-            background-color: #F8FAFC !important;
-            border: 1px solid #E2E8F0 !important;
-            border-radius: 14px !important;
+            background-color: transparent !important;
+            border: none !important;
             box-shadow: none !important;
-            padding: 20px 20px !important;
-            margin-top: 10px !important;
+            padding: 0px !important;
         }
 
         .card-vehicle-info {
             background-color: #F8FAFC !important;
-            border: 1px solid #DBEAFE !important;
-            border-left: 5px solid #2563EB !important;
+            border: 1px solid #E2E8F0 !important;
+            border-left: 4px solid #2563EB !important;
             padding: 14px 16px !important;
-            border-radius: 12px !important;
+            border-radius: 10px !important;
             margin: 14px 0 !important;
             color: #334155 !important;
             line-height: 1.6 !important;
-            font-size: 0.90rem !important;
+            font-size: 0.92rem !important;
         }
 
-        /* CARD RESUMO DA VIAGEM ATIVA: VERDE/AZUL CORPORATIVO */
         .card-active-trip {
-            background: linear-gradient(135deg, #F0FDF4 0%, #E0F2FE 100%) !important;
-            border: 1px solid #93C5FD !important;
-            border-left: 6px solid #16A34A !important;
-            padding: 18px 20px !important;
-            border-radius: 14px !important;
-            margin-bottom: 1.4rem !important;
-            margin-top: 0.8rem !important;
-            color: #0F172A !important;
-            line-height: 1.75 !important;
-            font-size: 0.95rem !important;
-            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.10) !important;
+            background-color: #EFF6FF !important;
+            border: 1px solid #BFDBFE !important;
+            padding: 16px !important;
+            border-radius: 12px !important;
+            margin-bottom: 1.3rem !important;
+            color: #1E3A8A !important;
+            line-height: 1.65 !important;
+            font-size: 0.93rem !important;
         }
         .card-active-trip b {
             color: #1E3A8A !important;
-            font-weight: 700 !important;
         }
 
-        /* Inputs e controles */
+        /* Inputs */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -231,7 +253,7 @@ st.markdown("""
         div[data-testid="stTimeInput"] > div,
         div[data-testid="stNumberInput"] > div,
         div[data-testid="stNumberInputContainer"] {
-            background-color: #FFFFFF !important;
+            background-color: #F8FAFC !important;
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 8px !important;
@@ -241,7 +263,7 @@ st.markdown("""
         div[data-baseweb="select"]:focus-within,
         div[data-testid="stNumberInputContainer"]:focus-within {
             border-color: #2563EB !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.20) !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
         }
 
         input[type="text"], 
@@ -255,53 +277,31 @@ st.markdown("""
             font-size: 0.94rem !important;
             font-weight: 500 !important;
         }
+        input::placeholder {
+            color: #94A3B8 !important;
+            -webkit-text-fill-color: #94A3B8 !important;
+        }
 
-        /* Botões principais */
-        div.stButton > button:first-child,
+        /* Botões Principais de Envio */
         div[data-testid="stFormSubmitButton"] > button {
-            background: linear-gradient(135deg, #1D4ED8, #2563EB) !important;
-            background-color: #1D4ED8 !important;
+            background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+            background-color: #2563EB !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             border: none !important;
             border-radius: 10px !important;
-            height: 46px !important;
-            font-size: 0.98rem !important;
+            height: 48px !important;
+            font-size: 1rem !important;
             font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(29, 78, 216, 0.35) !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
+            width: 100% !important;
         }
-        div.stButton > button:first-child:hover,
         div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1E40AF, #1D4ED8) !important;
+            background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(29, 78, 216, 0.45) !important;
-        }
-
-        .btn-menu-card button {
-            background: #F1F5F9 !important;
-            color: #334155 !important;
-            -webkit-text-fill-color: #334155 !important;
-            border: 1px solid #CBD5E1 !important;
-            border-radius: 8px !important;
-            height: 38px !important;
-            font-size: 0.88rem !important;
-            box-shadow: none !important;
-        }
-        .btn-menu-card button:hover {
-            background: #E2E8F0 !important;
-            transform: none !important;
-            box-shadow: none !important;
-        }
-
-        section[data-testid="stSidebar"] {
-            background-color: #FFFFFF !important;
-            border-right: 1px solid #DBEAFE !important;
-            z-index: 10000000 !important;
-        }
-        section[data-testid="stSidebar"] * {
-            color: #1E293B !important;
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -317,46 +317,44 @@ GID_VEICULOS = "0"               # Aba Frota
 GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
 
 # -------------------------------------------------------------
-# 3. SUPORTE A ARQUIVOS LOCAIS
+# 3. SUPORTE A LOGOTIPO CORPORATIVO E IMAGEM DA FROTA
 # -------------------------------------------------------------
-def obter_caminho_arquivo(nomes_possiveis):
+def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
-    for nome in nomes_possiveis:
+    nomes = ["Logotipo", "logotipo", "Logo", "logo"]
+    for nome in nomes:
         for ext in extensoes:
             caminho = f"{nome}{ext}"
             if os.path.exists(caminho) and not os.path.isdir(caminho):
                 return caminho
     return None
 
-def obter_caminho_logotipo():
-    return obter_caminho_arquivo(["Logotipo", "logotipo", "Logo", "logo"])
+def obter_caminho_imagem_frota():
+    extensoes = [".png", ".jpg", ".jpeg", ".webp", ".svg", ""]
+    nomes = ["Frota", "frota", "FROTA"]
+    for nome in nomes:
+        for ext in extensoes:
+            caminho = f"{nome}{ext}"
+            if os.path.exists(caminho) and not os.path.isdir(caminho):
+                return caminho
+    return None
 
-def obter_caminho_imagem_veiculo():
-    return obter_caminho_arquivo([
-        "veiculo", "veiculos", "Veiculo", "Veiculos",
-        "frota", "Frota", "carro", "carros", "Carro", "Carros",
-        "banner", "Banner"
-    ])
-
-def renderizar_cabecalho_interno(subtitulo="Gestão e Controle Operacional de Frotas"):
-    """Renderiza apenas o logotipo e títulos (SEM a imagem da frota)."""
+def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
     caminho_logo = obter_caminho_logotipo()
-
+    st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
-            st.image(logo_img, width=110)
+            col_l1, col_logo, col_l2 = st.columns([1, 1.4, 1])
+            with col_logo:
+                st.image(logo_img, use_container_width=True)
         except Exception:
-            st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+            st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
-        st.markdown('<div class="corporate-title" style="text-align:center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+        st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown(f"""
-        <div class="card-header-block">
-            <div class="corporate-title">Registro e Controle de Saída de Veículos</div>
-            <p class="corporate-subtitle">{subtitulo}</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown(f'<div class="corporate-header"><p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
 # -------------------------------------------------------------
 # 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
@@ -368,14 +366,8 @@ def normalizar_texto(texto):
     return texto.strip().lower()
 
 def limpar_placa(placa_str):
+    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
-
-def _eh_vazio_ou_nulo(val):
-    """Verifica com precisão se o campo está vazio ou nulo."""
-    if val is None:
-        return True
-    s = str(val).strip().lower()
-    return s in ["", "nan", "none", "null", "nat", "0", "0.0", "undefined", "-"]
 
 @st.cache_data(ttl=60)
 def carregar_usuarios():
@@ -463,10 +455,9 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    t_anti_cache = int(time.time())
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&_nocache={t_anti_cache}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&_nocache={t_anti_cache}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
     ]
     for url in urls:
         try:
@@ -476,58 +467,6 @@ def carregar_lancamentos_existentes():
         except Exception:
             continue
     return pd.DataFrame()
-
-def extrair_viagens_abertas(df_lanc):
-    abertos_por_condutor = {}
-    veiculos_ocupados = {}
-
-    if df_lanc.empty:
-        return abertos_por_condutor, veiculos_ocupados
-
-    col_map = {normalizar_texto(c): c for c in df_lanc.columns}
-    
-    col_data_ini = col_map.get("data inicial", col_map.get("data_inicial", df_lanc.columns[0]))
-    col_hora_ini = col_map.get("horario inicial", col_map.get("horario_inicial", df_lanc.columns[1] if len(df_lanc.columns) > 1 else df_lanc.columns[0]))
-    col_km_ini = col_map.get("km inicial", col_map.get("km_inicial", df_lanc.columns[2] if len(df_lanc.columns) > 2 else df_lanc.columns[0]))
-    col_data_fim = col_map.get("data final", col_map.get("data_final", df_lanc.columns[3] if len(df_lanc.columns) > 3 else df_lanc.columns[0]))
-    col_hora_fim = col_map.get("horario final", col_map.get("horario_final", df_lanc.columns[4] if len(df_lanc.columns) > 4 else df_lanc.columns[0]))
-    col_km_fim = col_map.get("km final", col_map.get("km_final", df_lanc.columns[5] if len(df_lanc.columns) > 5 else df_lanc.columns[0]))
-    col_condutor = col_map.get("condutor", col_map.get("motorista", df_lanc.columns[6] if len(df_lanc.columns) > 6 else df_lanc.columns[0]))
-    col_destino = col_map.get("destino", col_map.get("rota", df_lanc.columns[7] if len(df_lanc.columns) > 7 else df_lanc.columns[0]))
-    col_placa = col_map.get("placa", df_lanc.columns[8] if len(df_lanc.columns) > 8 else df_lanc.columns[0])
-    col_veiculo = col_map.get("veiculo", col_map.get("modelo", df_lanc.columns[9] if len(df_lanc.columns) > 9 else df_lanc.columns[0]))
-    col_rv = col_map.get("rv", col_map.get("registro", df_lanc.columns[12] if len(df_lanc.columns) > 12 else df_lanc.columns[-1]))
-
-    for _, row in df_lanc.iterrows():
-        val_data_fim = row.get(col_data_fim, "")
-        val_km_fim = row.get(col_km_fim, "")
-        val_cond = str(row.get(col_condutor, "")).strip()
-        val_placa = str(row.get(col_placa, "")).strip()
-        val_rv = str(row.get(col_rv, "")).strip()
-
-        # Condição aprimorada: só é finalizada se houver data OU km final preenchidos
-        tem_fim = not (_eh_vazio_ou_nulo(val_data_fim) and _eh_vazio_ou_nulo(val_km_fim))
-
-        if not tem_fim and val_rv:
-            info = {
-                "rv": val_rv,
-                "condutor": val_cond,
-                "placa": val_placa,
-                "veiculo": str(row.get(col_veiculo, "")).strip(),
-                "data_inicial": str(row.get(col_data_ini, "")).strip(),
-                "horario_inicial": str(row.get(col_hora_ini, "")).strip(),
-                "km_inicial": str(row.get(col_km_ini, "0")).strip(),
-                "destino": str(row.get(col_destino, "")).strip()
-            }
-
-            p_limpa = limpar_placa(val_placa)
-            if p_limpa:
-                veiculos_ocupados[p_limpa] = info
-
-            if val_cond:
-                abertos_por_condutor[normalizar_texto(val_cond)] = info
-
-    return abertos_por_condutor, veiculos_ocupados
 
 def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, data_ini, km_ini):
     if df_lancamentos.empty or len(df_lancamentos.columns) < 13:
@@ -613,29 +552,24 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (LOGOTIPO + IMAGEM DA FROTA 317PX)
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
-    caminho_logo = obter_caminho_logotipo()
-    caminho_veiculo = obter_caminho_imagem_veiculo()
+    renderizar_cabecalho("Portal de Acesso do Condutor")
     
+    caminho_frota = obter_caminho_imagem_frota()
+    if caminho_frota:
+        try:
+            img_frota = Image.open(caminho_frota)
+            col_esq, col_centro, col_dir = st.columns([1, 2.8, 1])
+            with col_centro:
+                st.image(img_frota, use_container_width=True)
+        except Exception:
+            pass
+
     with st.form("form_login"):
-        if caminho_logo:
-            try:
-                logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=110)
-            except Exception:
-                st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
-        else:
-            st.markdown("<h3 style='text-align:center;'>🚗 Master Café</h3>", unsafe_allow_html=True)
-
-        if caminho_veiculo:
-            try:
-                img_veiculo = Image.open(caminho_veiculo)
-                st.image(img_veiculo, width=317)
-            except Exception:
-                pass
-
+        st.markdown('<div class="section-subheading">Identificação do Condutor</div>', unsafe_allow_html=True)
+        
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
         btn_login = st.form_submit_button("Entrar no Sistema")
@@ -656,14 +590,13 @@ def tela_login(df_usuarios):
                 st.session_state["usuario_logado"] = usuario_digitado
                 st.session_state["nome_condutor"] = row_user["nome"]
                 st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
-                st.session_state["menu_aberto"] = False
                 st.query_params["u"] = usuario_digitado
                 st.rerun()
             else:
                 st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL (TELA DA VIAGEM)
+# 6. APLICATIVO PRINCIPAL
 # -------------------------------------------------------------
 def main():
     df_usuarios = carregar_usuarios()
@@ -679,115 +612,93 @@ def main():
                 st.session_state["usuario_logado"] = usuario_url
                 st.session_state["nome_condutor"] = row_user["nome"]
                 st.session_state["acesso_local"] = row_user.get("acesso_local", "Geral")
-                st.session_state["menu_aberto"] = False
 
     if not st.session_state.get("autenticado", False):
         tela_login(df_usuarios)
         return
 
-    usuario_atual = st.session_state.get("usuario_logado", "")
+    usuario_atual = st.session_state.get("usuario_logado")
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
     df_lanc = carregar_lancamentos_existentes()
-    viagens_abertas_por_condutor, veiculos_em_uso = extrair_viagens_abertas(df_lanc)
+
+    viagens_abertas_por_condutor = {}
+    veiculos_em_uso = {}
+
+    if not df_lanc.empty and len(df_lanc.columns) >= 13:
+        for _, row in df_lanc.iterrows():
+            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
+            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
+            cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
+            placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
+            rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
+
+            if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
+                info_aberta = {
+                    "rv": rv_row,
+                    "condutor": cond_row,
+                    "placa": placa_row,
+                    "veiculo": str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else "",
+                    "data_inicial": str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else "",
+                    "horario_inicial": str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "",
+                    "km_inicial": str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "0",
+                    "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
+                }
+                
+                placa_k = limpar_placa(placa_row)
+                if placa_k:
+                    veiculos_em_uso[placa_k] = info_aberta
+
+                if cond_row:
+                    viagens_abertas_por_condutor[normalizar_texto(cond_row)] = info_aberta
 
     condutor_chave = normalizar_texto(nome_condutor)
-    usuario_chave = normalizar_texto(usuario_atual)
+    viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
-    # Identificação por estado ativo local ou busca por nome/login
-    viagem_pendente_condutor = st.session_state.get("viagem_ativa", None)
-
-    if not viagem_pendente_condutor:
-        viagem_pendente_condutor = (
-            viagens_abertas_por_condutor.get(condutor_chave) or 
-            viagens_abertas_por_condutor.get(usuario_chave)
-        )
-        if viagem_pendente_condutor:
-            st.session_state["viagem_ativa"] = viagem_pendente_condutor
-
-    # Menu Lateral
-    with st.sidebar:
-        st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
-        st.caption(f"📍 **Base de Acesso:** {acesso_local}")
-        if viagem_pendente_condutor:
-            st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor.get('placa')}**\n(RV: {viagem_pendente_condutor.get('rv')})")
-        if st.button("🚪 Sair do Sistema", key="btn_logout_sidebar"):
-            st.session_state.clear()
-            st.query_params.clear()
-            st.rerun()
-
-    agora = obter_agora_brasil()
-    ano_atual = agora.strftime("%Y")
-
-    # -------------------------------------------------------------
-    # 7. CONTEÚDO PRINCIPAL (DENTRO DO CARD BRANCO UNIFICADO)
-    # -------------------------------------------------------------
-    
-    # 1. BOTÃO DE ACESSO AO MENU EMBUTIDO NO TOPO DO CARD
-    col_menu_btn, col_user_info = st.columns([1.1, 2.2])
-    
-    with col_menu_btn:
-        st.markdown('<div class="btn-menu-card">', unsafe_allow_html=True)
-        texto_botao = "✖ Fechar Menu" if st.session_state.get("menu_aberto", False) else "☰ Menu do Condutor"
-        if st.button(texto_botao, key="toggle_menu_card", use_container_width=True):
-            st.session_state["menu_aberto"] = not st.session_state.get("menu_aberto", False)
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with col_user_info:
-        st.markdown(f"""
-            <div style="text-align: right; padding-top: 6px;">
-                <span class="user-status-pill">👤 {nome_condutor} • {acesso_local}</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-    if st.session_state.get("menu_aberto", False):
-        st.markdown(f"""
-            <div class="internal-menu-panel">
-                <b>🚗 Painel do Condutor</b><br>
-                <span style="font-size: 0.88rem; color: #475569;">Usuário: <b>{usuario_atual}</b> | Cidade Base: <b>{acesso_local}</b></span>
-            </div>
-        """, unsafe_allow_html=True)
-        col_m1, col_m2 = st.columns(2)
+    # ---------------------------------------------------------------------------------
+    # MENU DO SISTEMA NATIVO - EXCLUSIVAMENTE OS 3 PONTINHOS (···), ZERO SETAS
+    # ---------------------------------------------------------------------------------
+    with st.expander("···", expanded=False):
+        col_m1, col_m2 = st.columns([1.5, 1])
         with col_m1:
-            if st.button("🔄 Atualizar Informações", use_container_width=True):
+            st.write(f"👤 **Condutor:** {nome_condutor}")
+            st.caption(f"📍 **Base:** {acesso_local}")
+            if viagem_pendente_condutor:
+                st.warning(f"⚠️ Viagem em aberto no veículo: **{viagem_pendente_condutor['placa']}**")
+        with col_m2:
+            if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_menu_refresh"):
                 st.cache_data.clear()
                 st.rerun()
-        with col_m2:
-            if st.button("🚪 Desconectar / Sair", use_container_width=True):
+            if st.button("🚪 Sair do Sistema", use_container_width=True, key="btn_menu_logout"):
                 st.session_state.clear()
                 st.query_params.clear()
                 st.rerun()
-        st.markdown("<hr style='margin: 12px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
-    # 2. Cabeçalho interno (Logo e Título - SEM a imagem da frota)
-    renderizar_cabecalho_interno("Controle de Deslocamentos e Quilometragem")
+    # Cabeçalho Principal (Logotipo colado imediatamente abaixo do menu)
+    renderizar_cabecalho("Registro e Controle de Saída de Veículos")
+    agora = obter_agora_brasil()
+    ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # CENÁRIO 1: CONDUTOR EM VIAGEM ABERTA (EXIBE CARD RESUMO + FORM FINAL)
+    # CENÁRIO 1: VIAGEM ABERTA (START FINAL)
     # =========================================================================
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
 
-        st.warning("⚠️ **Você possui uma viagem em andamento!** Finalize o retorno abaixo para liberar novos lançamentos.")
-        
-        # CARD COM AS INFORMAÇÕES DETALHADAS APÓS O START INICIAL (VERDE/AZUL CORPORATIVO)
+        st.warning("⚠️ **Você possui uma viagem em andamento!** Finalize o retorno para liberar novos lançamentos.")
         st.markdown(f"""
             <div class="card-active-trip">
-                <div style="font-size: 1.05rem; font-weight: 800; margin-bottom: 8px; color: #15803D; border-bottom: 1px solid #93C5FD; padding-bottom: 4px;">
-                    📋 Resumo da Viagem em Andamento
-                </div>
-                <b>🎫 Registro de Viagem (RV):</b> {dados_ativos.get('rv')}<br>
+                <b>🎫 Registro de Viagem:</b> {dados_ativos.get('rv')}<br>
                 <b>👤 Condutor:</b> {dados_ativos.get('condutor')}<br>
-                <b>🚙 Veículo & Placa:</b> {dados_ativos.get('veiculo')} — <b>{dados_ativos.get('placa')}</b><br>
-                <b>⏱️ Data e Horário de Início:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial de Saída:</b> {dados_ativos.get('km_inicial')} km<br>
-                <b>📍 Destino / Rota Informada:</b> {dados_ativos.get('destino') or 'Não informado'}
+                <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
+                <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
+                <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
+                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
             </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("Start Final (Retorno do Veículo)")
+        st.markdown('<div class="section-subheading">Start Final (Retorno do Veículo)</div>', unsafe_allow_html=True)
         with st.form("form_start_final"):
             col_df, col_hf = st.columns(2)
             with col_df:
@@ -795,7 +706,7 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = float(str(dados_ativos.get("km_inicial") or 0).replace(",", "."))
+            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -844,8 +755,6 @@ def main():
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.session_state["viagem_ativa"] = None
-                st.session_state["ultima_transacao"] = None
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
                 st.balloons()
                 st.cache_data.clear()
@@ -856,7 +765,7 @@ def main():
                 st.error(f"❌ Falha ao finalizar na planilha: {msg}")
 
     # =========================================================================
-    # CENÁRIO 2: CONDUTOR LIVRE (NOVO REGISTRO / START INICIAL)
+    # CENÁRIO 2: INÍCIO DE NOVA VIAGEM
     # =========================================================================
     else:
         df_veiculos_todos = carregar_veiculos()
@@ -879,7 +788,7 @@ def main():
             st.warning(f"⚠️ Nenhum veículo cadastrado com pernoite para sua localidade ({acesso_local}). Contate o gestor de frota.")
             return
 
-        st.subheader("1. Seleção do Veículo")
+        st.markdown('<div class="section-subheading">1. Seleção do Veículo</div>', unsafe_allow_html=True)
         
         df_veiculos["rotulo_completo"] = df_veiculos.apply(
             lambda r: f"{r['placa']} - {r['veiculo']} ({r['local_pernoite']})" if r.get('local_pernoite') else f"{r['placa']} - {r['veiculo']}",
@@ -913,7 +822,7 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-            st.subheader("2. Start Inicial (Saída do Veículo)")
+            st.markdown('<div class="section-subheading">2. Start Inicial (Saída do Veículo)</div>', unsafe_allow_html=True)
             with st.form("form_start_inicial"):
                 col_d, col_h = st.columns(2)
                 with col_d:
@@ -942,7 +851,6 @@ def main():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
                     return
 
-                # Verificação anti-duplicidade em tempo real
                 df_lanc_tempo_real = carregar_lancamentos_existentes()
                 duplicado, motivo_duplicado = verificar_lancamento_duplicado(
                     df_lanc_tempo_real,
@@ -983,20 +891,9 @@ def main():
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
-                    # Persistência ativa no estado da sessão: Card exibido imediatamente
-                    st.session_state["viagem_ativa"] = {
-                        "rv": codigo_rv_previsto,
-                        "condutor": nome_condutor,
-                        "placa": placa,
-                        "veiculo": modelo,
-                        "data_inicial": data_ini.strftime("%d/%m/%Y"),
-                        "horario_inicial": hora_ini.strftime("%H:%M:%S"),
-                        "km_inicial": int(km_ini),
-                        "destino": destino_ini.strip()
-                    }
-                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada com sucesso!")
+                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
                     st.cache_data.clear()
-                    time.sleep(1.0)
+                    time.sleep(1.5)
                     st.rerun()
                 else:
                     st.session_state["ultima_transacao"] = None
