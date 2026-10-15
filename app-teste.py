@@ -20,13 +20,17 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONTROLE E CONFIGURAÇÃO DA SIDEBAR
 # -------------------------------------------------------------
+if "sidebar_aberta" not in st.session_state:
+    st.session_state["sidebar_aberta"] = False
+
+# Abre ou fecha dinamicamente no carregamento
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded" if st.session_state["sidebar_aberta"] else "collapsed"
 )
 
 st.markdown("""
@@ -48,11 +52,18 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER E ITENS EXTERNOS */
-        header[data-testid="stHeader"] {
-            background: transparent !important;
+        /* 2. OCULTA DEFINITIVAMENTE O BOTÃO DE SETINHAS FORA DO CONTAINER */
+        header[data-testid="stHeader"],
+        [data-testid="stHeader"],
+        div[data-testid="stSidebarCollapsedControl"],
+        [data-testid="stSidebarCollapsedControl"],
+        button[data-testid="baseButton-headerNoPadding"] {
+            display: none !important;
+            visibility: hidden !important;
             height: 0px !important;
-            border: none !important;
+            width: 0px !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -78,7 +89,7 @@ st.markdown("""
             background-size: cover !important;
         }
 
-        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO (ZERO ESPAÇO NO TOPO) */
+        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO (COLADO NO TOPO) */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
@@ -95,44 +106,39 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. ÁREA DO BOTÃO DO MENU TOTALMENTE COLADA NO TOPO */
-        .menu-top-bar {
-            display: flex !important;
-            justify-content: flex-start !important;
-            align-items: center !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            width: 100% !important;
-        }
-
-        .btn-menu-lateral {
+        /* 5. BOTÃO NATIVO DO MENU DENTRO DO CONTAINER (COLADO NO TOPO) */
+        div.stButton.btn-menu-container > button {
             background-color: #F8FAFC !important;
             color: #1E293B !important;
+            -webkit-text-fill-color: #1E293B !important;
             border: 1px solid #CBD5E1 !important;
             border-radius: 8px !important;
-            padding: 6px 12px !important;
-            font-size: 0.90rem !important;
+            height: 32px !important;
+            min-height: 32px !important;
+            padding: 0px 10px !important;
+            font-size: 0.88rem !important;
             font-weight: 700 !important;
-            cursor: pointer !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            gap: 6px !important;
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
             transition: all 0.2s ease-in-out !important;
-            margin-top: 2px !important;
-            margin-bottom: 0px !important;
+            margin: 0px !important;
+            width: auto !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
 
-        .btn-menu-lateral:hover {
+        div.stButton.btn-menu-container > button:hover {
             background-color: #EFF6FF !important;
             color: #2563EB !important;
+            -webkit-text-fill-color: #2563EB !important;
             border-color: #93C5FD !important;
             transform: scale(1.03) !important;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
         }
 
         /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
         .logo-wrapper {
-            margin-top: 2px !important;
+            margin-top: 0px !important;
             padding-top: 0px !important;
             margin-bottom: 4px !important;
         }
@@ -336,32 +342,14 @@ def obter_caminho_imagem_frota():
     return None
 
 def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_botao_menu=False):
-    # 1. Botão do menu colado no topo do container branco com disparador robusto do DOM
+    # 1. Botão nativo do Streamlit dentro do container colado no topo
     if incluir_botao_menu:
-        st.markdown("""
-            <div class="menu-top-bar">
-                <button type="button" class="btn-menu-lateral" onclick="
-                    const pDoc = window.parent.document || document;
-                    let btn = pDoc.querySelector('[data-testid=stSidebarCollapsedControl] button') 
-                           || pDoc.querySelector('[data-testid=stSidebarCollapseButton] button')
-                           || pDoc.querySelector('[data-testid=stSidebarCollapseButton]')
-                           || pDoc.querySelector('[data-testid=stSidebarCollapsedControl]')
-                           || pDoc.querySelector('button[aria-label*=sidebar]')
-                           || pDoc.querySelector('button[aria-label*=Sidebar]');
-                    if (btn) {
-                        btn.click();
-                    } else {
-                        const sidebar = pDoc.querySelector('section[data-testid=stSidebar]');
-                        if (sidebar) {
-                            sidebar.setAttribute('aria-expanded', 'true');
-                            sidebar.classList.remove('collapsed');
-                        }
-                    }
-                ">
-                    <span>&gt;&gt;</span> Menu
-                </button>
-            </div>
-        """, unsafe_allow_html=True)
+        col_btn, _ = st.columns([0.28, 0.72])
+        with col_btn:
+            label_btn = "◀ Fechar" if st.session_state.get("sidebar_aberta") else "▶ Menu"
+            if st.button(label_btn, key="btn_toggle_sidebar_real"):
+                st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
+                st.rerun()
 
     # 2. Logotipo colado imediatamente após o botão
     caminho_logo = obter_caminho_logotipo()
@@ -702,7 +690,7 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # Cabeçalho Principal (com o botão >> colado no topo e o logo logo abaixo)
+    # Cabeçalho Principal (renderiza o botão nativo do menu e o logotipo colados)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_botao_menu=True)
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
