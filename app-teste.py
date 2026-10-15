@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (REMOCAO DE DIVS/MARKDOWN VAZIOS)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -31,7 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA QUALQUER stMarkdownContainer OU ELEMENT-CONTAINER VAZIO/SEM USO */
+        /* 1. ELIMINA CONTAINERS VAZIOS */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -77,7 +77,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 3. TEMA CLARO CORPORATIVO NATIVO */
+        /* 3. TEMA GERAL */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -122,12 +122,42 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
+        /* 4. FORMULÁRIO COM DEGRADÊ RADIAL PERSONALIZADO */
         [data-testid="stForm"] {
-            background-color: #FFFFFF !important;
-            border: 1px solid #E2E8F0 !important;
-            border-radius: 14px !important;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-            padding: 24px !important;
+            background-color: #0d0722 !important;
+            background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
+                        radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
+                        radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), 
+                        radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
+                        radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
+                        radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), 
+                        radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
+                        radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
+                        radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
+            border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            border-top: 4px solid #818CF8 !important;
+            border-radius: 16px !important;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, 0.25) !important;
+            padding: 24px 24px 28px 24px !important;
+            margin-top: 10px !important;
+            margin-bottom: 20px !important;
+        }
+
+        /* Contraste dos textos internos do formulário escuro */
+        [data-testid="stForm"] h1, 
+        [data-testid="stForm"] h2, 
+        [data-testid="stForm"] h3, 
+        [data-testid="stForm"] h4, 
+        [data-testid="stForm"] h5, 
+        [data-testid="stForm"] h6 {
+            color: #FFFFFF !important;
+        }
+        [data-testid="stForm"] .stWidgetLabel p, 
+        [data-testid="stForm"] label p,
+        [data-testid="stForm"] span,
+        [data-testid="stForm"] p {
+            color: #E2E8F0 !important;
+            font-weight: 500 !important;
         }
 
         .card-vehicle-info {
@@ -176,13 +206,13 @@ st.markdown("""
         div[data-baseweb="input"]:focus-within,
         div[data-baseweb="select"]:focus-within,
         div[data-testid="stNumberInputContainer"]:focus-within {
-            border-color: #2563EB !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15) !important;
+            border-color: #818CF8 !important;
+            box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25) !important;
         }
 
         input[type="text"], 
         input[type="number"], 
-        input[type="password"],
+        input[type="password"], 
         input {
             background-color: #FFFFFF !important;
             color: #0F172A !important;
@@ -199,8 +229,8 @@ st.markdown("""
         /* Botões */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
-            background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-            background-color: #2563EB !important;
+            background: linear-gradient(135deg, #6366F1, #4F46E5) !important;
+            background-color: #6366F1 !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             border: none !important;
@@ -208,18 +238,18 @@ st.markdown("""
             height: 48px !important;
             font-size: 1rem !important;
             font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
         }
         div.stButton > button:first-child:hover,
         div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
-            background-color: #1D4ED8 !important;
+            background: linear-gradient(135deg, #4F46E5, #4338CA) !important;
+            background-color: #4F46E5 !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+            box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45) !important;
         }
 
         section[data-testid="stSidebar"] {
@@ -301,7 +331,6 @@ def carregar_usuarios():
                 c_pass = cols_norm.get("senha", df.columns[1] if len(df.columns) > 1 else df.columns[0])
                 c_nome = cols_norm.get("nome", cols_norm.get("condutor", c_user))
                 
-                # Identifica coluna de Acesso / Localidade / Cidade
                 c_acesso = None
                 for col_k in ["acesso", "local", "cidade", "unidade", "pernoite", "base"]:
                     if col_k in cols_norm:
@@ -532,10 +561,8 @@ def main():
     nome_condutor = st.session_state.get("nome_condutor", "Condutor")
     acesso_local = st.session_state.get("acesso_local", "Geral")
 
-    # Lê lançamentos para analisar status das viagens em tempo real
     df_lanc = carregar_lancamentos_existentes()
 
-    # Mapeamento de viagens em aberto na planilha (onde Data Final ou Km Final está vazio)
     viagens_abertas_por_condutor = {}
     veiculos_em_uso = {}
 
