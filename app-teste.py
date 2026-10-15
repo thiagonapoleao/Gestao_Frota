@@ -104,7 +104,7 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU EXPANSÍVEL NATIVO COM APENAS OS 3 PONTINHOS (···) */
+        /* 5. MENU COM APENAS OS 3 PONTINHOS - ELIMINAÇÃO TOTAL DE QUALQUER SETA */
         div[data-testid="stExpander"] {
             border: 1px solid #CBD5E1 !important;
             border-radius: 8px !important;
@@ -116,12 +116,28 @@ st.markdown("""
             min-width: 44px !important;
         }
 
+        /* Remove absolutamente qualquer seta, ícone ou marcador nativo */
+        div[data-testid="stExpander"] summary::-webkit-details-marker,
+        div[data-testid="stExpander"] summary::marker {
+            display: none !important;
+        }
+
+        div[data-testid="stExpander"] summary svg,
+        div[data-testid="stExpander"] [data-testid="stExpanderToggleIcon"],
+        div[data-testid="stExpander"] summary > span:first-child:has(svg),
+        div[data-testid="stExpander"] summary > div:first-child:has(svg) {
+            display: none !important;
+            visibility: hidden !important;
+            width: 0px !important;
+            height: 0px !important;
+        }
+
         div[data-testid="stExpander"] summary {
-            padding: 2px 10px !important;
-            font-size: 1.5rem !important;
+            padding: 0px 10px !important;
+            font-size: 1.6rem !important;
             font-weight: 900 !important;
             color: #1E293B !important;
-            line-height: 1 !important;
+            line-height: 1.1 !important;
             letter-spacing: 2px !important;
             list-style: none !important;
             display: flex !important;
@@ -129,17 +145,6 @@ st.markdown("""
             justify-content: center !important;
             user-select: none !important;
             cursor: pointer !important;
-        }
-
-        div[data-testid="stExpander"] summary::-webkit-details-marker {
-            display: none !important;
-        }
-
-        /* Oculta qualquer ícone ou seta que o Streamlit queira injetar */
-        div[data-testid="stExpander"] summary svg,
-        div[data-testid="stExpander"] summary span:first-child:empty {
-            display: none !important;
-            visibility: hidden !important;
         }
 
         div[data-testid="stExpander"] summary:hover {
@@ -153,7 +158,7 @@ st.markdown("""
             padding-top: 10px !important;
         }
 
-        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O MENU */
+        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
         .logo-wrapper {
             margin-top: 0px !important;
             padding-top: 0px !important;
@@ -652,7 +657,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO SISTEMA NATIVO COM APENAS OS 3 PONTINHOS (···), SEM SETAS E SEM TEXTO
+    # MENU DO SISTEMA NATIVO - EXCLUSIVAMENTE OS 3 PONTINHOS (···), ZERO SETAS
     # ---------------------------------------------------------------------------------
     with st.expander("···", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
