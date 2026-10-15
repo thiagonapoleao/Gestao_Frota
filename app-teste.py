@@ -20,16 +20,13 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONTROLE E CONFIGURAÇÃO DA SIDEBAR (EXPANDIDA / RECOLHIDA)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
-if "sidebar_aberta" not in st.session_state:
-    st.session_state["sidebar_aberta"] = False
-
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="expanded" if st.session_state["sidebar_aberta"] else "collapsed"
+    initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
@@ -51,13 +48,11 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. OCULTA AS SETINHAS E HEADER NATIVOS EXTERNOS */
-        header[data-testid="stHeader"],
-        div[data-testid="stSidebarCollapsedControl"],
-        [data-testid="stSidebarCollapsedControl"] {
-            display: none !important;
-            visibility: hidden !important;
+        /* 2. REMOVE HEADER E CONTROLES EXTERNOS */
+        header[data-testid="stHeader"] {
+            background: transparent !important;
             height: 0px !important;
+            border: none !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -83,49 +78,61 @@ st.markdown("""
             background-size: cover !important;
         }
 
-        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO */
+        /* 4. CONTAINER BRANCO UNIFICADO (PADDING SUPERIOR REDUZIDO A ZERO) */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 24px 30px 38px 30px !important;
-            margin-top: 1.5rem !important;
+            padding: 12px 28px 36px 28px !important;
+            margin-top: 1.2rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
-            position: relative !important;
         }
 
-        /* 5. BOTÃO DAS 2 SETINHAS (>> / <<) DENTRO DO CONTAINER */
-        div[data-testid="stButton"].sidebar-toggle-arrows > button {
-            background-color: #F8FAFC !important;
-            color: #1E293B !important;
-            -webkit-text-fill-color: #1E293B !important;
-            border: 1px solid #CBD5E1 !important;
-            border-radius: 8px !important;
-            width: 38px !important;
-            height: 34px !important;
-            min-width: 38px !important;
+        /* 5. BARRA DO BOTÃO SEM ESPAÇO NO TOPO */
+        .sidebar-trigger-container {
+            width: 100%;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            margin: 0px 0px 4px 0px !important;
             padding: 0px !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            font-size: 1rem !important;
-            font-weight: 700 !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
-            transition: all 0.2s ease-in-out !important;
-            margin: 0 !important;
-            line-height: 1 !important;
         }
 
-        div[data-testid="stButton"].sidebar-toggle-arrows > button:hover {
-            background-color: #EFF6FF !important;
-            color: #2563EB !important;
-            -webkit-text-fill-color: #2563EB !important;
-            border-color: #93C5FD !important;
-            transform: scale(1.05) !important;
+        .btn-setinhas-menu {
+            background-color: #F8FAFC;
+            color: #1E293B;
+            border: 1px solid #CBD5E1;
+            border-radius: 8px;
+            width: 36px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease-in-out;
+            outline: none;
+            user-select: none;
+        }
+
+        .btn-setinhas-menu:hover {
+            background-color: #EFF6FF;
+            color: #2563EB;
+            border-color: #93C5FD;
+            transform: scale(1.05);
+        }
+
+        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
+        .logo-wrapper {
+            margin-top: 0px !important;
+            padding-top: 0px !important;
+            margin-bottom: 6px !important;
         }
 
         /* Tipografia Base */
@@ -143,16 +150,16 @@ st.markdown("""
         /* Cabeçalho Corporativo */
         .corporate-header {
             background: transparent !important;
-            padding: 0 0 14px 0 !important;
+            padding: 0 0 12px 0 !important;
             text-align: center !important;
             border-bottom: 1px solid #E2E8F0 !important;
-            margin-bottom: 1.4rem !important;
+            margin-bottom: 1.3rem !important;
         }
         .corporate-title {
             font-size: 1.45rem !important;
             font-weight: 700 !important;
             color: #0F172A !important;
-            margin: 6px 0 3px 0 !important;
+            margin: 4px 0 2px 0 !important;
             letter-spacing: -0.025em !important;
         }
         .corporate-subtitle {
@@ -327,18 +334,23 @@ def obter_caminho_imagem_frota():
     return None
 
 def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_setinhas=False):
-    # Renderiza as 2 setinhas (>> / <<) DENTRO do container branco no canto superior esquerdo
+    # Botão de 2 setinhas colado no topo do container que abre/fecha a sidebar diretamente via DOM
     if incluir_setinhas:
-        col_seta, _ = st.columns([0.15, 0.85])
-        with col_seta:
-            st.markdown('<div class="sidebar-toggle-arrows">', unsafe_allow_html=True)
-            icone_seta = "<<" if st.session_state.get("sidebar_aberta") else ">>"
-            if st.button(icone_seta, help="Abrir/Fechar Menu Lateral", key="btn_toggle_setinhas"):
-                st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown("""
+            <div class="sidebar-trigger-container">
+                <button type="button" class="btn-setinhas-menu" title="Abrir Menu Lateral" onclick="
+                    const pDoc = window.parent.document || document;
+                    const btn = pDoc.querySelector('[data-testid=stSidebarCollapsedControl] button') 
+                             || pDoc.querySelector('[data-testid=stSidebarCollapseButton] button')
+                             || pDoc.querySelector('button[aria-label*=sidebar]')
+                             || pDoc.querySelector('button[aria-label*=Sidebar]');
+                    if (btn) { btn.click(); }
+                ">&gt;&gt;</button>
+            </div>
+        """, unsafe_allow_html=True)
 
     caminho_logo = obter_caminho_logotipo()
+    st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
@@ -349,6 +361,7 @@ def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor", incluir_setin
             st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
         st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown(f'<div class="corporate-header"><p class="corporate-subtitle">{subtitulo}</p></div>', unsafe_allow_html=True)
 
@@ -674,7 +687,7 @@ def main():
             st.query_params.clear()
             st.rerun()
 
-    # Cabeçalho Principal (renderiza o botão com >> / << no canto superior esquerdo dentro do container branco)
+    # Cabeçalho Principal (renderiza o botão >> colado no topo do container e o logotipo logo abaixo)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos", incluir_setinhas=True)
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
