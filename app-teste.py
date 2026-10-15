@@ -22,11 +22,17 @@ def obter_agora_brasil():
 # -------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (DEGRADÊ + CONTAINER BRANCO UNIFICADO)
 # -------------------------------------------------------------
+# Estado para controlar se a sidebar deve iniciar expandida ou recolhida
+if "sidebar_aberta" not in st.session_state:
+    st.session_state["sidebar_aberta"] = False
+
+estado_sidebar = "expanded" if st.session_state.get("sidebar_aberta") else "collapsed"
+
 st.set_page_config(
     page_title="Gestão de Frota",
     page_icon="🚗",
     layout="centered",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state=estado_sidebar
 )
 
 st.markdown("""
@@ -48,17 +54,9 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER E BARRAS PADRÃO DO STREAMLIT */
-        header[data-testid="stHeader"],
-        [data-testid="stHeader"],
-        div[data-testid="stDecoration"],
-        [data-testid="stDecoration"],
-        div[data-testid="stToolbar"] {
-            display: none !important;
-            height: 0px !important;
-            margin: 0px !important;
-            padding: 0px !important;
-            visibility: hidden !important;
+        /* 2. REMOVE HEADER E BARRAS PADRÃO DO STREAMLIT (MANTÉM VISÍVEL O BOTÃO NATIVO DA SIDEBAR CASO PRECISE) */
+        header[data-testid="stHeader"] {
+            background-color: transparent !important;
         }
 
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -90,12 +88,22 @@ st.markdown("""
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 36px 32px !important;
-            margin-top: 2rem !important;
+            padding: 28px 28px 36px 28px !important;
+            margin-top: 1.5rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        }
+
+        /* Barra de Ações Rápidas no Topo */
+        .top-action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid #F1F5F9;
         }
 
         /* Tipografia Base */
@@ -125,7 +133,6 @@ st.markdown("""
             margin: 6px 0 3px 0 !important;
             letter-spacing: -0.025em !important;
         }
-        /* Subtítulo aumentado e com presença corporativa */
         .corporate-subtitle {
             font-size: 1.15rem !important;
             color: #475569 !important;
@@ -140,17 +147,8 @@ st.markdown("""
             font-weight: 600 !important;
             color: #1E293B !important;
             margin-bottom: 1rem !important;
-            margin-top: 0.2rem !important;
+            margin-top: 0.4rem !important;
             letter-spacing: -0.01em !important;
-        }
-
-        /* Centralizador para imagem da Frota */
-        .frota-banner-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 0.5rem 0 1.4rem 0;
-            width: 100%;
         }
 
         /* Remove bordas duplicadas do st.form dentro do container branco */
@@ -226,7 +224,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Botões */
+        /* Botões Principais */
         div.stButton > button:first-child,
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
@@ -250,10 +248,38 @@ st.markdown("""
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
         }
 
+        /* Estilização dos Botões de topo/secundários */
+        button[kind="secondary"] {
+            background: #F1F5F9 !important;
+            color: #334155 !important;
+            border: 1px solid #CBD5E1 !important;
+            height: 38px !important;
+            font-size: 0.88rem !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        button[kind="secondary"]:hover {
+            background: #E2E8F0 !important;
+            color: #0F172A !important;
+        }
+
         /* Barra Lateral */
         section[data-testid="stSidebar"] {
             background-color: #FFFFFF !important;
             border-right: 1px solid #E2E8F0 !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button {
+            background: #F8FAFC !important;
+            color: #334155 !important;
+            border: 1px solid #CBD5E1 !important;
+            box-shadow: none !important;
+            height: 42px !important;
+            font-size: 0.92rem !important;
+        }
+        section[data-testid="stSidebar"] div.stButton > button:hover {
+            background: #EFF6FF !important;
+            color: #2563EB !important;
+            border-color: #BFDBFE !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -296,7 +322,6 @@ def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
     if caminho_logo:
         try:
             logo_img = Image.open(caminho_logo)
-            # Centralização precisa do Logotipo
             col_l1, col_logo, col_l2 = st.columns([1, 1.4, 1])
             with col_logo:
                 st.image(logo_img, use_container_width=True)
@@ -503,12 +528,11 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (COM HIERARQUIA VISUAL MODERNA E PROPORCIONAL)
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
     
-    # Imagem Frota centralizada logo abaixo do logotipo/cabeçalho
     caminho_frota = obter_caminho_imagem_frota()
     if caminho_frota:
         try:
@@ -520,7 +544,6 @@ def tela_login(df_usuarios):
             pass
 
     with st.form("form_login"):
-        # Título da seção em estilo corporativo reduzido e discreto
         st.markdown('<div class="section-subheading">Identificação do Condutor</div>', unsafe_allow_html=True)
         
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
@@ -609,17 +632,52 @@ def main():
     condutor_chave = normalizar_texto(nome_condutor)
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
-    # Menu Lateral
+    # ---------------------------------------------------------
+    # MENU LATERAL (SIDEBAR)
+    # ---------------------------------------------------------
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
         st.caption(f"📍 **Base de Acesso:** {acesso_local}")
+        
         if viagem_pendente_condutor:
             st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
-        if st.button("🚪 Sair do Sistema"):
+        
+        st.markdown("---")
+        st.write("⚙️ **Ações Rápidas**")
+        
+        if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_sidebar_refresh"):
+            st.cache_data.clear()
+            st.rerun()
+
+        if st.button("🚪 Sair do Sistema", use_container_width=True, key="btn_sidebar_logout"):
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
 
+    # ---------------------------------------------------------
+    # BARRA DE AÇÕES NA PÁGINA PRINCIPAL (ACESSAR MENU / ATUALIZAR / SAIR)
+    # ---------------------------------------------------------
+    col_menu, col_atualizar, col_sair = st.columns([1.2, 1.2, 1])
+    
+    with col_menu:
+        # Alterna visibilidade da barra lateral
+        texto_botao_sidebar = "❌ Fechar Menu" if st.session_state.get("sidebar_aberta") else "☰ Abrir Menu"
+        if st.button(texto_botao_sidebar, key="btn_toggle_sidebar"):
+            st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
+            st.rerun()
+
+    with col_atualizar:
+        if st.button("🔄 Atualizar", key="btn_topo_atualizar"):
+            st.cache_data.clear()
+            st.rerun()
+
+    with col_sair:
+        if st.button("🚪 Sair", key="btn_topo_sair"):
+            st.session_state.clear()
+            st.query_params.clear()
+            st.rerun()
+
+    # Cabeçalho Principal
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
