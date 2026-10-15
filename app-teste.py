@@ -22,7 +22,6 @@ def obter_agora_brasil():
 # -------------------------------------------------------------
 # 1. CONFIGURAÇÃO DA PÁGINA E CSS (DEGRADÊ + CONTAINER BRANCO UNIFICADO)
 # -------------------------------------------------------------
-# Estado para controlar se a sidebar deve iniciar expandida ou recolhida
 if "sidebar_aberta" not in st.session_state:
     st.session_state["sidebar_aberta"] = False
 
@@ -54,7 +53,7 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. REMOVE HEADER E BARRAS PADRÃO DO STREAMLIT (MANTÉM VISÍVEL O BOTÃO NATIVO DA SIDEBAR CASO PRECISE) */
+        /* 2. REMOVE HEADER E BARRAS PADRÃO DO STREAMLIT */
         header[data-testid="stHeader"] {
             background-color: transparent !important;
         }
@@ -88,22 +87,41 @@ st.markdown("""
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding: 28px 28px 36px 28px !important;
+            padding: 24px 28px 36px 28px !important;
             margin-top: 1.5rem !important;
             margin-bottom: 2.5rem !important;
             max-width: 680px !important;
             box-shadow: 0 20px 45px rgba(0, 0, 0, 0.32) !important;
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
+            position: relative !important;
         }
 
-        /* Barra de Ações Rápidas no Topo */
-        .top-action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.8rem;
-            border-bottom: 1px solid #F1F5F9;
+        /* Botão Minimalista de 3 tracinhos (Hamburguer) */
+        div[data-testid="stButton"].menu-toggle-btn > button {
+            background: #F8FAFC !important;
+            color: #1E293B !important;
+            -webkit-text-fill-color: #1E293B !important;
+            border: 1px solid #CBD5E1 !important;
+            border-radius: 8px !important;
+            width: 42px !important;
+            height: 38px !important;
+            min-width: 42px !important;
+            padding: 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            font-size: 1.25rem !important;
+            font-weight: 700 !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+            transition: all 0.2s ease-in-out !important;
+            margin: 0 !important;
+        }
+        div[data-testid="stButton"].menu-toggle-btn > button:hover {
+            background: #EFF6FF !important;
+            color: #2563EB !important;
+            -webkit-text-fill-color: #2563EB !important;
+            border-color: #93C5FD !important;
+            transform: scale(1.03) !important;
         }
 
         /* Tipografia Base */
@@ -224,8 +242,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Botões Principais */
-        div.stButton > button:first-child,
+        /* Botões Principais de Envio */
         div[data-testid="stFormSubmitButton"] > button {
             background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
             background-color: #2563EB !important;
@@ -241,26 +258,10 @@ st.markdown("""
             transition: all 0.2s ease-in-out !important;
             width: 100% !important;
         }
-        div.stButton > button:first-child:hover,
         div[data-testid="stFormSubmitButton"] > button:hover {
             background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
             transform: translateY(-1px) !important;
             box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
-        }
-
-        /* Estilização dos Botões de topo/secundários */
-        button[kind="secondary"] {
-            background: #F1F5F9 !important;
-            color: #334155 !important;
-            border: 1px solid #CBD5E1 !important;
-            height: 38px !important;
-            font-size: 0.88rem !important;
-            font-weight: 600 !important;
-            box-shadow: none !important;
-        }
-        button[kind="secondary"]:hover {
-            background: #E2E8F0 !important;
-            color: #0F172A !important;
         }
 
         /* Barra Lateral */
@@ -271,14 +272,19 @@ st.markdown("""
         section[data-testid="stSidebar"] div.stButton > button {
             background: #F8FAFC !important;
             color: #334155 !important;
+            -webkit-text-fill-color: #334155 !important;
             border: 1px solid #CBD5E1 !important;
             box-shadow: none !important;
-            height: 42px !important;
+            height: 44px !important;
             font-size: 0.92rem !important;
+            font-weight: 600 !important;
+            border-radius: 8px !important;
+            width: 100% !important;
         }
         section[data-testid="stSidebar"] div.stButton > button:hover {
             background: #EFF6FF !important;
             color: #2563EB !important;
+            -webkit-text-fill-color: #2563EB !important;
             border-color: #BFDBFE !important;
         }
     </style>
@@ -633,7 +639,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------
-    # MENU LATERAL (SIDEBAR)
+    # MENU LATERAL (SIDEBAR) - ATUALIZAR E SAIR CONCENTRADOS AQUI
     # ---------------------------------------------------------
     with st.sidebar:
         st.write(f"🚗 **Condutor:**\n### {nome_condutor}")
@@ -643,7 +649,7 @@ def main():
             st.warning(f"⚠️ Viagem aberta no veículo: **{viagem_pendente_condutor['placa']}**\n(RV: {viagem_pendente_condutor['rv']})")
         
         st.markdown("---")
-        st.write("⚙️ **Ações Rápidas**")
+        st.write("⚙️ **Opções do Sistema**")
         
         if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_sidebar_refresh"):
             st.cache_data.clear()
@@ -655,27 +661,15 @@ def main():
             st.rerun()
 
     # ---------------------------------------------------------
-    # BARRA DE AÇÕES NA PÁGINA PRINCIPAL (ACESSAR MENU / ATUALIZAR / SAIR)
+    # BOTÃO MINIMALISTA DE 3 TRACINHOS (☰) NO TOPO DO CONTAINER
     # ---------------------------------------------------------
-    col_menu, col_atualizar, col_sair = st.columns([1.2, 1.2, 1])
-    
-    with col_menu:
-        # Alterna visibilidade da barra lateral
-        texto_botao_sidebar = "❌ Fechar Menu" if st.session_state.get("sidebar_aberta") else "☰ Abrir Menu"
-        if st.button(texto_botao_sidebar, key="btn_toggle_sidebar"):
+    col_menu_btn, _ = st.columns([0.15, 0.85])
+    with col_menu_btn:
+        st.markdown('<div class="menu-toggle-btn">', unsafe_allow_html=True)
+        if st.button("☰", help="Abrir ou fechar menu lateral", key="btn_hamburguer"):
             st.session_state["sidebar_aberta"] = not st.session_state.get("sidebar_aberta")
             st.rerun()
-
-    with col_atualizar:
-        if st.button("🔄 Atualizar", key="btn_topo_atualizar"):
-            st.cache_data.clear()
-            st.rerun()
-
-    with col_sair:
-        if st.button("🚪 Sair", key="btn_topo_sair"):
-            st.session_state.clear()
-            st.query_params.clear()
-            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # Cabeçalho Principal
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
