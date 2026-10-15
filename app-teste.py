@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (CONTAINER BRANCO UNIFICADO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (CARD BRANCO UNIFICADO + DEGRADÊ)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Gestão de Frota",
@@ -76,7 +76,7 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 2. FUNDO GERAL COM O DEGRADÊ RADIAL SOLICITADO */
+        /* 2. FUNDO GERAL COM O DEGRADÊ RADIAL */
         :root, html, body {
             background-color: #0d0722 !important;
             background: radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
@@ -96,29 +96,47 @@ st.markdown("""
             background: transparent !important;
         }
 
-        /* 3. O CARD BRANCO UNIFICADO (CONTAINER NATIVO STREAMLIT) */
-        div[data-testid="stVerticalBlockBorderWrapper"] {
+        /* 3. CARD BRANCO UNIFICADO (CONTAINER NATIVO STREAMLIT FORÇADO) */
+        div[data-testid="stVerticalBlockBorderWrapper"],
+        div[data-testid="stVerticalBlockBorderWrapper"] > div,
+        div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stVerticalBlock"] {
             background-color: #FFFFFF !important;
-            border-radius: 20px !important;
-            border: 1px solid rgba(255, 255, 255, 0.25) !important;
-            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.45) !important;
-            padding: 30px 28px !important;
-            margin-bottom: 25px !important;
+            background: #FFFFFF !important;
         }
 
-        /* Funde o formulário ao container sem bordas duplas */
-        [data-testid="stForm"] {
-            background-color: transparent !important;
+        div[data-testid="stVerticalBlockBorderWrapper"] {
+            border-radius: 20px !important;
+            border: 1px solid rgba(255, 255, 255, 0.45) !important;
+            box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
+            padding: 30px 28px !important;
+            margin-bottom: 25px !important;
+            overflow: hidden !important;
+        }
+
+        /* Funde perfeitamente o formulário no container sem criar caixas extras */
+        [data-testid="stForm"],
+        div[data-testid="stVerticalBlockBorderWrapper"] [data-testid="stForm"] {
+            background-color: #FFFFFF !important;
+            background: #FFFFFF !important;
             border: none !important;
             box-shadow: none !important;
             padding: 0px !important;
             margin: 0px !important;
         }
 
-        /* Tipografia dentro do Card Branco */
-        h1, h2, h3, h4, h5, h6, p, span, label {
+        /* Textos dentro do Card Branco */
+        div[data-testid="stVerticalBlockBorderWrapper"] h1,
+        div[data-testid="stVerticalBlockBorderWrapper"] h2,
+        div[data-testid="stVerticalBlockBorderWrapper"] h3,
+        div[data-testid="stVerticalBlockBorderWrapper"] h4,
+        div[data-testid="stVerticalBlockBorderWrapper"] h5,
+        div[data-testid="stVerticalBlockBorderWrapper"] h6,
+        div[data-testid="stVerticalBlockBorderWrapper"] p,
+        div[data-testid="stVerticalBlockBorderWrapper"] span,
+        div[data-testid="stVerticalBlockBorderWrapper"] label {
             color: #0F172A !important;
         }
+
         .stWidgetLabel p, label p {
             color: #334155 !important;
             font-weight: 600 !important;
@@ -132,6 +150,7 @@ st.markdown("""
             margin-bottom: 1.2rem !important;
             padding-bottom: 1.2rem !important;
             border-bottom: 1px solid #E2E8F0 !important;
+            background-color: #FFFFFF !important;
         }
         .corporate-title {
             font-size: 1.45rem !important;
@@ -174,7 +193,7 @@ st.markdown("""
             color: #1E3A8A !important;
         }
 
-        /* Inputs e Caixas de Texto */
+        /* Inputs e Controles */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -589,7 +608,7 @@ def main():
     ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # CONTAINER UNIFICADO: ENGLEBA LOGOTIPO, CABEÇALHO, CARDS E FORMULÁRIO
+    # CONTAINER UNIFICADO: ENGLOBA DESDE O TOPO ATÉ O FINAL DO FORMULÁRIO
     # =========================================================================
     with st.container(border=True):
         renderizar_cabecalho("Registro e Controle de Saída de Veículos")
