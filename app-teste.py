@@ -87,13 +87,13 @@ st.markdown("""
             background-size: cover !important;
         }
 
-        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO (COLADO NO TOPO) */
+        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
             background-color: #FFFFFF !important;
             border-radius: 20px !important;
-            padding-top: 10px !important;
+            padding-top: 14px !important;
             padding-left: 28px !important;
             padding-right: 28px !important;
             padding-bottom: 34px !important;
@@ -104,22 +104,23 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU EXPANSÍVEL: BOTÃO COM O MESMO DEGRADÊ DO FUNDO */
+        /* 5. MENU EXPANSÍVEL: DE FORA A FORA E CENTRALIZADO */
         div[data-testid="stExpander"] {
             border: 1px solid rgba(147, 51, 234, 0.35) !important;
-            border-radius: 10px !important;
+            border-radius: 12px !important;
             background-color: #110426 !important;
             background-image: 
                 radial-gradient(at 93% 5%, hsla(267.8, 100%, 18%, 1) 0%, transparent 100%),
                 radial-gradient(at 49% 50%, hsla(264.1, 100%, 25%, 1) 0%, transparent 100%),
                 radial-gradient(at 37% 89%, hsla(240.8, 100%, 32%, 1) 0%, transparent 100%) !important;
             margin-top: 0px !important;
-            margin-bottom: 6px !important;
+            margin-bottom: 12px !important;
             box-shadow: 0 4px 14px rgba(17, 4, 38, 0.25) !important;
-            width: fit-content !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
         }
 
-        /* Remove absolutamente qualquer seta nativa */
+        /* Remove completamente qualquer seta nativa */
         div[data-testid="stExpander"] summary::-webkit-details-marker,
         div[data-testid="stExpander"] summary::marker {
             display: none !important;
@@ -135,39 +136,42 @@ st.markdown("""
             height: 0px !important;
         }
 
-        /* Estilo do texto no botão Degradê */
+        /* Estilo do botão 100% centralizado de ponta a ponta */
         div[data-testid="stExpander"] summary {
-            padding: 7px 16px !important;
-            font-size: 0.88rem !important;
+            padding: 10px 18px !important;
+            font-size: 0.95rem !important;
             font-weight: 700 !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            letter-spacing: -0.01em !important;
+            letter-spacing: 0.02em !important;
             list-style: none !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
             user-select: none !important;
             cursor: pointer !important;
-            border-radius: 9px !important;
+            border-radius: 11px !important;
             transition: all 0.2s ease-in-out !important;
         }
 
         div[data-testid="stExpander"] summary:hover {
             filter: brightness(1.15) !important;
-            transform: scale(1.02) !important;
-            box-shadow: 0 0 12px rgba(168, 85, 247, 0.4) !important;
+            box-shadow: 0 0 16px rgba(168, 85, 247, 0.45) !important;
         }
 
         div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {
-            min-width: 290px !important;
-            padding: 14px 14px 12px 14px !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 16px 18px !important;
             background-color: #FFFFFF !important;
-            border-radius: 0 0 10px 10px !important;
+            border-radius: 0 0 12px 12px !important;
             border-top: 1px solid #E2E8F0 !important;
         }
 
-        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O MENU */
+        /* 6. LOGOTIPO COLADO APÓS O MENU */
         .logo-wrapper {
             margin-top: 0px !important;
             padding-top: 0px !important;
@@ -666,7 +670,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO CONDUTOR - BOTÃO NO MESMO DEGRADÊ DA PÁGINA (SEM SETA E SEM PONTINHOS)
+    # MENU DO CONDUTOR - BOTÃO CENTRALIZADO DE FORA A FORA NO DEGRADÊ DA PÁGINA
     # ---------------------------------------------------------------------------------
     with st.expander("Menu do Condutor", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
@@ -684,7 +688,7 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-    # Cabeçalho Principal (Logotipo imediatamente abaixo do botão Menu do Condutor)
+    # Cabeçalho Principal (Logotipo colado imediatamente abaixo do menu)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
