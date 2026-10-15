@@ -104,19 +104,22 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU COM APENAS OS 3 PONTINHOS - ELIMINAÇÃO TOTAL DE QUALQUER SETA */
+        /* 5. MENU EXPANSÍVEL: BOTÃO COM O MESMO DEGRADÊ DO FUNDO */
         div[data-testid="stExpander"] {
-            border: 1px solid #CBD5E1 !important;
-            border-radius: 8px !important;
-            background-color: #F8FAFC !important;
+            border: 1px solid rgba(147, 51, 234, 0.35) !important;
+            border-radius: 10px !important;
+            background-color: #110426 !important;
+            background-image: 
+                radial-gradient(at 93% 5%, hsla(267.8, 100%, 18%, 1) 0%, transparent 100%),
+                radial-gradient(at 49% 50%, hsla(264.1, 100%, 25%, 1) 0%, transparent 100%),
+                radial-gradient(at 37% 89%, hsla(240.8, 100%, 32%, 1) 0%, transparent 100%) !important;
             margin-top: 0px !important;
-            margin-bottom: 4px !important;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+            margin-bottom: 6px !important;
+            box-shadow: 0 4px 14px rgba(17, 4, 38, 0.25) !important;
             width: fit-content !important;
-            min-width: 44px !important;
         }
 
-        /* Remove absolutamente qualquer seta, ícone ou marcador nativo */
+        /* Remove absolutamente qualquer seta nativa */
         div[data-testid="stExpander"] summary::-webkit-details-marker,
         div[data-testid="stExpander"] summary::marker {
             display: none !important;
@@ -132,33 +135,39 @@ st.markdown("""
             height: 0px !important;
         }
 
+        /* Estilo do texto no botão Degradê */
         div[data-testid="stExpander"] summary {
-            padding: 0px 10px !important;
-            font-size: 1.6rem !important;
-            font-weight: 900 !important;
-            color: #1E293B !important;
-            line-height: 1.1 !important;
-            letter-spacing: 2px !important;
+            padding: 7px 16px !important;
+            font-size: 0.88rem !important;
+            font-weight: 700 !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            letter-spacing: -0.01em !important;
             list-style: none !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             user-select: none !important;
             cursor: pointer !important;
+            border-radius: 9px !important;
+            transition: all 0.2s ease-in-out !important;
         }
 
         div[data-testid="stExpander"] summary:hover {
-            color: #2563EB !important;
-            background-color: #EFF6FF !important;
-            border-radius: 8px !important;
+            filter: brightness(1.15) !important;
+            transform: scale(1.02) !important;
+            box-shadow: 0 0 12px rgba(168, 85, 247, 0.4) !important;
         }
 
         div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {
-            min-width: 280px !important;
-            padding-top: 10px !important;
+            min-width: 290px !important;
+            padding: 14px 14px 12px 14px !important;
+            background-color: #FFFFFF !important;
+            border-radius: 0 0 10px 10px !important;
+            border-top: 1px solid #E2E8F0 !important;
         }
 
-        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O BOTÃO */
+        /* 6. LOGOTIPO COLADO IMEDIATAMENTE APÓS O MENU */
         .logo-wrapper {
             margin-top: 0px !important;
             padding-top: 0px !important;
@@ -657,9 +666,9 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO SISTEMA NATIVO - EXCLUSIVAMENTE OS 3 PONTINHOS (···), ZERO SETAS
+    # MENU DO CONDUTOR - BOTÃO NO MESMO DEGRADÊ DA PÁGINA (SEM SETA E SEM PONTINHOS)
     # ---------------------------------------------------------------------------------
-    with st.expander("···", expanded=False):
+    with st.expander("Menu do Condutor", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
         with col_m1:
             st.write(f"👤 **Condutor:** {nome_condutor}")
@@ -675,7 +684,7 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-    # Cabeçalho Principal (Logotipo colado imediatamente abaixo do menu)
+    # Cabeçalho Principal (Logotipo imediatamente abaixo do botão Menu do Condutor)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
