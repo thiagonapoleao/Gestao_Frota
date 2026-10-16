@@ -586,24 +586,26 @@ def main():
             grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
             for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
                 col_target = grid_abertos[idx % 3]
+                dest_aberta = str(v_aberta['destino']).strip() if v_aberta.get('destino') and str(v_aberta['destino']).lower() != 'nan' else 'Não especificado'
+                card_aberto_html = (
+                    f'<div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">'
+                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">'
+                    f'<span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta["placa"]}</span>'
+                    f'<span class="badge-open">EM TRÂNSITO</span>'
+                    f'</div>'
+                    f'<div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta["veiculo"]}</div>'
+                    f'<hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">'
+                    f'<div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">'
+                    f'<b>Condutor:</b> {v_aberta["condutor"]}<br>'
+                    f'<b>Saída:</b> {v_aberta["data_inicial"]} às {v_aberta["horario_inicial"]}<br>'
+                    f'<b>Km Saída:</b> {v_aberta["km_inicial"]} km<br>'
+                    f'<b>Destino:</b> {dest_aberta}<br>'
+                    f'<b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta["rv"]}</code>'
+                    f'</div>'
+                    f'</div>'
+                )
                 with col_target:
-                    st.markdown(f"""
-                        <div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta['placa']}</span>
-                                <span class="badge-open">EM TRÂNSITO</span>
-                            </div>
-                            <div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta['veiculo']}</div>
-                            <hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">
-                            <div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">
-                                <b>Condutor:</b> {v_aberta['condutor']}<br>
-                                <b>Saída:</b> {v_aberta['data_inicial']} às {v_aberta['horario_inicial']}<br>
-                                <b>Km Saída:</b> {v_aberta['km_inicial']} km<br>
-                                <b>Destino:</b> {v_aberta['destino'] or 'Não especificado'}<br>
-                                <b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta['rv']}</code>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(card_aberto_html, unsafe_allow_html=True)
 
         st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
@@ -691,7 +693,7 @@ def main():
 
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
-        # 4. CARROS UTILIZADOS NO DIA (HOJE) - EM FORMATO DE CARDS
+        # 4. CARROS UTILIZADOS NO DIA (HOJE) - CARDS SEM ERROS DE INDENTAÇÃO
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
@@ -724,10 +726,8 @@ def main():
 
             st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
-            # Ordena com base no status e no horário inicial (mais recentes primeiro)
             df_cards_dia = df_carros_dia.sort_values(by=["status", "horario_inicial"], ascending=[True, False])
 
-            # Renderização dos cards em grade de até 3 colunas
             num_cols = min(len(df_cards_dia), 3)
             grid_dia = st.columns(num_cols)
 
@@ -735,7 +735,6 @@ def main():
                 col_target = grid_dia[idx % num_cols]
                 em_aberto = (v_dia["status"] == "Em Aberto")
 
-                # Definição de cores e estilos de acordo com o status
                 if em_aberto:
                     card_bg = "#FFFBEB"
                     card_border = "#FDE68A"
@@ -759,39 +758,38 @@ def main():
                     rv_bg = "#DEF7EC"
                     rv_color = "#03543F"
 
-                # Formatações de quilometragem e horários
                 km_sai_txt = f"{v_dia['km_inicial_num']:,.0f} km" if pd.notna(v_dia.get('km_inicial_num')) else (f"{v_dia['km_inicial']} km" if v_dia['km_inicial'] else "Não inf.")
                 km_ret_txt = f"{v_dia['km_final_num']:,.0f} km" if pd.notna(v_dia.get('km_final_num')) else (f"{v_dia['km_final']} km" if v_dia['km_final'] else "—")
                 km_rod_txt = f"{v_dia['km_percorrido_num']:,.0f} km" if pd.notna(v_dia.get('km_percorrido_num')) else "—"
-                hora_ret_txt = f"{v_dia['data_final']} às {v_dia['horario_final']}" if v_dia['horario_final'] else "Em trânsito"
+                hora_ret_txt = f"{v_dia['data_final']} às {v_dia['horario_final']}" if v_dia.get('horario_final') else "Em trânsito"
+                destino_txt = str(v_dia['destino']).strip() if v_dia.get('destino') and str(v_dia['destino']).lower() != "nan" else "Não especificado"
+                rv_txt = str(v_dia['rv']).strip()
 
                 bloco_retorno = ""
                 if not em_aberto:
-                    bloco_retorno = f"""
-                        <b>Retorno:</b> {hora_ret_txt}<br>
-                        <b>Km Retorno:</b> {km_ret_txt}<br>
-                        <b>Km Rodado:</b> <span style="font-weight: 700; color: #047857;">{km_rod_txt}</span><br>
-                    """
+                    bloco_retorno = f'<b>Retorno:</b> {hora_ret_txt}<br><b>Km Retorno:</b> {km_ret_txt}<br><b>Km Rodado:</b> <span style="font-weight: 700; color: #047857;">{km_rod_txt}</span><br>'
+
+                card_html = (
+                    f'<div style="background: {card_bg}; border: 1px solid {card_border}; border-left: 4px solid {card_border_left}; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">'
+                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">'
+                    f'<span style="font-weight: 800; font-size: 1.05rem; color: {title_color};">🚗 {v_dia["placa"]}</span>'
+                    f'{badge_html}'
+                    f'</div>'
+                    f'<div style="font-size: 0.88rem; color: {sub_color}; font-weight: 600;">{v_dia["veiculo"]}</div>'
+                    f'<hr style="margin: 8px 0; border: none; border-top: 1px solid {divider_color};">'
+                    f'<div style="font-size: 0.84rem; color: {text_color}; line-height: 1.5;">'
+                    f'<b>Condutor:</b> {v_dia["condutor"]}<br>'
+                    f'<b>Saída:</b> {v_dia["data_inicial"]} às {v_dia["horario_inicial"]}<br>'
+                    f'<b>Km Saída:</b> {km_sai_txt}<br>'
+                    f'{bloco_retorno}'
+                    f'<b>Destino:</b> {destino_txt}<br>'
+                    f'<b>Código RV:</b> <code style="background: {rv_bg}; color: {rv_color}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{rv_txt}</code>'
+                    f'</div>'
+                    f'</div>'
+                )
 
                 with col_target:
-                    st.markdown(f"""
-                        <div style="background: {card_bg}; border: 1px solid {card_border}; border-left: 4px solid {card_border_left}; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                                <span style="font-weight: 800; font-size: 1.05rem; color: {title_color};">🚗 {v_dia['placa']}</span>
-                                {badge_html}
-                            </div>
-                            <div style="font-size: 0.88rem; color: {sub_color}; font-weight: 600;">{v_dia['veiculo']}</div>
-                            <hr style="margin: 8px 0; border: none; border-top: 1px solid {divider_color};">
-                            <div style="font-size: 0.84rem; color: {text_color}; line-height: 1.5;">
-                                <b>Condutor:</b> {v_dia['condutor']}<br>
-                                <b>Saída:</b> {v_dia['data_inicial']} às {v_dia['horario_inicial']}<br>
-                                <b>Km Saída:</b> {km_sai_txt}<br>
-                                {bloco_retorno}
-                                <b>Destino:</b> {v_dia['destino'] or 'Não especificado'}<br>
-                                <b>Código RV:</b> <code style="background: {rv_bg}; color: {rv_color}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_dia['rv']}</code>
-                            </div>
-                        </div>
-                    """, unsafe_allow_html=True)
+                    st.markdown(card_html, unsafe_allow_html=True)
 
     # =========================================================================
     # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
