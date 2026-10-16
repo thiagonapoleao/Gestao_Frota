@@ -145,6 +145,17 @@ st.markdown("""
             margin-bottom: 1.2rem;
         }
 
+        /* Card Container Especial para Indicadores do Dia */
+        .daily-metrics-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 16px 22px;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+            margin-bottom: 1.2rem;
+            border-left: 5px solid #2563EB;
+        }
+
         /* KPI Cards */
         .kpi-card {
             background: #FFFFFF;
@@ -332,7 +343,7 @@ def carregar_usuarios():
     return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Gestor Master Café"}])
 
 @st.cache_data(ttl=30)
-def carregar_dados_viagens():
+def carregar_dados_viagens_planilha():
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
@@ -364,6 +375,13 @@ def carregar_dados_viagens():
         else:
             df[nome] = ""
 
+    return processar_dataframe_viagens(df)
+
+def processar_dataframe_viagens(df):
+    if df.empty:
+        return pd.DataFrame()
+
+    df = df.copy()
     df["placa"] = df["placa"].str.upper()
     df["condutor"] = df["condutor"].str.strip()
     df["veiculo"] = df["veiculo"].str.strip()
@@ -397,6 +415,13 @@ def carregar_dados_viagens():
     )
 
     return df
+
+def obter_dados_base():
+    """Garante sincronização mantendo eventuais edições/exclusões na sessão."""
+    if "dados_viagens_memoria" not in st.session_state:
+        df = carregar_dados_viagens_planilha()
+        st.session_state["dados_viagens_memoria"] = df
+    return st.session_state["dados_viagens_memoria"]
 
 # -------------------------------------------------------------
 # 5. TELA DE LOGIN
@@ -462,7 +487,11 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    opcoes_menu = ["📊 Visão Geral & KPIs", "🔍 Consulta & Filtros Avançados"]
+    opcoes_menu = [
+        "📊 Visão Geral & KPIs", 
+        "🔍 Consulta & Filtros Avançados",
+        "✏️ Gerenciar Registros (Editar / Excluir)"
+    ]
 
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
@@ -497,6 +526,8 @@ def main():
         with col_btn1:
             if st.button("🔄 Atualizar"):
                 st.cache_data.clear()
+                if "dados_viagens_memoria" in st.session_state:
+                    del st.session_state["dados_viagens_memoria"]
                 st.rerun()
         with col_btn2:
             if st.button("🚪 Sair"):
@@ -504,7 +535,7 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-    df_base = carregar_dados_viagens()
+    df_base = obter_dados_base()
 
     if df_base.empty:
         st.warning("Nenhum registro de viagem encontrado na planilha.")
@@ -693,7 +724,7 @@ def main():
 
         st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
 
-        # 4. CARROS UTILIZADOS NO DIA (HOJE) - CARDS SEM ERROS DE INDENTAÇÃO
+        # 4. CARROS UTILIZADOS NO DIA (HOJE) - COM OS INDICADORES ENVOLVIDOS EM UM CARD
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
@@ -716,15 +747,25 @@ def main():
             qtd_carros_dia = df_carros_dia["placa"].nunique()
             km_dia_total = df_carros_dia[df_carros_dia["status"] == "Concluída"]["km_percorrido_num"].sum()
 
-            m1, m2, m3 = st.columns(3)
-            with m1:
-                st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
-            with m2:
-                st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
-            with m3:
-                st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
+            # ENVOLVIMENTO DOS TRÊS ITENS EM UM CARD CONTAINER
+            with st.container():
+                st.markdown(f"""
+                    <div class="daily-metrics-card">
+                        <div style="font-size: 0.82rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #2563EB; margin-bottom: 8px;">
+                            📌 Resumo da Operação do Dia ({dia_selecionado.strftime('%d/%m/%Y')})
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                m1, m2, m3 = st.columns(3)
+                with m1:
+                    st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
+                with m2:
+                    st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
+                with m3:
+                    st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
 
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+            st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
             df_cards_dia = df_carros_dia.sort_values(by=["status", "horario_inicial"], ascending=[True, False])
 
@@ -915,6 +956,107 @@ def main():
                     fill_value=0
                 )
                 st.dataframe(pivot_km.style.format("{:,.0f} km"), use_container_width=True)
+
+    # =========================================================================
+    # PÁGINA 3: GERENCIAR REGISTROS (EDITAR / EXCLUIR)
+    # =========================================================================
+    elif st.session_state["pagina_selecionada"] == "✏️ Gerenciar Registros (Editar / Excluir)":
+        renderizar_cabecalho_com_logo("Edição e Cancelamento / Exclusão de Lançamentos")
+
+        st.markdown("""
+            <div style="background-color: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #2563EB; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                <span style="font-weight: 700; color: #1E40AF;">🛠️ Central de Correção de Lançamentos:</span>
+                <span style="color: #1E3A8A; font-size: 0.90rem;">
+                    Localize a viagem lançada incorretamente para corrigir dados de quilometragem, horários e condutor, ou realize a exclusão definitiva do registro.
+                </span>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Seletor de registro
+        lista_opcoes_edicao = []
+        for idx_row, r_item in df_base.iterrows():
+            rv_rotulo = r_item['rv'] if r_item['rv'] else f"LINHA-{idx_row}"
+            descricao = f"[{rv_rotulo}] - {r_item['placa']} ({r_item['condutor']}) | Saída: {r_item['data_inicial']} {r_item['horario_inicial']}"
+            lista_opcoes_edicao.append((idx_row, descricao))
+
+        escolha = st.selectbox(
+            "Selecione o Registro que deseja Editar ou Excluir:",
+            options=lista_opcoes_edicao,
+            format_func=lambda x: x[1]
+        )
+
+        if escolha is not None:
+            idx_selecionado = escolha[0]
+            registro_atual = df_base.loc[idx_selecionado]
+
+            tab_editar, tab_excluir = st.tabs(["✏️ Editar Registro", "🗑️ Excluir Registro"])
+
+            with tab_editar:
+                with st.form("form_edicao_registro"):
+                    st.markdown("#### **Dados Principais da Saída**")
+                    e_col1, e_col2, e_col3 = st.columns(3)
+                    with e_col1:
+                        novo_rv = st.text_input("Código RV:", value=str(registro_atual.get("rv", "")))
+                        novo_condutor = st.text_input("Condutor:", value=str(registro_atual.get("condutor", "")))
+                    with e_col2:
+                        nova_placa = st.text_input("Placa do Veículo:", value=str(registro_atual.get("placa", "")))
+                        novo_veiculo = st.text_input("Modelo do Veículo:", value=str(registro_atual.get("veiculo", "")))
+                    with e_col3:
+                        novo_destino = st.text_input("Destino:", value=str(registro_atual.get("destino", "")))
+
+                    st.markdown("#### **Quilometragem e Horários**")
+                    h_col1, h_col2, h_col3, h_col4 = st.columns(4)
+                    with h_col1:
+                        nova_data_ini = st.text_input("Data Saída (DD/MM/AAAA):", value=str(registro_atual.get("data_inicial", "")))
+                        novo_hora_ini = st.text_input("Hora Saída (HH:MM):", value=str(registro_atual.get("horario_inicial", "")))
+                    with h_col2:
+                        novo_km_ini = st.text_input("Km Saída:", value=str(registro_atual.get("km_inicial", "")))
+                    with h_col3:
+                        nova_data_fim = st.text_input("Data Retorno (DD/MM/AAAA):", value=str(registro_atual.get("data_final", "")))
+                        novo_hora_fim = st.text_input("Hora Retorno (HH:MM):", value=str(registro_atual.get("horario_final", "")))
+                    with h_col4:
+                        novo_km_fim = st.text_input("Km Retorno:", value=str(registro_atual.get("km_final", "")))
+
+                    btn_salvar_edicao = st.form_submit_button("💾 Salvar Alterações")
+
+                    if btn_salvar_edicao:
+                        df_editado = df_base.copy()
+                        df_editado.at[idx_selecionado, "rv"] = novo_rv.strip().upper()
+                        df_editado.at[idx_selecionado, "condutor"] = novo_condutor.strip()
+                        df_editado.at[idx_selecionado, "placa"] = nova_placa.strip().upper()
+                        df_editado.at[idx_selecionado, "veiculo"] = novo_veiculo.strip()
+                        df_editado.at[idx_selecionado, "destino"] = novo_destino.strip()
+                        df_editado.at[idx_selecionado, "data_inicial"] = nova_data_ini.strip()
+                        df_editado.at[idx_selecionado, "horario_inicial"] = novo_hora_ini.strip()
+                        df_editado.at[idx_selecionado, "km_inicial"] = novo_km_ini.strip()
+                        df_editado.at[idx_selecionado, "data_final"] = nova_data_fim.strip()
+                        df_editado.at[idx_selecionado, "horario_final"] = novo_hora_fim.strip()
+                        df_editado.at[idx_selecionado, "km_final"] = novo_km_fim.strip()
+                        df_editado.at[idx_selecionado, "km_percorrido"] = ""
+
+                        # Reprocessa os dados recalculando Km e datas
+                        st.session_state["dados_viagens_memoria"] = processar_dataframe_viagens(df_editado)
+                        st.success(f"✅ Registro **{novo_rv}** atualizado com sucesso no painel!")
+                        st.rerun()
+
+            with tab_excluir:
+                st.markdown("#### **Confirmar Exclusão de Registro**")
+                st.warning(f"⚠️ Atenção: Você está prestes a excluir o registro **{escolha[1]}**. Esta ação removerá os dados deste veículo dos relatórios.")
+                
+                check_confirma = st.checkbox("Estou ciente e confirmo a exclusão definitiva deste lançamento.", key="check_exclusao_segura")
+                
+                col_exc1, col_exc2 = st.columns([1.5, 4])
+                with col_exc1:
+                    btn_confirmar_exclusao = st.button("🗑️ Excluir Definitivamente", type="primary")
+
+                if btn_confirmar_exclusao:
+                    if check_confirma:
+                        df_excluido = df_base.drop(index=idx_selecionado).reset_index(drop=True)
+                        st.session_state["dados_viagens_memoria"] = processar_dataframe_viagens(df_excluido)
+                        st.success("✅ Registro removido com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("Por favor, marque a caixa de confirmação acima para autorizar a exclusão.")
 
 if __name__ == "__main__":
     main()
