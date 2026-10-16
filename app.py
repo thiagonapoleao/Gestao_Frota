@@ -104,9 +104,9 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU EXPANSÍVEL: DE FORA A FORA E CENTRALIZADO */
+        /* 5. MENU EXPANSÍVEL: DE FORA A FORA E CENTRALIZADO NO DEGRADÊ */
         div[data-testid="stExpander"] {
-            border: 1px solid rgba(147, 51, 234, 0.35) !important;
+            border: 1px solid rgba(147, 51, 234, 0.4) !important;
             border-radius: 12px !important;
             background-color: #110426 !important;
             background-image: 
@@ -120,7 +120,6 @@ st.markdown("""
             box-sizing: border-box !important;
         }
 
-        /* Remove completamente qualquer seta nativa */
         div[data-testid="stExpander"] summary::-webkit-details-marker,
         div[data-testid="stExpander"] summary::marker {
             display: none !important;
@@ -136,7 +135,6 @@ st.markdown("""
             height: 0px !important;
         }
 
-        /* Estilo do botão 100% centralizado de ponta a ponta */
         div[data-testid="stExpander"] summary {
             padding: 10px 18px !important;
             font-size: 0.95rem !important;
@@ -295,26 +293,65 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* Botões Principais de Envio */
-        div[data-testid="stFormSubmitButton"] > button {
-            background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-            background-color: #2563EB !important;
+        /* ------------------------------------------------------------- */
+        /* 7. BOTÕES COM DEGRADÊ DO FUNDO EXPANDIDOS DE FORA A FORA      */
+        /* (Aplica com especificidade total em 'Entrar no Sistema' e forms) */
+        /* ------------------------------------------------------------- */
+        div[data-testid="stFormSubmitButton"],
+        div[data-testid="stFormSubmitButton"] > button,
+        div.stButton > button[kind="primary"],
+        div[data-testid="stForm"] div.stButton > button,
+        form[data-testid="stForm"] button {
+            background-color: #110426 !important;
+            background-image: 
+                radial-gradient(at 93% 5%, hsla(267.8, 100%, 18%, 1) 0%, transparent 100%),
+                radial-gradient(at 49% 50%, hsla(264.1, 100%, 25%, 1) 0%, transparent 100%),
+                radial-gradient(at 37% 89%, hsla(240.8, 100%, 32%, 1) 0%, transparent 100%) !important;
+            background-size: cover !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            border: none !important;
-            border-radius: 10px !important;
-            height: 48px !important;
+            border: 1px solid rgba(147, 51, 234, 0.45) !important;
+            border-radius: 12px !important;
+            height: 50px !important;
+            min-height: 50px !important;
             font-size: 1rem !important;
-            font-weight: 600 !important;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+            font-weight: 700 !important;
+            letter-spacing: 0.02em !important;
+            box-shadow: 0 4px 16px rgba(17, 4, 38, 0.35) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
             width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+            margin-top: 14px !important;
         }
-        div[data-testid="stFormSubmitButton"] > button:hover {
-            background: linear-gradient(135deg, #1D4ED8, #1E40AF) !important;
+
+        /* Garante que qualquer texto interno (p ou span) fique branco */
+        div[data-testid="stFormSubmitButton"] > button p,
+        div[data-testid="stFormSubmitButton"] > button span,
+        form[data-testid="stForm"] button p,
+        form[data-testid="stForm"] button span {
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            font-weight: 700 !important;
+            font-size: 1rem !important;
+        }
+
+        div[data-testid="stFormSubmitButton"] > button:hover,
+        form[data-testid="stForm"] button:hover {
+            filter: brightness(1.18) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5) !important;
+            border-color: rgba(168, 85, 247, 0.75) !important;
+        }
+
+        div[data-testid="stFormSubmitButton"] > button:active,
+        form[data-testid="stForm"] button:active {
+            transform: translateY(1px) !important;
+            filter: brightness(0.95) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -565,7 +602,7 @@ def enviar_requisicao_apps_script(payload):
         return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN
+# 5. TELA DE LOGIN (COM BOTÃO EXPANDIDO EM DEGRADÊ)
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
@@ -585,7 +622,8 @@ def tela_login(df_usuarios):
         
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
-        btn_login = st.form_submit_button("Entrar no Sistema")
+        
+        btn_login = st.form_submit_button("Entrar no Sistema", use_container_width=True)
         
         if btn_login:
             if df_usuarios.empty:
@@ -735,7 +773,7 @@ def main():
                 value=dados_ativos.get("destino", "")
             )
 
-            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)")
+            btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)", use_container_width=True)
 
         if btn_start_final:
             if km_fim is None:
@@ -854,7 +892,7 @@ def main():
                 )
                 destino_ini = st.text_input("Destino / Rota planejada:", placeholder="Ex: Rota Araraquara, São Carlos...")
 
-                btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)")
+                btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)", use_container_width=True)
 
             if btn_start_inicial:
                 if km_ini is None or km_ini <= 0:
