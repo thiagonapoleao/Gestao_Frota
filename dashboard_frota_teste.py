@@ -90,10 +90,15 @@ st.markdown("""
             letter-spacing: 0.05em;
         }
 
-        /* REDUÇÃO DE ESPAÇAMENTO LATERAL ESPECÍFICO DO HEADER SUPERIOR */
+        /* COMPACTAÇÃO: GAPS NATIVOS ELIMINADOS E MARGEM EXATA DE 3PX ENTRE ITENS */
+        .top-header-row div[data-testid="stHorizontalBlock"] {
+            gap: 0px !important;
+            align-items: center !important;
+        }
+
         .top-header-row div[data-testid="column"] {
-            padding-left: 3px !important;
-            padding-right: 3px !important;
+            padding-left: 1.5px !important;
+            padding-right: 1.5px !important;
         }
 
         /* 4. PADRONIZAÇÃO COMPLETA DE TODOS OS BOTÕES DO TOPO */
@@ -510,11 +515,11 @@ def main():
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
     # =========================================================================
-    # CABEÇALHO COMPACTO: BRANDING + NAVEGAÇÃO INTEGRADA (SEM SIDEBAR)
+    # CABEÇALHO COMPACTO: BRANDING + NAVEGAÇÃO INTEGRADA (3PX DE MARGEM ENTRE BOTÕES)
     # =========================================================================
     st.markdown('<div class="top-header-row">', unsafe_allow_html=True)
     c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [3.4, 1.15, 1.15, 1.25, 1.1, 1.4, 1.15, 0.95],
+        [3.3, 1.15, 1.15, 1.25, 1.1, 1.4, 1.15, 0.9],
         vertical_alignment="center"
     )
 
@@ -571,7 +576,7 @@ def main():
 
     with c_info:
         st.markdown(f"""
-            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:4px;">
+            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:6px;">
                 <b>Gestor:</b> {nome_gestor}<br>
                 <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m/%Y %H:%M')}</span>
             </div>
