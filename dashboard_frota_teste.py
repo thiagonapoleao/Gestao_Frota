@@ -21,19 +21,18 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS MODERNO CORPORATIVO
 # -------------------------------------------------------------
 st.set_page_config(
-    page_title="Painel de Frotas",
+    page_title="Painel de Frotas | Master Café",
     page_icon="🚘",
     layout="wide",
-    initial_sidebar_state="collapsed"
+    initial_sidebar_state="expanded"
 )
 
 st.markdown("""
     <style>
-        [data-testid="collapsedControl"],
-        section[data-testid="stSidebar"],
+        /* 1. OCULTAR ELEMENTOS PADRÃO DO STREAMLIT */
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
             display: none !important;
@@ -41,14 +40,18 @@ st.markdown("""
         }
 
         header[data-testid="stHeader"] {
-            display: none !important;
+            background-color: transparent !important;
+            height: 2.5rem !important;
         }
 
+        /* 2. BASE DO CONTAINER PRINCIPAL */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.5rem !important;
-            padding-bottom: 2rem !important;
-            max-width: 98% !important;
+            padding-top: 1rem !important;
+            padding-bottom: 2.5rem !important;
+            padding-left: 2rem !important;
+            padding-right: 2rem !important;
+            max-width: 100% !important;
         }
 
         :root, html, body {
@@ -60,111 +63,167 @@ st.markdown("""
         .stApp, [data-testid="stAppViewContainer"] {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
         }
 
         h1, h2, h3, h4, h5, p, span, label, div {
             color: #0F172A !important;
         }
+
         .stWidgetLabel p, label p {
             color: #334155 !important;
             font-weight: 600 !important;
             font-size: 0.88rem !important;
         }
 
-        .brand-title {
-            font-size: 1.55rem;
-            font-weight: 800;
-            color: #0F172A;
-            line-height: 1.1;
-            letter-spacing: -0.025em;
-            white-space: nowrap;
+        /* 3. SIDEBAR CORPORATIVA */
+        section[data-testid="stSidebar"] {
+            background-color: #0F172A !important;
+            border-right: 1px solid #1E293B !important;
+            padding-top: 0.5rem !important;
+            width: 18rem !important;
         }
+
+        section[data-testid="stSidebar"] [data-testid="stSidebarUserContent"] {
+            padding-top: 1rem !important;
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }
+
+        /* TIPOGRAFIA E ELEMENTOS DA SIDEBAR */
+        section[data-testid="stSidebar"] h1, 
+        section[data-testid="stSidebar"] h2, 
+        section[data-testid="stSidebar"] h3, 
+        section[data-testid="stSidebar"] p, 
+        section[data-testid="stSidebar"] span {
+            color: #F8FAFC !important;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid #1E293B;
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: #FFFFFF !important;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+        }
+
         .brand-sub {
-            font-size: 0.74rem;
-            color: #64748B;
+            font-size: 0.70rem;
+            color: #94A3B8 !important;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
+            letter-spacing: 0.08em;
         }
 
-        div[data-testid="stVerticalBlock"]:has(> div #ancora_header_top) + div[data-testid="stHorizontalBlock"],
-        div[data-testid="stHorizontalBlock"]:has(button[key^="top_nav_"]) {
-            gap: 3px !important;
-            column-gap: 3px !important;
+        .user-card {
+            background: #1E293B;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 1.2rem;
+        }
+
+        .user-card-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #FFFFFF !important;
+            margin: 0;
+        }
+
+        .user-card-role {
+            font-size: 0.72rem;
+            color: #38BDF8 !important;
+            font-weight: 600;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .user-card-time {
+            font-size: 0.68rem;
+            color: #94A3B8 !important;
+            margin-top: 3px;
+        }
+
+        /* 4. BOTÕES DE NAVEGAÇÃO DA SIDEBAR PADRONIZADOS */
+        section[data-testid="stSidebar"] div.stButton > button {
+            background: #1E293B !important;
+            color: #CBD5E1 !important;
+            -webkit-text-fill-color: #CBD5E1 !important;
+            border: 1px solid #334155 !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            font-size: 0.85rem !important;
+            padding: 0 14px !important;
+            min-height: 2.6rem !important;
+            height: 2.6rem !important;
+            width: 100% !important;
+            box-shadow: none !important;
+            transition: all 0.2s ease-in-out !important;
+            display: flex !important;
             align-items: center !important;
+            justify-content: flex-start !important;
+            text-align: left !important;
+            margin-bottom: 6px !important;
         }
 
-        div[data-testid="stHorizontalBlock"]:has(button[key^="top_nav_"]) > div[data-testid="column"] {
-            padding-left: 0px !important;
-            padding-right: 0px !important;
-            min-width: 0 !important;
-        }
-
-        div.stButton > button {
+        section[data-testid="stSidebar"] div.stButton > button:hover {
             background: #2563EB !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            border-radius: 6px !important;
-            font-weight: 600 !important;
-            font-size: 0.80rem !important;
-            border: 1px solid #1D4ED8 !important;
-            padding: 0 4px !important;
-            min-height: 2.25rem !important;
-            height: 2.25rem !important;
-            width: 100% !important;
-            box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
-            transition: all 0.15s ease-in-out !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            display: inline-flex !important;
-            align-items: center !important;
+            border-color: #3B82F6 !important;
+            transform: translateX(3px);
+        }
+
+        /* BOTÃO ATIVO NA SIDEBAR */
+        section[data-testid="stSidebar"] .nav-active div.stButton > button {
+            background: #2563EB !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-color: #60A5FA !important;
+            font-weight: 700 !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
+        }
+
+        /* BOTÕES DE SISTEMA NA SIDEBAR */
+        section[data-testid="stSidebar"] .btn-sync div.stButton > button {
+            background: #065F46 !important;
+            color: #ECFDF5 !important;
+            -webkit-text-fill-color: #ECFDF5 !important;
+            border: 1px solid #059669 !important;
             justify-content: center !important;
-            box-sizing: border-box !important;
+        }
+        section[data-testid="stSidebar"] .btn-sync div.stButton > button:hover {
+            background: #059669 !important;
         }
 
-        div.stButton > button p {
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            margin: 0 !important;
-            color: inherit !important;
+        section[data-testid="stSidebar"] .btn-exit div.stButton > button {
+            background: #7F1D1D !important;
+            color: #FEF2F2 !important;
+            -webkit-text-fill-color: #FEF2F2 !important;
+            border: 1px solid #DC2626 !important;
+            justify-content: center !important;
         }
-
-        div.stButton > button:hover {
-            background: #1D4ED8 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border-color: #1E40AF !important;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3) !important;
-        }
-
-        .nav-active div.stButton > button {
-            background: #1E40AF !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border-color: #172554 !important;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
-            font-weight: 800 !important;
-        }
-
-        .btn-sync div.stButton > button {
-            background: #16A34A !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border: 1px solid #15803D !important;
-            box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
-            font-weight: 600 !important;
-        }
-
-        .btn-exit div.stButton > button {
+        section[data-testid="stSidebar"] .btn-exit div.stButton > button:hover {
             background: #DC2626 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border: 1px solid #B91C1C !important;
-            box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
-            font-weight: 600 !important;
+        }
+
+        /* 5. CARDS, KPIS E COMPONENTES NO CONTEÚDO PRINCIPAL */
+        .main-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #E2E8F0;
         }
 
         .filter-panel, .kpi-card {
@@ -221,7 +280,7 @@ st.markdown("""
             border: 1px solid #E2E8F0 !important;
             border-radius: 12px !important;
             box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
-            padding: 20px !important;
+            padding: 22px !important;
         }
 
         div[data-baseweb="input"],
@@ -294,7 +353,7 @@ def formatar_nome_padrao(nome: str) -> str:
     return " ".join(resultado)
 
 def gerar_usuario_padrao(nome_completo: str) -> str:
-    """Gera o login automático: primeira letra do nome + último sobrenome em minúsculas e sem acento."""
+    """Gera o login automático: primeira letra do nome + sobrenome em minúsculas e sem acento."""
     texto_sem_acento = unicodedata.normalize('NFKD', str(nome_completo)).encode('ASCII', 'ignore').decode('ASCII')
     partes = re.sub(r'[^a-zA-Z\s]', '', texto_sem_acento).strip().split()
     if not partes:
@@ -530,7 +589,7 @@ def tela_login(df_usuarios):
                     st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO PRINCIPAL
+# 6. APLICATIVO PRINCIPAL (SISTEMA CORPORATIVO)
 # -------------------------------------------------------------
 def main():
     df_usuarios = obter_usuarios_ativos()
@@ -554,100 +613,76 @@ def main():
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
     acesso_gestor = st.session_state.get("dash_acesso", "Geral")
 
-    opcoes_menu = [
-        "◈ Deshboar",
-        "⌕ Consultas",
-        "✎ Editar Viagens",
-        "👥 Usuários"
+    itens_menu = [
+        {"id": "dash", "label": "Dashboard Geral", "icon": "📊"},
+        {"id": "consultas", "label": "Consultas & Filtros", "icon": "🔍"},
+        {"id": "editar", "label": "Editar Viagens", "icon": "✍️"},
+        {"id": "usuarios", "label": "Gestão de Usuários", "icon": "👥"}
     ]
 
-    if "pagina_selecionada" not in st.session_state:
-        st.session_state["pagina_selecionada"] = opcoes_menu[0]
+    if "pagina_selecionada_id" not in st.session_state:
+        st.session_state["pagina_selecionada_id"] = "dash"
 
-    # CABEÇALHO COMPACTO
-    st.markdown('<div id="ancora_header_top"></div>', unsafe_allow_html=True)
-    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [3.0, 1.1, 1.1, 1.25, 1.05, 1.3, 1.15, 0.85],
-        gap="small",
-        vertical_alignment="center"
-    )
-
-    with c_brand:
+    # =========================================================================
+    # SIDEBAR: MENU LATERAL CORPORATIVO MODERNO
+    # =========================================================================
+    with st.sidebar:
         caminho_logo = obter_caminho_logotipo()
-        col_img, col_txt = st.columns([0.45, 0.55], gap="small", vertical_alignment="center")
-        with col_img:
-            if caminho_logo:
-                try:
-                    st.image(Image.open(caminho_logo), width=95)
-                except Exception:
-                    st.markdown("<h1 style='margin:0; font-size:2.4rem;'>☕</h1>", unsafe_allow_html=True)
-            else:
-                st.markdown("<h1 style='margin:0; font-size:2.4rem;'>☕</h1>", unsafe_allow_html=True)
-        with col_txt:
-            st.markdown("""
-                <div style="line-height:1.15;">
-                    <span class="brand-title">Painel de Frotas</span><br>
-                    <span class="brand-sub">Master Café Gestão</span>
-                </div>
-            """, unsafe_allow_html=True)
+        if caminho_logo:
+            try:
+                st.image(Image.open(caminho_logo), width=75)
+            except Exception:
+                st.markdown("<span style='font-size:2rem;'>☕</span>", unsafe_allow_html=True)
+        else:
+            st.markdown("<span style='font-size:2rem;'>☕</span>", unsafe_allow_html=True)
 
-    with c_nav1:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[0])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[0], key="top_nav_0"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[0]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_nav2:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[1])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[1], key="top_nav_1"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[1]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_nav3:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[2])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[2], key="top_nav_2"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[2]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_nav4:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[3])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[3], key="top_nav_3"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[3]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_info:
-        st.markdown(f"""
-            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:4px;">
-                <b>Gestor:</b> {nome_gestor}<br>
-                <span style="color:#64748B; font-weight:600;">{acesso_gestor}</span> | <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m %H:%M')}</span>
+        st.markdown("""
+            <div style="margin-bottom: 1.2rem;">
+                <div class="brand-title">Painel de Frotas</div>
+                <div class="brand-sub">Master Café Gestão</div>
             </div>
         """, unsafe_allow_html=True)
 
-    with c_act1:
+        # Card de Perfil do Gestor Logado
+        st.markdown(f"""
+            <div class="user-card">
+                <p class="user-card-name">👤 {nome_gestor}</p>
+                <p class="user-card-role">Acesso: {acesso_gestor}</p>
+                <div class="user-card-time">🕒 {obter_agora_brasil().strftime('%d/%m/%Y • %H:%M')}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;'>Navegação</p>", unsafe_allow_html=True)
+
+        # Renderização dos botões de navegação padronizados
+        for item in itens_menu:
+            is_active = (st.session_state["pagina_selecionada_id"] == item["id"])
+            prefix = "▶ " if is_active else ""
+            st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+            if st.button(f"{prefix}{item['icon']}  {item['label']}", key=f"nav_btn_{item['id']}"):
+                st.session_state["pagina_selecionada_id"] = item["id"]
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        st.markdown("<div style='margin-top: 2rem;'></div>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;'>Sistema</p>", unsafe_allow_html=True)
+
         st.markdown('<div class="btn-sync">', unsafe_allow_html=True)
-        if st.button("⟳ Sincronizar", key="btn_top_sync"):
+        if st.button("⟳  Sincronizar Dados", key="side_btn_sync"):
             st.cache_data.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    with c_act2:
         st.markdown('<div class="btn-exit">', unsafe_allow_html=True)
-        if st.button("→ Sair", key="btn_top_exit"):
+        if st.button("→  Sair do Painel", key="side_btn_exit"):
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
-
+    # =========================================================================
+    # ÁREA PRINCIPAL
+    # =========================================================================
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
 
@@ -656,11 +691,21 @@ def main():
         return
 
     hoje_brasil = obter_agora_brasil().date()
+    pagina_atual = st.session_state["pagina_selecionada_id"]
 
     # =========================================================================
     # PÁGINA 1: DASHBOARD
     # =========================================================================
-    if st.session_state["pagina_selecionada"] == opcoes_menu[0]:
+    if pagina_atual == "dash":
+        st.markdown("""
+            <div class="main-header">
+                <div>
+                    <h2 style="margin:0; font-weight:800; color:#0F172A;">📊 Dashboard Geral</h2>
+                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Indicadores operacionais consolidados e veículos em atividade</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
         total_em_aberto = len(viagens_abertas_df)
@@ -749,7 +794,7 @@ def main():
                     st.markdown(card_aberto_html, unsafe_allow_html=True)
                     if st.button(f"✎ Editar/Baixar ({v_aberta['rv']})", key=f"btn_quick_{v_aberta['rv']}"):
                         st.session_state["rv_para_editar"] = v_aberta["rv"]
-                        st.session_state["pagina_selecionada"] = opcoes_menu[2]
+                        st.session_state["pagina_selecionada_id"] = "editar"
                         st.rerun()
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
@@ -909,7 +954,16 @@ def main():
     # =========================================================================
     # PÁGINA 2: CONSULTAS & FILTROS AVANÇADOS
     # =========================================================================
-    elif st.session_state["pagina_selecionada"] == opcoes_menu[1]:
+    elif pagina_atual == "consultas":
+        st.markdown("""
+            <div class="main-header">
+                <div>
+                    <h2 style="margin:0; font-weight:800; color:#0F172A;">🔍 Consultas & Relatórios</h2>
+                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Pesquise históricos com múltiplos filtros e exporte extratos</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
         st.markdown("<p style='font-size:0.90rem; font-weight:700; color:#0F172A; margin-bottom:6px;'>◈ Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
         
@@ -921,29 +975,17 @@ def main():
 
         with f_col2:
             lista_veiculos = sorted([v for v in df_base["rotulo_veiculo"].unique() if v])
-            veiculos_sel = st.multiselect(
-                "Veículo(s):",
-                options=lista_veiculos,
-                placeholder="Todos..."
-            )
+            veiculos_sel = st.multiselect("Veículo(s):", options=lista_veiculos, placeholder="Todos...")
 
         with f_col3:
             lista_condutores = sorted([c for c in df_base["condutor"].unique() if c and c.lower() != "nan"])
-            condutores_sel = st.multiselect(
-                "Condutor(es):",
-                options=lista_condutores,
-                placeholder="Todos..."
-            )
+            condutores_sel = st.multiselect("Condutor(es):", options=lista_condutores, placeholder="Todos...")
 
         with f_col4:
             datas_validas = df_base["data_ini_dt"].dropna()
             min_d = datas_validas.min().date() if not datas_validas.empty else date.today() - timedelta(days=30)
             max_d = datas_validas.max().date() if not datas_validas.empty else date.today()
-            periodo_sel = st.date_input(
-                "Período de Saída:",
-                value=(min_d, max_d),
-                format="DD/MM/YYYY"
-            )
+            periodo_sel = st.date_input("Período de Saída:", value=(min_d, max_d), format="DD/MM/YYYY")
         st.markdown('</div>', unsafe_allow_html=True)
 
         df_consulta = df_base.copy()
@@ -1031,7 +1073,16 @@ def main():
     # =========================================================================
     # PÁGINA 3: EDITAR VIAGENS
     # =========================================================================
-    elif st.session_state["pagina_selecionada"] == opcoes_menu[2]:
+    elif pagina_atual == "editar":
+        st.markdown("""
+            <div class="main-header">
+                <div>
+                    <h2 style="margin:0; font-weight:800; color:#0F172A;">✍️ Edição & Fechamento de Viagens</h2>
+                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Retificação de dados de saída e encerramento de percursos</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
         if "edicoes_viagens" not in st.session_state:
             st.session_state["edicoes_viagens"] = {}
 
@@ -1129,7 +1180,16 @@ def main():
     # =========================================================================
     # PÁGINA 4: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN E GRAVAÇÃO DEFINITIVA)
     # =========================================================================
-    elif st.session_state["pagina_selecionada"] == opcoes_menu[3]:
+    elif pagina_atual == "usuarios":
+        st.markdown("""
+            <div class="main-header">
+                <div>
+                    <h2 style="margin:0; font-weight:800; color:#0F172A;">👥 Gestão de Usuários</h2>
+                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Controle de credenciais, permissões de frota e cadastro sincronizado</p>
+                </div>
+            </div>
+        """, unsafe_allow_html=True)
+
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
 
         with tab_lista:
@@ -1163,7 +1223,7 @@ def main():
             with st.form("form_cadastrar_usuario"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
-                    # Exibição do usuário gerado pelo sistema (desabilitado para garantir o padrão)
+                    # Exibição do usuário gerado pelo sistema
                     st.text_input(
                         "Usuário:",
                         value=usuario_gerado,
