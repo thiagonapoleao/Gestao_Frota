@@ -75,7 +75,7 @@ st.markdown("""
 
         /* 3. BRANDING PRINCIPAL COMPACTO */
         .brand-title {
-            font-size: 1.45rem;
+            font-size: 1.55rem;
             font-weight: 800;
             color: #0F172A;
             line-height: 1.1;
@@ -83,7 +83,7 @@ st.markdown("""
             white-space: nowrap;
         }
         .brand-sub {
-            font-size: 0.72rem;
+            font-size: 0.76rem;
             color: #64748B;
             font-weight: 600;
             text-transform: uppercase;
@@ -424,7 +424,7 @@ def tela_login(df_usuarios):
     with col2:
         if caminho_logo:
             try:
-                st.image(Image.open(caminho_logo), width=160)
+                st.image(Image.open(caminho_logo), width=180)
             except Exception:
                 st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
         else:
@@ -492,22 +492,22 @@ def main():
     # CABEÇALHO COMPACTO: BRANDING PRINCIPAL + NAVEGAÇÃO INTEGRADA (SEM SIDEBAR)
     # =========================================================================
     c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [3.0, 1.3, 1.2, 1.4, 1.1, 1.6, 1.2, 0.8],
+        [3.4, 1.25, 1.15, 1.35, 1.05, 1.5, 1.2, 0.75],
         vertical_alignment="center"
     )
 
     with c_brand:
         caminho_logo = obter_caminho_logotipo()
-        col_img, col_txt = st.columns([0.38, 0.62], vertical_alignment="center")
+        col_img, col_txt = st.columns([0.45, 0.55], vertical_alignment="center")
         with col_img:
             if caminho_logo:
                 try:
-                    # Logotipo ampliado proporcionalmente com a nova largura do header
-                    st.image(Image.open(caminho_logo), width=64)
+                    # Logotipo ampliado de forma proeminente e nítida
+                    st.image(Image.open(caminho_logo), width=95)
                 except Exception:
-                    st.markdown("<h2 style='margin:0;'>☕</h2>", unsafe_allow_html=True)
+                    st.markdown("<h1 style='margin:0; font-size:2.4rem;'>☕</h1>", unsafe_allow_html=True)
             else:
-                st.markdown("<h2 style='margin:0;'>☕</h2>", unsafe_allow_html=True)
+                st.markdown("<h1 style='margin:0; font-size:2.4rem;'>☕</h1>", unsafe_allow_html=True)
         with col_txt:
             st.markdown("""
                 <div style="line-height:1.15;">
