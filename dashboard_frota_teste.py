@@ -90,18 +90,30 @@ st.markdown("""
             letter-spacing: 0.05em;
         }
 
-        /* COMPACTAÇÃO: GAPS NATIVOS ELIMINADOS E MARGEM EXATA DE 3PX ENTRE ITENS */
-        .top-header-row div[data-testid="stHorizontalBlock"] {
-            gap: 0px !important;
+        /* 4. CLUSTER COMPACTO COM EXATAMENTE 3PX DE DISTÂNCIA ENTRE BOTÕES */
+        .nav-cluster-container > div[data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
             align-items: center !important;
+            gap: 3px !important;
+            width: 100% !important;
         }
 
-        .top-header-row div[data-testid="column"] {
-            padding-left: 1.5px !important;
-            padding-right: 1.5px !important;
+        .nav-cluster-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+            width: auto !important;
+            min-width: 0 !important;
+            flex: 1 1 0px !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
 
-        /* 4. PADRONIZAÇÃO COMPLETA DE TODOS OS BOTÕES DO TOPO */
+        /* Informações do gestor dentro do cluster */
+        .cluster-info {
+            flex: 1.2 1 0px !important;
+            min-width: 110px !important;
+        }
+
+        /* 5. PADRONIZAÇÃO COMPLETA DE TODOS OS BOTÕES */
         div.stButton > button {
             background: #2563EB !important;
             color: #FFFFFF !important;
@@ -110,7 +122,7 @@ st.markdown("""
             font-weight: 600 !important;
             font-size: 0.80rem !important;
             border: 1px solid #1D4ED8 !important;
-            padding: 0 6px !important;
+            padding: 0 4px !important;
             min-height: 2.25rem !important;
             height: 2.25rem !important;
             width: 100% !important;
@@ -151,7 +163,7 @@ st.markdown("""
             font-weight: 800 !important;
         }
 
-        /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO PADRONIZADO) */
+        /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO) */
         .btn-sync div.stButton > button {
             background: #16A34A !important;
             color: #FFFFFF !important;
@@ -168,7 +180,7 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35) !important;
         }
 
-        /* BOTÃO SAIR (VERMELHO PRIMÁRIO PADRONIZADO) */
+        /* BOTÃO SAIR (VERMELHO PRIMÁRIO) */
         .btn-exit div.stButton > button {
             background: #DC2626 !important;
             color: #FFFFFF !important;
@@ -185,7 +197,7 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.35) !important;
         }
 
-        /* 5. CARDS E COMPONENTES */
+        /* 6. CARDS E COMPONENTES */
         .filter-panel {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -515,13 +527,9 @@ def main():
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
     # =========================================================================
-    # CABEÇALHO COMPACTO: BRANDING + NAVEGAÇÃO INTEGRADA (3PX DE MARGEM ENTRE BOTÕES)
+    # CABEÇALHO COMPACTO: BRANDING + BARRA DE BOTÕES COM GAP DE 3PX FORÇADO
     # =========================================================================
-    st.markdown('<div class="top-header-row">', unsafe_allow_html=True)
-    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [3.3, 1.15, 1.15, 1.25, 1.1, 1.4, 1.15, 0.9],
-        vertical_alignment="center"
-    )
+    c_brand, c_toolbar = st.columns([0.30, 0.70], vertical_alignment="center")
 
     with c_brand:
         caminho_logo = obter_caminho_logotipo()
@@ -542,62 +550,69 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-    with c_nav1:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[0])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[0], key="top_nav_0"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[0]
-            st.rerun()
+    with c_toolbar:
+        st.markdown('<div class="nav-cluster-container">', unsafe_allow_html=True)
+        btn1, btn2, btn3, btn4, c_info, btn_sync, btn_exit = st.columns(
+            [1.05, 1.05, 1.25, 1.05, 1.15, 1.15, 0.85],
+            vertical_alignment="center"
+        )
+
+        with btn1:
+            is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[0])
+            st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+            if st.button(opcoes_menu[0], key="top_nav_0"):
+                st.session_state["pagina_selecionada"] = opcoes_menu[0]
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with btn2:
+            is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[1])
+            st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+            if st.button(opcoes_menu[1], key="top_nav_1"):
+                st.session_state["pagina_selecionada"] = opcoes_menu[1]
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with btn3:
+            is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[2])
+            st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+            if st.button(opcoes_menu[2], key="top_nav_2"):
+                st.session_state["pagina_selecionada"] = opcoes_menu[2]
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with btn4:
+            is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[3])
+            st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+            if st.button(opcoes_menu[3], key="top_nav_3"):
+                st.session_state["pagina_selecionada"] = opcoes_menu[3]
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with c_info:
+            st.markdown(f"""
+                <div class="cluster-info" style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:4px;">
+                    <b>Gestor:</b> {nome_gestor}<br>
+                    <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m %H:%M')}</span>
+                </div>
+            """, unsafe_allow_html=True)
+
+        with btn_sync:
+            st.markdown('<div class="btn-sync">', unsafe_allow_html=True)
+            if st.button("⟳ Sincronizar", key="btn_top_sync"):
+                st.cache_data.clear()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        with btn_exit:
+            st.markdown('<div class="btn-exit">', unsafe_allow_html=True)
+            if st.button("→ Sair", key="btn_top_exit"):
+                st.session_state.clear()
+                st.query_params.clear()
+                st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
+
         st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_nav2:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[1])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[1], key="top_nav_1"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[1]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_nav3:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[2])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[2], key="top_nav_2"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[2]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_nav4:
-        is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[3])
-        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[3], key="top_nav_3"):
-            st.session_state["pagina_selecionada"] = opcoes_menu[3]
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_info:
-        st.markdown(f"""
-            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:6px;">
-                <b>Gestor:</b> {nome_gestor}<br>
-                <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m/%Y %H:%M')}</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c_act1:
-        st.markdown('<div class="btn-sync">', unsafe_allow_html=True)
-        if st.button("⟳ Sincronizar", key="btn_top_sync"):
-            st.cache_data.clear()
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    with c_act2:
-        st.markdown('<div class="btn-exit">', unsafe_allow_html=True)
-        if st.button("→ Sair", key="btn_top_exit"):
-            st.session_state.clear()
-            st.query_params.clear()
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
@@ -673,7 +688,7 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO (CSS E ESTRUTURA DOS CARDS PRESERVADOS)
+        # 2. VEÍCULOS EM ABERTO NO TOPO (ESTRUTURA E CSS DOS CARDS PRESERVADOS)
         st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✔ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
