@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta, date
 import requests
 import json
 import os
+import re
 import unicodedata
 from PIL import Image
 
@@ -156,13 +157,6 @@ st.markdown("""
             box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2) !important;
             font-weight: 600 !important;
         }
-        .btn-sync div.stButton > button:hover {
-            background: #15803D !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border-color: #166534 !important;
-            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35) !important;
-        }
 
         .btn-exit div.stButton > button {
             background: #DC2626 !important;
@@ -171,13 +165,6 @@ st.markdown("""
             border: 1px solid #B91C1C !important;
             box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
             font-weight: 600 !important;
-        }
-        .btn-exit div.stButton > button:hover {
-            background: #B91C1C !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            border-color: #991B1B !important;
-            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.35) !important;
         }
 
         .filter-panel, .kpi-card {
@@ -273,7 +260,7 @@ GID_FROTA = "1438914619"
 WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO E UTILITÁRIOS
+# 3. SUPORTE A LOGOTIPO E PADRONIZAÇÃO
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
@@ -290,6 +277,33 @@ def normalizar_texto(texto):
         texto = str(texto)
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto.strip().lower()
+
+def formatar_nome_padrao(nome: str) -> str:
+    """Formata o nome com as primeiras letras maiúsculas, mantendo preposições minúsculas."""
+    partes = str(nome).strip().split()
+    if not partes:
+        return ""
+    conjuncoes = {"de", "da", "do", "das", "dos", "e"}
+    resultado = []
+    for idx, p in enumerate(partes):
+        p_lower = p.lower()
+        if p_lower in conjuncoes and 0 < idx < len(partes) - 1:
+            resultado.append(p_lower)
+        else:
+            resultado.append(p.capitalize())
+    return " ".join(resultado)
+
+def gerar_usuario_padrao(nome_completo: str) -> str:
+    """Gera o login automático: primeira letra do nome + sobrenome em minúsculas e sem acento."""
+    texto_sem_acento = unicodedata.normalize('NFKD', str(nome_completo)).encode('ASCII', 'ignore').decode('ASCII')
+    partes = re.sub(r'[^a-zA-Z\s]', '', texto_sem_acento).strip().split()
+    if not partes:
+        return ""
+    if len(partes) == 1:
+        return partes[0].lower()
+    primeira_letra = partes[0][0].lower()
+    sobrenome = partes[-1].lower()
+    return f"{primeira_letra}{sobrenome}"
 
 # -------------------------------------------------------------
 # 4. CARREGAMENTO E GRAVAÇÃO DE DADOS (ETL)
@@ -313,7 +327,7 @@ def carregar_usuarios():
                 df_res = pd.DataFrame()
                 df_res["usuario"] = df[c_user].fillna("").astype(str).str.strip().str.lower()
                 df_res["senha"] = df[c_pass].fillna("").astype(str).str.strip()
-                df_res["nome"] = df[c_nome].fillna(df[c_user]).astype(str).str.strip()
+                df_res["nome"] = df[c_nome].fillna(df[c_user]).astype(str).str.strip().apply(formatar_nome_padrao)
                 
                 if c_acesso and c_acesso in df.columns:
                     df_res["acesso"] = df[c_acesso].fillna("Geral").astype(str).str.strip()
@@ -491,7 +505,7 @@ def tela_login(df_usuarios):
 
         with st.form("form_login_dash"):
             usuario_digitado = st.text_input("Usuário Gestor:", placeholder="Digite seu usuário").strip().lower()
-            senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
+            senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha (números)").strip()
             btn_login = st.form_submit_button("Acessar Painel")
 
             if btn_login:
@@ -1113,7 +1127,7 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: USUÁRIOS (COM ACESSO E PERSISTÊNCIA DIRETA NA PLANILHA)
+    # PÁGINA 4: USUÁRIOS (COM PADRONIZAÇÃO E GRAVAÇÃO DEFINITIVA)
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == opcoes_menu[3]:
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
@@ -1135,11 +1149,30 @@ def main():
         with tab_novo:
             locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
             
+            # Campo para digitação prévia do nome com atualização dinâmica do login padrão
+            nome_digitado = st.text_input(
+                "Digite o Nome Completo:",
+                key="input_nome_temp",
+                placeholder="Ex: Roberto da Silva"
+            )
+
+            # Padronizações em tempo real
+            nome_formatado_padrao = formatar_nome_padrao(nome_digitado)
+            usuario_sugerido = gerar_usuario_padrao(nome_digitado)
+
             with st.form("form_cadastrar_usuario"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
-                    novo_nome = st.text_input("Nome Completo:", placeholder="Ex: Roberto Silva")
-                    novo_login = st.text_input("Login (Usuário):", placeholder="Ex: rsilva").strip().lower()
+                    novo_nome = st.text_input(
+                        "Nome Completo (Primeiras letras maiúsculas):",
+                        value=nome_formatado_padrao,
+                        placeholder="Ex: Roberto da Silva"
+                    )
+                    novo_login = st.text_input(
+                        "Usuário (Todas as letras minúsculas):",
+                        value=usuario_sugerido,
+                        placeholder="Ex: rsilva"
+                    ).strip().lower()
                     
                     tipo_acesso_modo = st.radio(
                         "Tipo de Acesso:",
@@ -1153,8 +1186,16 @@ def main():
                         cidade_acesso = "Geral"
 
                 with u_col2:
-                    nova_senha = st.text_input("Senha Inicial:", type="password", placeholder="Digite a senha")
-                    confirma_senha = st.text_input("Confirme a Senha:", type="password", placeholder="Repita a senha")
+                    nova_senha = st.text_input(
+                        "Senha Inicial (Apenas números):",
+                        type="password",
+                        placeholder="Ex: 123456"
+                    ).strip()
+                    confirma_senha = st.text_input(
+                        "Confirme a Senha (Apenas números):",
+                        type="password",
+                        placeholder="Repita os números da senha"
+                    ).strip()
                     
                     st.markdown("<b>Veículos liberados para este perfil:</b>", unsafe_allow_html=True)
                     if not df_frota.empty and "Local de pernoite" in df_frota.columns:
@@ -1170,17 +1211,23 @@ def main():
                 btn_cadastrar = st.form_submit_button("💾 Cadastrar e Salvar Usuário")
 
                 if btn_cadastrar:
-                    if not novo_nome or not novo_login or not nova_senha:
+                    # Aplica as padronizações estritas
+                    nome_final = formatar_nome_padrao(novo_nome)
+                    usuario_final = novo_login.strip().lower()
+
+                    if not nome_final or not usuario_final or not nova_senha:
                         st.error("Preencha todos os campos obrigatórios.")
+                    elif not nova_senha.isdigit():
+                        st.error("❌ A senha deve conter apenas números.")
                     elif nova_senha != confirma_senha:
-                        st.error("As senhas digitadas não coincidem.")
-                    elif novo_login in df_usuarios["usuario"].values:
-                        st.error("Este nome de usuário já está cadastrado.")
+                        st.error("❌ As senhas digitadas não coincidem.")
+                    elif usuario_final in df_usuarios["usuario"].values:
+                        st.error("❌ Este nome de usuário já está cadastrado.")
                     else:
                         novo_reg = {
-                            "usuario": novo_login,
+                            "usuario": usuario_final,
                             "senha": nova_senha,
-                            "nome": novo_nome,
+                            "nome": nome_final,
                             "acesso": cidade_acesso
                         }
 
@@ -1189,15 +1236,14 @@ def main():
 
                         if gravou_nuvem:
                             st.cache_data.clear()
-                            st.success(f"✔ Usuário **{novo_nome}** (`{novo_login}`) cadastrado e salvo com sucesso na folha de cálculo!")
+                            st.success(f"✔ Usuário **{nome_final}** (`{usuario_final}`) cadastrado e salvo com sucesso na folha de cálculo!")
                             st.rerun()
                         else:
-                            # Fallback na sessão caso o Webhook encontre erro de conexão ou permissão
                             if "novos_usuarios_sessao" not in st.session_state:
                                 st.session_state["novos_usuarios_sessao"] = []
                             st.session_state["novos_usuarios_sessao"].append(novo_reg)
                             st.warning(
-                                f"✔ Usuário adicionado apenas à sessão. Verifique se a implantação do Webhook no Apps Script está autorizada para 'Qualquer pessoa'."
+                                f"✔ Usuário adicionado temporariamente à sessão. Verifique a implantação do Apps Script para gravação em nuvem."
                             )
                             st.rerun()
 
