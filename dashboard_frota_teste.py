@@ -3,6 +3,11 @@ import pandas as pd
 import numpy as np
 import altair as alt
 from datetime import datetime, timezone, timedelta, date
+import requests
+import json
+import os
+import unicodedata
+from PIL import Image
 
 try:
     from zoneinfo import ZoneInfo
@@ -10,17 +15,12 @@ try:
 except Exception:
     FUSO_BRASIL = timezone(timedelta(hours=-3))
 
-import os
-import re
-import unicodedata
-from PIL import Image
-
 def obter_agora_brasil():
     """Retorna datetime oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (DESIGN CLEAN & INTEGRADO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -31,7 +31,6 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. OCULTA SIDEBAR, CABEÇALHOS E ELEMENTOS NATIVOS NÃO UTILIZADOS */
         [data-testid="collapsedControl"],
         section[data-testid="stSidebar"],
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
@@ -51,7 +50,6 @@ st.markdown("""
             max-width: 98% !important;
         }
 
-        /* 2. BASE DE CORES DO SISTEMA */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -73,7 +71,6 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* 3. BRANDING PRINCIPAL */
         .brand-title {
             font-size: 1.55rem;
             font-weight: 800;
@@ -90,8 +87,6 @@ st.markdown("""
             letter-spacing: 0.05em;
         }
 
-        /* 4. SOBREPOSIÇÃO FORÇADA DE GAP PARA 3PX NOS BOTÕES DE TOPO */
-        /* Zera o gap nativo do Streamlit em flexbox e grid */
         div[data-testid="stVerticalBlock"]:has(> div #ancora_header_top) + div[data-testid="stHorizontalBlock"],
         div[data-testid="stHorizontalBlock"]:has(button[key^="top_nav_"]) {
             gap: 3px !important;
@@ -105,7 +100,6 @@ st.markdown("""
             min-width: 0 !important;
         }
 
-        /* 5. PADRONIZAÇÃO COMPLETA DE TODOS OS BOTÕES */
         div.stButton > button {
             background: #2563EB !important;
             color: #FFFFFF !important;
@@ -145,7 +139,6 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3) !important;
         }
 
-        /* DESTAQUE DO BOTÃO ATIVO */
         .nav-active div.stButton > button {
             background: #1E40AF !important;
             color: #FFFFFF !important;
@@ -155,7 +148,6 @@ st.markdown("""
             font-weight: 800 !important;
         }
 
-        /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO) */
         .btn-sync div.stButton > button {
             background: #16A34A !important;
             color: #FFFFFF !important;
@@ -172,7 +164,6 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35) !important;
         }
 
-        /* BOTÃO SAIR (VERMELHO PRIMÁRIO) */
         .btn-exit div.stButton > button {
             background: #DC2626 !important;
             color: #FFFFFF !important;
@@ -189,26 +180,15 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(220, 38, 38, 0.35) !important;
         }
 
-        /* 6. CARDS E COMPONENTES */
-        .filter-panel {
+        .filter-panel, .kpi-card {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
             border-radius: 10px;
-            padding: 14px 18px 8px 18px;
+            padding: 14px 18px;
             box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
             margin-bottom: 1rem;
         }
 
-        .kpi-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 10px;
-            padding: 14px 16px;
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
         .kpi-title {
             font-size: 0.75rem;
             font-weight: 700;
@@ -273,7 +253,6 @@ st.markdown("""
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
         }
-
         div[data-testid="stDataFrame"] {
             border: 1px solid #E2E8F0 !important;
             border-radius: 8px !important;
@@ -283,14 +262,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------------------
-# 2. CONFIGURAÇÕES DA PLANILHA
+# 2. CONFIGURAÇÕES DA FOLHA DE CÁLCULO
 # -------------------------------------------------------------
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
+GID_FROTA = "1438914619"
+
+# URL do Apps Script Webhook (opcional, pode ser colocado em st.secrets ou diretamente aqui)
+WEBHOOK_APPS_SCRIPT_URL = st.secrets.get("APPS_SCRIPT_URL", "")
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO
+# 3. SUPORTE A LOGOTIPO E UTILITÁRIOS
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
@@ -309,9 +292,9 @@ def normalizar_texto(texto):
     return texto.strip().lower()
 
 # -------------------------------------------------------------
-# 4. CARREGAMENTO E TRATAMENTO DOS DADOS (ETL)
+# 4. CARREGAMENTO E GRAVAÇÃO DE DADOS (ETL)
 # -------------------------------------------------------------
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=45)
 def carregar_usuarios():
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
@@ -325,15 +308,22 @@ def carregar_usuarios():
                 c_user = cols_norm.get("usuario", cols_norm.get("login", df.columns[0]))
                 c_pass = cols_norm.get("senha", df.columns[1] if len(df.columns) > 1 else df.columns[0])
                 c_nome = cols_norm.get("nome", cols_norm.get("condutor", c_user))
+                c_acesso = cols_norm.get("acesso", cols_norm.get("cidade", None))
 
                 df_res = pd.DataFrame()
                 df_res["usuario"] = df[c_user].fillna("").astype(str).str.strip().str.lower()
                 df_res["senha"] = df[c_pass].fillna("").astype(str).str.strip()
                 df_res["nome"] = df[c_nome].fillna(df[c_user]).astype(str).str.strip()
+                
+                if c_acesso and c_acesso in df.columns:
+                    df_res["acesso"] = df[c_acesso].fillna("Geral").astype(str).str.strip()
+                else:
+                    df_res["acesso"] = "Geral"
+
                 return df_res
         except Exception:
             continue
-    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Gestor Master Café"}])
+    return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Gestor Master Café", "acesso": "Geral"}])
 
 def obter_usuarios_ativos():
     df_base_user = carregar_usuarios()
@@ -344,6 +334,36 @@ def obter_usuarios_ativos():
         df_novos = pd.DataFrame(st.session_state["novos_usuarios_sessao"])
         return pd.concat([df_base_user, df_novos], ignore_index=True).drop_duplicates(subset=["usuario"], keep="last")
     return df_base_user
+
+def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
+    """Envia o novo utilizador para persistência na Google Spreadsheet."""
+    if WEBHOOK_APPS_SCRIPT_URL:
+        try:
+            r = requests.post(
+                WEBHOOK_APPS_SCRIPT_URL,
+                data=json.dumps(usuario_dict),
+                headers={"Content-Type": "application/json"},
+                timeout=8
+            )
+            return r.status_code == 200
+        except Exception:
+            return False
+    return False
+
+@st.cache_data(ttl=45)
+def carregar_dados_frota():
+    urls = [
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_FROTA}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_FROTA}"
+    ]
+    for url in urls:
+        try:
+            df = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
+            if not df.empty:
+                return df
+        except Exception:
+            continue
+    return pd.DataFrame()
 
 @st.cache_data(ttl=30)
 def carregar_dados_viagens():
@@ -409,7 +429,6 @@ def carregar_dados_viagens():
     df["rotulo_veiculo"] = df.apply(
         lambda r: f"{r['placa']} - {r['veiculo']}" if r['veiculo'] else r['placa'], axis=1
     )
-
     return df
 
 def obter_viagens_consolidadas():
@@ -478,16 +497,18 @@ def tela_login(df_usuarios):
                 ]
 
                 if not usuario_valido.empty:
+                    usr_info = usuario_valido.iloc[0]
                     st.session_state["dash_autenticado"] = True
                     st.session_state["dash_usuario"] = usuario_digitado
-                    st.session_state["dash_nome"] = usuario_valido.iloc[0]["nome"]
+                    st.session_state["dash_nome"] = usr_info["nome"]
+                    st.session_state["dash_acesso"] = usr_info.get("acesso", "Geral")
                     st.query_params["u"] = usuario_digitado
                     st.rerun()
                 else:
                     st.error("Usuário ou senha incorretos.")
 
 # -------------------------------------------------------------
-# 6. APLICATIVO DO DASHBOARD
+# 6. APLICATIVO PRINCIPAL
 # -------------------------------------------------------------
 def main():
     df_usuarios = obter_usuarios_ativos()
@@ -498,15 +519,18 @@ def main():
             usuario_url = str(usuario_url).strip().lower()
             usuario_valido = df_usuarios[df_usuarios["usuario"] == usuario_url]
             if not usuario_valido.empty:
+                usr_info = usuario_valido.iloc[0]
                 st.session_state["dash_autenticado"] = True
                 st.session_state["dash_usuario"] = usuario_url
-                st.session_state["dash_nome"] = usuario_valido.iloc[0]["nome"]
+                st.session_state["dash_nome"] = usr_info["nome"]
+                st.session_state["dash_acesso"] = usr_info.get("acesso", "Geral")
 
     if not st.session_state.get("dash_autenticado", False):
         tela_login(df_usuarios)
         return
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
+    acesso_gestor = st.session_state.get("dash_acesso", "Geral")
 
     opcoes_menu = [
         "◈ Deshboar",
@@ -518,9 +542,7 @@ def main():
     if "pagina_selecionada" not in st.session_state:
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
-    # =========================================================================
-    # CABEÇALHO COMPACTO: GAP DEFINIDO NATIVAMENTE COMO 'SMALL' E OVERRIDE 3PX
-    # =========================================================================
+    # CABEÇALHO COMPACTO
     st.markdown('<div id="ancora_header_top"></div>', unsafe_allow_html=True)
     c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
         [3.0, 1.1, 1.1, 1.25, 1.05, 1.3, 1.15, 0.85],
@@ -583,7 +605,7 @@ def main():
         st.markdown(f"""
             <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:4px;">
                 <b>Gestor:</b> {nome_gestor}<br>
-                <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m %H:%M')}</span>
+                <span style="color:#64748B; font-weight:600;">{acesso_gestor}</span> | <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m %H:%M')}</span>
             </div>
         """, unsafe_allow_html=True)
 
@@ -605,6 +627,7 @@ def main():
     st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
     df_base = obter_viagens_consolidadas()
+    df_frota = carregar_dados_frota()
 
     if df_base.empty:
         st.warning("Nenhum registro de viagem encontrado na planilha.")
@@ -613,7 +636,7 @@ def main():
     hoje_brasil = obter_agora_brasil().date()
 
     # =========================================================================
-    # PÁGINA 1: DESHBOAR & KPIS
+    # PÁGINA 1: DASHBOARD
     # =========================================================================
     if st.session_state["pagina_selecionada"] == opcoes_menu[0]:
         total_viagens = len(df_base)
@@ -625,7 +648,6 @@ def main():
         media_km_geral = viagens_concluidas["km_percorrido_num"].mean() if not viagens_concluidas.empty else 0
         total_concluidas = len(viagens_concluidas)
 
-        # 1. BLOCO DE KPIS
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
@@ -676,7 +698,6 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO (ESTRUTURA E CSS DOS CARDS PRESERVADOS)
         st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✔ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -711,7 +732,6 @@ def main():
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-        # 3. GRÁFICOS
         st.markdown("### 📊 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -737,12 +757,7 @@ def main():
                 )
 
                 text1 = alt.Chart(df_acumulado_veiculo).mark_text(
-                    align="center",
-                    baseline="bottom",
-                    dy=-4,
-                    fontSize=11,
-                    fontWeight=700,
-                    color="#1E40AF"
+                    align="center", baseline="bottom", dy=-4, fontSize=11, fontWeight=700, color="#1E40AF"
                 ).encode(
                     x=alt.X("Placa:N", sort="-y"),
                     y=alt.Y("Km_Total:Q"),
@@ -776,12 +791,7 @@ def main():
                 )
 
                 text2 = alt.Chart(df_media_veiculo).mark_text(
-                    align="center",
-                    baseline="bottom",
-                    dy=-4,
-                    fontSize=11,
-                    fontWeight=700,
-                    color="#064E3B"
+                    align="center", baseline="bottom", dy=-4, fontSize=11, fontWeight=700, color="#064E3B"
                 ).encode(
                     x=alt.X("Placa:N", sort="-y"),
                     y=alt.Y("Media_Km:Q"),
@@ -795,7 +805,6 @@ def main():
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-        # 4. CARROS UTILIZADOS NO DIA (ESTRUTURA E CSS PRESERVADOS)
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
         with c_dia_col1:
@@ -825,7 +834,6 @@ def main():
                 st.metric("Km Total no Dia", f"{km_dia_total:,.0f} km")
 
             df_cards_dia = df_carros_dia.sort_values(by=["status", "horario_inicial"], ascending=[True, False])
-
             num_cols = min(len(df_cards_dia), 3)
             grid_dia = st.columns(num_cols)
 
@@ -833,28 +841,16 @@ def main():
                 col_target = grid_dia[idx % num_cols]
                 em_aberto = (v_dia["status"] == "Em Aberto")
 
-                if em_aberto:
-                    card_bg = "#FFFBEB"
-                    card_border = "#FDE68A"
-                    card_border_left = "#F59E0B"
-                    badge_html = '<span class="badge-open">EM TRÂNSITO</span>'
-                    title_color = "#92400E"
-                    sub_color = "#78350F"
-                    divider_color = "#FEE382"
-                    text_color = "#451A03"
-                    rv_bg = "#FEF3C7"
-                    rv_color = "#92400E"
-                else:
-                    card_bg = "#F8FAFC"
-                    card_border = "#E2E8F0"
-                    card_border_left = "#10B981"
-                    badge_html = '<span class="badge-done">CONCLUÍDA</span>'
-                    title_color = "#0F172A"
-                    sub_color = "#475569"
-                    divider_color = "#E2E8F0"
-                    text_color = "#1E293B"
-                    rv_bg = "#DEF7EC"
-                    rv_color = "#03543F"
+                card_bg = "#FFFBEB" if em_aberto else "#F8FAFC"
+                card_border = "#FDE68A" if em_aberto else "#E2E8F0"
+                card_border_left = "#F59E0B" if em_aberto else "#10B981"
+                badge_html = '<span class="badge-open">EM TRÂNSITO</span>' if em_aberto else '<span class="badge-done">CONCLUÍDA</span>'
+                title_color = "#92400E" if em_aberto else "#0F172A"
+                sub_color = "#78350F" if em_aberto else "#475569"
+                divider_color = "#FEE382" if em_aberto else "#E2E8F0"
+                text_color = "#451A03" if em_aberto else "#1E293B"
+                rv_bg = "#FEF3C7" if em_aberto else "#DEF7EC"
+                rv_color = "#92400E" if em_aberto else "#03543F"
 
                 km_sai_txt = f"{v_dia['km_inicial_num']:,.0f} km" if pd.notna(v_dia.get('km_inicial_num')) else (f"{v_dia['km_inicial']} km" if v_dia['km_inicial'] else "Não inf.")
                 km_ret_txt = f"{v_dia['km_final_num']:,.0f} km" if pd.notna(v_dia.get('km_final_num')) else (f"{v_dia['km_final']} km" if v_dia['km_final'] else "—")
@@ -885,7 +881,6 @@ def main():
                     f'</div>'
                     f'</div>'
                 )
-
                 with col_target:
                     st.markdown(card_html, unsafe_allow_html=True)
 
@@ -1110,35 +1105,63 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: USUÁRIOS
+    # PÁGINA 4: USUÁRIOS (COM ACESSO E PERSISTÊNCIA)
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == opcoes_menu[3]:
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
 
         with tab_lista:
+            cols_exibicao = ["nome", "usuario", "acesso"] if "acesso" in df_usuarios.columns else ["nome", "usuario"]
             st.dataframe(
-                df_usuarios[["nome", "usuario"]],
+                df_usuarios[cols_exibicao],
                 use_container_width=True,
                 hide_index=True,
                 column_config={
                     "nome": st.column_config.TextColumn("Nome Completo / Condutor", width="large"),
                     "usuario": st.column_config.TextColumn("Login de Acesso", width="medium"),
+                    "acesso": st.column_config.TextColumn("Permissão / Acesso (Cidade/Geral)", width="large"),
                 }
             )
             st.caption(f"Total: {len(df_usuarios)} usuário(s) ativos.")
 
         with tab_novo:
+            # Lista de localidades conhecidas da frota para pré-seleção
+            locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
+            
             with st.form("form_cadastrar_usuario"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
                     novo_nome = st.text_input("Nome Completo:", placeholder="Ex: Roberto Silva")
-                    novo_login = st.text_input("Login:", placeholder="Ex: roberto.silva").strip().lower()
-                
+                    novo_login = st.text_input("Login (Usuário):", placeholder="Ex: rsilva").strip().lower()
+                    
+                    tipo_acesso_modo = st.radio(
+                        "Tipo de Acesso:",
+                        options=["Geral (Acesso a toda a frota)", "Cidade Específica (Restrito aos veículos da base)"],
+                        horizontal=True
+                    )
+                    
+                    if "Cidade" in tipo_acesso_modo:
+                        cidade_acesso = st.selectbox("Selecione a Cidade Base:", options=[c for c in locais_conhecidos if c != "Geral"])
+                    else:
+                        cidade_acesso = "Geral"
+
                 with u_col2:
                     nova_senha = st.text_input("Senha Inicial:", type="password", placeholder="Digite a senha")
                     confirma_senha = st.text_input("Confirme a Senha:", type="password", placeholder="Repita a senha")
+                    
+                    # Exibe os veículos correspondentes ao acesso escolhido
+                    st.markdown("<b>Veículos liberados para este perfil:</b>", unsafe_allow_html=True)
+                    if not df_frota.empty and "Local de pernoite" in df_frota.columns:
+                        if cidade_acesso == "Geral":
+                            veiculos_liberados = df_frota["Placa"].tolist()
+                        else:
+                            veiculos_liberados = df_frota[df_frota["Local de pernoite"].str.lower() == cidade_acesso.lower()]["Placa"].tolist()
+                        
+                        st.caption(f"Total de {len(veiculos_liberados)} veículo(s) liberado(s) para operação.")
+                    else:
+                        st.caption("Acesso total a todos os veículos disponíveis.")
 
-                btn_cadastrar = st.form_submit_button("Cadastrar Usuário")
+                btn_cadastrar = st.form_submit_button("💾 Cadastrar e Salvar Usuário")
 
                 if btn_cadastrar:
                     if not novo_nome or not novo_login or not nova_senha:
@@ -1151,12 +1174,23 @@ def main():
                         novo_reg = {
                             "usuario": novo_login,
                             "senha": nova_senha,
-                            "nome": novo_nome
+                            "nome": novo_nome,
+                            "acesso": cidade_acesso
                         }
+
+                        # Tenta gravar de forma permanente na folha de cálculo
+                        gravou_nuvem = gravar_usuario_na_planilha(novo_reg)
+
                         if "novos_usuarios_sessao" not in st.session_state:
                             st.session_state["novos_usuarios_sessao"] = []
                         st.session_state["novos_usuarios_sessao"].append(novo_reg)
-                        st.success(f"✔ Usuário **{novo_nome}** (`{novo_login}`) cadastrado!")
+
+                        if gravou_nuvem:
+                            st.cache_data.clear()
+                            st.success(f"✔ Usuário **{novo_nome}** (`{novo_login}`) cadastrado e salvo com sucesso na folha de cálculo!")
+                        else:
+                            st.info(f"✔ Usuário **{novo_nome}** adicionado à sessão. (Para gravar permanentemente na folha Google sem recarregar apenas em memória, implante o Webhook do Google Apps Script e defina `APPS_SCRIPT_URL`).")
+
                         st.rerun()
 
 if __name__ == "__main__":
