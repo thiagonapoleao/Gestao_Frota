@@ -411,7 +411,6 @@ def normalizar_texto(texto):
     return texto.strip().lower()
 
 def limpar_placa(placa_str):
-    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
 
 @st.cache_data(ttl=30)
@@ -500,10 +499,11 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    # Lê sem cache e com parâmetro anti-cache na URL
+    # Carregamento imediato sem cache da aba Controle de Uso
+    timestamp_atual = int(time.time())
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cachebust={int(time.time())}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&cachebust={int(time.time())}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}"
     ]
     for url in urls:
         try:
@@ -584,25 +584,25 @@ def enviar_requisicao_apps_script(payload):
             try:
                 ret = resposta.json()
                 status_resp = str(ret.get("status", "")).lower().strip()
-                sucesso_bool = ret.get("sucesso") is True or ret.get("success") is True
-
-                if status_resp in ["success", "sucesso", "ok", "concluido", "concluído"] or sucesso_bool:
-                    msg = ret.get("message") or ret.get("mensagem") or "Operação realizada com sucesso!"
+                
+                # Validação rigorosa do status
+                if status_resp in ["sucesso", "success", "ok"]:
+                    msg = ret.get("mensagem") or ret.get("message") or "Operação realizada com sucesso!"
                     return True, msg
                 
-                msg_erro = ret.get("message") or ret.get("error") or ret.get("mensagem") or str(ret)
+                msg_erro = ret.get("mensagem") or ret.get("message") or ret.get("error") or str(ret)
                 return False, msg_erro
             except Exception:
                 texto = resposta.text
-                if any(termo in texto.lower() for termo in ["success", "sucesso", "ok"]):
+                if any(k in texto.lower() for k in ["sucesso", "success"]):
                     return True, "Operação realizada com sucesso!"
-                return False, f"Resposta do Script: {texto[:200]}"
+                return False, f"Resposta inesperada do Script: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, acesse 'Implantar' > 'Gerenciar Implantações' e certifique-se de que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
+            return False, "Erro 403: No Apps Script, acesse 'Implantar' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
     except Exception as e:
-        return False, f"Falha na comunicação: {str(e)}"
+        return False, f"Falha na conexão: {str(e)}"
 
 # -------------------------------------------------------------
 # 5. TELA DE LOGIN
@@ -688,7 +688,7 @@ def main():
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            # Viagem em aberto se não possui data_final nem km_final preenchidos
+            # Aberta = Sem Data Final ou Km Final
             if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
                 info_aberta = {
                     "rv": rv_row,
@@ -736,7 +736,7 @@ def main():
     ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # CENÁRIO 1: VIAGEM ABERTA (START FINAL)
+    # CENÁRIO 1: VIAGEM ABERTA (FINALIZAR)
     # =========================================================================
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
@@ -802,16 +802,13 @@ def main():
                 "placa": dados_ativos.get("placa"),
                 "condutor": dados_ativos.get("condutor"),
                 "data_final": data_fim.strftime("%d/%m/%Y"),
-                "data_fim": data_fim.strftime("%d/%m/%Y"),
                 "horario_final": hora_fim.strftime("%H:%M:%S"),
-                "hora_fim": hora_fim.strftime("%H:%M:%S"),
                 "km_final": int(km_fim),
-                "km_fim": int(km_fim),
                 "km_percorrido": km_percorrido,
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
-            with st.spinner("Atualizando e gravando retorno na planilha..."):
+            with st.spinner("Gravando encerramento na planilha..."):
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
