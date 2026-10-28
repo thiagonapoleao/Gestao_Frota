@@ -46,7 +46,7 @@ st.markdown("""
 
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.6rem !important;
+            padding-top: 0.5rem !important;
             padding-bottom: 2rem !important;
             max-width: 98% !important;
         }
@@ -73,7 +73,7 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* 3. BRANDING PRINCIPAL COMPACTO */
+        /* 3. BRANDING PRINCIPAL */
         .brand-title {
             font-size: 1.55rem;
             font-weight: 800;
@@ -83,28 +83,49 @@ st.markdown("""
             white-space: nowrap;
         }
         .brand-sub {
-            font-size: 0.76rem;
+            font-size: 0.74rem;
             color: #64748B;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        /* 4. BOTÕES DE NAVEGAÇÃO (AZUL PRIMÁRIO) */
+        /* REDUÇÃO DE ESPAÇAMENTO LATERAL ESPECÍFICO DO HEADER SUPERIOR */
+        .top-header-row div[data-testid="column"] {
+            padding-left: 3px !important;
+            padding-right: 3px !important;
+        }
+
+        /* 4. PADRONIZAÇÃO COMPLETA DE TODOS OS BOTÕES DO TOPO */
         div.stButton > button {
             background: #2563EB !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             border-radius: 6px !important;
             font-weight: 600 !important;
-            font-size: 0.82rem !important;
+            font-size: 0.80rem !important;
             border: 1px solid #1D4ED8 !important;
-            padding: 4px 8px !important;
-            min-height: 2.2rem !important;
-            height: 2.2rem !important;
+            padding: 0 6px !important;
+            min-height: 2.25rem !important;
+            height: 2.25rem !important;
             width: 100% !important;
             box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
             transition: all 0.15s ease-in-out !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            box-sizing: border-box !important;
+        }
+
+        div.stButton > button p {
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            margin: 0 !important;
+            color: inherit !important;
         }
 
         div.stButton > button:hover {
@@ -125,7 +146,7 @@ st.markdown("""
             font-weight: 800 !important;
         }
 
-        /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO) */
+        /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO PADRONIZADO) */
         .btn-sync div.stButton > button {
             background: #16A34A !important;
             color: #FFFFFF !important;
@@ -142,7 +163,7 @@ st.markdown("""
             box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35) !important;
         }
 
-        /* BOTÃO SAIR (VERMELHO PRIMÁRIO) */
+        /* BOTÃO SAIR (VERMELHO PRIMÁRIO PADRONIZADO) */
         .btn-exit div.stButton > button {
             background: #DC2626 !important;
             color: #FFFFFF !important;
@@ -489,10 +510,11 @@ def main():
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
     # =========================================================================
-    # CABEÇALHO COMPACTO: BRANDING PRINCIPAL + NAVEGAÇÃO INTEGRADA (SEM SIDEBAR)
+    # CABEÇALHO COMPACTO: BRANDING + NAVEGAÇÃO INTEGRADA (SEM SIDEBAR)
     # =========================================================================
+    st.markdown('<div class="top-header-row">', unsafe_allow_html=True)
     c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [3.4, 1.25, 1.15, 1.35, 1.05, 1.5, 1.2, 0.75],
+        [3.4, 1.15, 1.15, 1.25, 1.1, 1.4, 1.15, 0.95],
         vertical_alignment="center"
     )
 
@@ -502,7 +524,6 @@ def main():
         with col_img:
             if caminho_logo:
                 try:
-                    # Logotipo ampliado de forma proeminente e nítida
                     st.image(Image.open(caminho_logo), width=95)
                 except Exception:
                     st.markdown("<h1 style='margin:0; font-size:2.4rem;'>☕</h1>", unsafe_allow_html=True)
@@ -550,7 +571,7 @@ def main():
 
     with c_info:
         st.markdown(f"""
-            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2;">
+            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:4px;">
                 <b>Gestor:</b> {nome_gestor}<br>
                 <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m/%Y %H:%M')}</span>
             </div>
@@ -570,6 +591,8 @@ def main():
             st.query_params.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
@@ -645,7 +668,7 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO (ESTRUTURA E CSS DOS CARDS PRESERVADOS)
+        # 2. VEÍCULOS EM ABERTO NO TOPO (CSS E ESTRUTURA DOS CARDS PRESERVADOS)
         st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✔ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
