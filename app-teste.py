@@ -566,7 +566,7 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
-    """Envia requisição POST ao Google Apps Script e decodifica mensagens de erro/sucesso."""
+    """Envia requisição POST ao Google Apps Script tratando status de sucesso em pt e en."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
@@ -584,25 +584,29 @@ def enviar_requisicao_apps_script(payload):
         if resposta.status_code == 200:
             try:
                 ret = resposta.json()
-                # Verifica status de sucesso
-                if ret.get("status") == "success" or ret.get("sucesso") is True:
-                    return True, ret.get("message", ret.get("mensagem", "Operação realizada com sucesso!"))
+                status_resp = str(ret.get("status", "")).lower().strip()
+                sucesso_bool = ret.get("sucesso") is True or ret.get("success") is True
+
+                # Valida 'sucesso', 'success', 'ok', etc.
+                if status_resp in ["success", "sucesso", "ok", "concluido", "concluído"] or sucesso_bool:
+                    msg = ret.get("message") or ret.get("mensagem") or "Operação realizada com sucesso!"
+                    return True, msg
                 
-                # Obtém o erro específico retornado pelo Apps Script
-                erro_especifico = ret.get("message") or ret.get("error") or ret.get("mensagem") or str(ret)
-                return False, erro_especifico
+                # Se status explicitamente erro
+                msg_erro = ret.get("message") or ret.get("error") or ret.get("mensagem") or str(ret)
+                return False, msg_erro
             except Exception:
-                # Caso a resposta seja texto puro ou HTML
+                # Caso o Apps Script responda em texto plano
                 texto = resposta.text
-                if "success" in texto.lower() or "sucesso" in texto.lower():
+                if any(termo in texto.lower() for termo in ["success", "sucesso", "ok"]):
                     return True, "Operação realizada com sucesso!"
-                return False, f"Resposta do Script: {texto[:200]}"
+                return False, f"Resposta bruta do Apps Script: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, acesse 'Implantar' > 'Gerenciar Implantações' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
+            return False, "Erro 403: No Apps Script, acesse 'Implantar' > 'Gerenciar Implantações' e certifique-se de que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
     except Exception as e:
-        return False, f"Falha na comunicação com o servidor: {str(e)}"
+        return False, f"Falha na comunicação: {str(e)}"
 
 # -------------------------------------------------------------
 # 5. TELA DE LOGIN
@@ -723,12 +727,14 @@ def main():
         with col_m2:
             if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_menu_refresh"):
                 st.cache_data.clear()
+                st.session_state["ultima_transacao"] = None
                 st.rerun()
             if st.button("🚪 Sair do Sistema", use_container_width=True, key="btn_menu_logout"):
                 st.session_state.clear()
                 st.query_params.clear()
                 st.rerun()
 
+    # Cabeçalho Principal
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
@@ -793,7 +799,6 @@ def main():
                 return
             st.session_state["ultima_transacao"] = chave_transacao_final
 
-            # Envia tanto chaves completas quanto alternativas para compatibilidade total com o script
             payload_finalizar = {
                 "acao": "finalizar",
                 "gid_destino": GID_LANCAMENTOS,
@@ -817,6 +822,7 @@ def main():
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
                 st.balloons()
                 st.cache_data.clear()
+                st.session_state["ultima_transacao"] = None
                 time.sleep(2)
                 st.rerun()
             else:
@@ -952,6 +958,7 @@ def main():
                 if sucesso:
                     st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
                     st.cache_data.clear()
+                    st.session_state["ultima_transacao"] = None
                     time.sleep(1.5)
                     st.rerun()
                 else:
