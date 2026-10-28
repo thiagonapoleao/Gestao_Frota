@@ -31,17 +31,14 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. OCULTA SIDEBAR, CABEÇALHOS E ELEMENTOS NATIVOS NÃO UTILIZADOS */
+        /* 1. OCULTA ELEMENTOS NATIVOS E SIDEBAR */
         [data-testid="collapsedControl"],
         section[data-testid="stSidebar"],
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
-        [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
-            display: none !important;
-            visibility: hidden !important;
-        }
-
+        [data-testid="manage-app-button"], div[data-testid="stDecoration"],
         header[data-testid="stHeader"] {
             display: none !important;
+            visibility: hidden !important;
         }
 
         .block-container,
@@ -51,7 +48,6 @@ st.markdown("""
             max-width: 98% !important;
         }
 
-        /* 2. BASE DE CORES DO SISTEMA */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -67,13 +63,7 @@ st.markdown("""
         h1, h2, h3, h4, h5, p, span, label, div {
             color: #0F172A !important;
         }
-        .stWidgetLabel p, label p {
-            color: #334155 !important;
-            font-weight: 600 !important;
-            font-size: 0.88rem !important;
-        }
 
-        /* 3. BRANDING PRINCIPAL */
         .brand-title {
             font-size: 1.55rem;
             font-weight: 800;
@@ -90,66 +80,87 @@ st.markdown("""
             letter-spacing: 0.05em;
         }
 
-        /* 4. SOBREPOSIÇÃO FORÇADA DE GAP PARA 3PX NOS BOTÕES DE TOPO */
-        /* Zera o gap nativo do Streamlit em flexbox e grid */
-        div[data-testid="stVerticalBlock"]:has(> div #ancora_header_top) + div[data-testid="stHorizontalBlock"],
-        div[data-testid="stHorizontalBlock"]:has(button[key^="top_nav_"]) {
+        /* -----------------------------------------------------------------
+           SOLUÇÃO DEFINITIVA DE GAP: 3PX ENTRE BOTÕES
+           Desmonta o layout grid/porcentagem nativo do Streamlit na navbar
+           ----------------------------------------------------------------- */
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] {
+            display: flex !important;
+            flex-direction: row !important;
+            flex-wrap: nowrap !important;
+            align-items: center !important;
             gap: 3px !important;
             column-gap: 3px !important;
-            align-items: center !important;
+            width: 100% !important;
         }
 
-        div[data-testid="stHorizontalBlock"]:has(button[key^="top_nav_"]) > div[data-testid="column"] {
-            padding-left: 0px !important;
-            padding-right: 0px !important;
+        /* Branding à esquerda ocupa o espaço necessário */
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(1) {
+            flex: 0 0 auto !important;
+            min-width: 280px !important;
+            margin-right: 12px !important;
+            padding: 0 !important;
+        }
+
+        /* Colunas dos botões e utilitários coladas rigorosamente a 3px */
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:not(:nth-child(1)) {
+            flex: 0 0 auto !important;
             min-width: 0 !important;
+            width: auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
 
-        /* 5. PADRONIZAÇÃO COMPLETA DE TODOS OS BOTÕES */
-        div.stButton > button {
+        /* Coluna de informações do gestor */
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(6) {
+            flex: 1 1 auto !important;
+            display: flex !important;
+            justify-content: flex-end !important;
+            padding: 0 8px !important;
+        }
+
+        /* PADRONIZAÇÃO DIMENSIONAL DOS BOTÕES: TAMANHO FIXO IDÊNTICO */
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] div.stButton > button {
+            width: 130px !important;
+            min-width: 130px !important;
+            max-width: 130px !important;
+            height: 36px !important;
+            min-height: 36px !important;
+            max-height: 36px !important;
+            padding: 0 4px !important;
+            margin: 0 !important;
+            border-radius: 6px !important;
+            font-size: 0.81rem !important;
+            font-weight: 600 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            white-space: nowrap !important;
+            box-sizing: border-box !important;
             background: #2563EB !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            border-radius: 6px !important;
-            font-weight: 600 !important;
-            font-size: 0.80rem !important;
             border: 1px solid #1D4ED8 !important;
-            padding: 0 4px !important;
-            min-height: 2.25rem !important;
-            height: 2.25rem !important;
-            width: 100% !important;
             box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
-            transition: all 0.15s ease-in-out !important;
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
-            display: inline-flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            box-sizing: border-box !important;
         }
 
-        div.stButton > button p {
-            white-space: nowrap !important;
-            overflow: hidden !important;
-            text-overflow: ellipsis !important;
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] div.stButton > button p {
             margin: 0 !important;
+            padding: 0 !important;
             color: inherit !important;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
         }
 
-        div.stButton > button:hover {
+        div[data-testid="stVerticalBlock"]:has(> div #nav_cluster_root) + div[data-testid="stHorizontalBlock"] div.stButton > button:hover {
             background: #1D4ED8 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
             border-color: #1E40AF !important;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3) !important;
         }
 
-        /* DESTAQUE DO BOTÃO ATIVO */
+        /* BOTÃO ATIVO */
         .nav-active div.stButton > button {
             background: #1E40AF !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
             border-color: #172554 !important;
             box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
             font-weight: 800 !important;
@@ -158,38 +169,30 @@ st.markdown("""
         /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO) */
         .btn-sync div.stButton > button {
             background: #16A34A !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
             border: 1px solid #15803D !important;
-            box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2) !important;
-            font-weight: 600 !important;
+            width: 125px !important;
+            min-width: 125px !important;
         }
         .btn-sync div.stButton > button:hover {
             background: #15803D !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
             border-color: #166534 !important;
-            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35) !important;
         }
 
         /* BOTÃO SAIR (VERMELHO PRIMÁRIO) */
         .btn-exit div.stButton > button {
             background: #DC2626 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
             border: 1px solid #B91C1C !important;
-            box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
-            font-weight: 600 !important;
+            width: 85px !important;
+            min-width: 85px !important;
         }
         .btn-exit div.stButton > button:hover {
             background: #B91C1C !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
             border-color: #991B1B !important;
-            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.35) !important;
         }
 
-        /* 6. CARDS E COMPONENTES */
+        /* -------------------------------------------------------------
+           ESTRUTURA DE CARDS, KPIS E FORMULÁRIOS
+           ------------------------------------------------------------- */
         .filter-panel {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -519,18 +522,14 @@ def main():
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
     # =========================================================================
-    # CABEÇALHO COMPACTO: GAP DEFINIDO NATIVAMENTE COMO 'SMALL' E OVERRIDE 3PX
+    # CABEÇALHO COMPACTO: ANCHOR DE CONTROLE + LINHA FLEXÍVEL COM GAP EXATO DE 3PX
     # =========================================================================
-    st.markdown('<div id="ancora_header_top"></div>', unsafe_allow_html=True)
-    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [3.0, 1.1, 1.1, 1.25, 1.05, 1.3, 1.15, 0.85],
-        gap="small",
-        vertical_alignment="center"
-    )
+    st.markdown('<div id="nav_cluster_root"></div>', unsafe_allow_html=True)
+    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(8)
 
     with c_brand:
         caminho_logo = obter_caminho_logotipo()
-        col_img, col_txt = st.columns([0.45, 0.55], gap="small", vertical_alignment="center")
+        col_img, col_txt = st.columns([0.45, 0.55], vertical_alignment="center")
         with col_img:
             if caminho_logo:
                 try:
@@ -581,7 +580,7 @@ def main():
 
     with c_info:
         st.markdown(f"""
-            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2; padding-right:4px;">
+            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2;">
                 <b>Gestor:</b> {nome_gestor}<br>
                 <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m %H:%M')}</span>
             </div>
