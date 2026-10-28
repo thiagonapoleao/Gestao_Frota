@@ -220,7 +220,6 @@ st.markdown("""
             letter-spacing: -0.01em !important;
         }
 
-        /* Remove bordas duplicadas do st.form dentro do container branco */
         [data-testid="stForm"] {
             background-color: transparent !important;
             border: none !important;
@@ -415,11 +414,11 @@ def limpar_placa(placa_str):
     """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=30)
 def carregar_usuarios():
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}&t={int(time.time())}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}&t={int(time.time())}"
     ]
     for url in urls:
         try:
@@ -451,11 +450,11 @@ def carregar_usuarios():
             continue
     return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor", "acesso_local": "Geral"}])
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=20)
 def carregar_veiculos():
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}&t={int(time.time())}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}&t={int(time.time())}"
     ]
     for url in urls:
         try:
@@ -472,7 +471,7 @@ def carregar_veiculos():
                     c_placa = df_raw.columns[4] if len(df_raw.columns) >= 5 else df_raw.columns[0]
 
                 c_veiculo = None
-                for k in ["veiculo", "modelo", "carro", "descricao"]:
+                for k in ["descricao", "veiculo", "modelo", "carro"]:
                     if k in cols_norm:
                         c_veiculo = cols_norm[k]
                         break
@@ -501,9 +500,10 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
+    # Lê sem cache e com parâmetro anti-cache na URL
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cachebust={int(time.time())}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&cachebust={int(time.time())}"
     ]
     for url in urls:
         try:
@@ -522,23 +522,23 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
     condutor_norm_alvo = normalizar_texto(condutor)
     data_ini_alvo = str(data_ini).strip()
     km_ini_alvo = str(int(km_ini)).strip() if km_ini is not None else ""
-    rv_alvo = str(rv_codigo).strip().upper()
+    rv_alvo = str(rv_codigo).replace("-", "").strip().upper()
 
     for _, row in df_lancamentos.iterrows():
-        rv_row = str(row.iloc[12]).strip().upper() if pd.notna(row.iloc[12]) else ""
+        rv_row = str(row.iloc[12]).replace("-", "").strip().upper() if pd.notna(row.iloc[12]) else ""
         placa_row = limpar_placa(row.iloc[8]) if pd.notna(row.iloc[8]) else ""
         cond_row = normalizar_texto(row.iloc[6]) if pd.notna(row.iloc[6]) else ""
         data_row = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
         km_row = str(row.iloc[2]).split(".")[0].strip() if pd.notna(row.iloc[2]) else ""
 
         if rv_row and rv_row == rv_alvo:
-            return True, f"O Registro de Viagem {rv_alvo} já existe na planilha."
+            return True, f"O Registro de Viagem {rv_codigo} já existe na planilha."
 
         if (placa_row == placa_limpa_alvo and 
             cond_row == condutor_norm_alvo and 
             data_row == data_ini_alvo and 
             km_row == km_ini_alvo):
-            return True, f"Já existe uma viagem registrada para este condutor e veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
+            return True, f"Já existe uma viagem registrada para este veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
 
     return False, ""
 
@@ -566,7 +566,6 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
-    """Envia requisição POST ao Google Apps Script tratando respostas de sucesso em qualquer formato."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
@@ -689,6 +688,7 @@ def main():
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
+            # Viagem em aberto se não possui data_final nem km_final preenchidos
             if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
                 info_aberta = {
                     "rv": rv_row,
@@ -731,7 +731,6 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-    # Cabeçalho Principal
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
@@ -812,11 +811,11 @@ def main():
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
-            with st.spinner("Atualizando e concluindo a viagem na planilha..."):
+            with st.spinner("Atualizando e gravando retorno na planilha..."):
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
+                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada e salva na planilha!")
                 st.balloons()
                 st.cache_data.clear()
                 st.session_state["ultima_transacao"] = None
