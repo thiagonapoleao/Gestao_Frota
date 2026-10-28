@@ -75,7 +75,7 @@ st.markdown("""
 
         /* 3. BRANDING PRINCIPAL COMPACTO */
         .brand-title {
-            font-size: 1.35rem;
+            font-size: 1.45rem;
             font-weight: 800;
             color: #0F172A;
             line-height: 1.1;
@@ -83,65 +83,80 @@ st.markdown("""
             white-space: nowrap;
         }
         .brand-sub {
-            font-size: 0.68rem;
+            font-size: 0.72rem;
             color: #64748B;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.05em;
         }
 
-        /* 4. BOTÕES DE NAVEGAÇÃO (AZUL CLARO / MINIMALISTA) */
+        /* 4. BOTÕES DE NAVEGAÇÃO (AZUL PRIMÁRIO) */
         div.stButton > button {
-            background: #E0F2FE !important;
-            color: #0369A1 !important;
-            -webkit-text-fill-color: #0369A1 !important;
+            background: #2563EB !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
             border-radius: 6px !important;
             font-weight: 600 !important;
             font-size: 0.82rem !important;
-            border: 1px solid #BAE6FD !important;
+            border: 1px solid #1D4ED8 !important;
             padding: 4px 8px !important;
-            min-height: 2.1rem !important;
-            height: 2.1rem !important;
+            min-height: 2.2rem !important;
+            height: 2.2rem !important;
             width: 100% !important;
-            box-shadow: none !important;
+            box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2) !important;
             transition: all 0.15s ease-in-out !important;
         }
 
         div.stButton > button:hover {
-            background: #BAE6FD !important;
-            color: #0284C7 !important;
-            -webkit-text-fill-color: #0284C7 !important;
-            border-color: #7DD3FC !important;
+            background: #1D4ED8 !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-color: #1E40AF !important;
+            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3) !important;
         }
 
         /* DESTAQUE DO BOTÃO ATIVO */
         .nav-active div.stButton > button {
-            background: #0284C7 !important;
+            background: #1E40AF !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            border-color: #0369A1 !important;
-            box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3) !important;
-            font-weight: 700 !important;
-        }
-        .nav-active div.stButton > button:hover {
-            background: #0369A1 !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
+            border-color: #172554 !important;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.25), 0 0 0 2px rgba(37, 99, 235, 0.4) !important;
+            font-weight: 800 !important;
         }
 
-        /* BOTÕES UTILITÁRIOS (SINCRONIZAR / SAIR) */
-        .btn-util div.stButton > button {
-            background: #FFFFFF !important;
-            color: #64748B !important;
-            -webkit-text-fill-color: #64748B !important;
-            border: 1px solid #E2E8F0 !important;
-            box-shadow: none !important;
+        /* BOTÃO SINCRONIZAR (VERDE PRIMÁRIO) */
+        .btn-sync div.stButton > button {
+            background: #16A34A !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border: 1px solid #15803D !important;
+            box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2) !important;
+            font-weight: 600 !important;
         }
-        .btn-util div.stButton > button:hover {
-            background: #F1F5F9 !important;
-            color: #0F172A !important;
-            -webkit-text-fill-color: #0F172A !important;
-            border-color: #CBD5E1 !important;
+        .btn-sync div.stButton > button:hover {
+            background: #15803D !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-color: #166534 !important;
+            box-shadow: 0 2px 4px rgba(22, 163, 74, 0.35) !important;
+        }
+
+        /* BOTÃO SAIR (VERMELHO PRIMÁRIO) */
+        .btn-exit div.stButton > button {
+            background: #DC2626 !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border: 1px solid #B91C1C !important;
+            box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
+            font-weight: 600 !important;
+        }
+        .btn-exit div.stButton > button:hover {
+            background: #B91C1C !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-color: #991B1B !important;
+            box-shadow: 0 2px 4px rgba(220, 38, 38, 0.35) !important;
         }
 
         /* 5. CARDS E COMPONENTES */
@@ -409,7 +424,7 @@ def tela_login(df_usuarios):
     with col2:
         if caminho_logo:
             try:
-                st.image(Image.open(caminho_logo), width=140)
+                st.image(Image.open(caminho_logo), width=160)
             except Exception:
                 st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
         else:
@@ -463,7 +478,6 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # Itens de navegação solicitados com ícones discretos
     opcoes_menu = [
         "◈ Deshboar",
         "⌕ Consultas",
@@ -478,21 +492,22 @@ def main():
     # CABEÇALHO COMPACTO: BRANDING PRINCIPAL + NAVEGAÇÃO INTEGRADA (SEM SIDEBAR)
     # =========================================================================
     c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
-        [2.8, 1.3, 1.2, 1.4, 1.1, 1.8, 1.1, 0.8],
+        [3.0, 1.3, 1.2, 1.4, 1.1, 1.6, 1.2, 0.8],
         vertical_alignment="center"
     )
 
     with c_brand:
         caminho_logo = obter_caminho_logotipo()
-        col_img, col_txt = st.columns([0.28, 0.72], vertical_alignment="center")
+        col_img, col_txt = st.columns([0.38, 0.62], vertical_alignment="center")
         with col_img:
             if caminho_logo:
                 try:
-                    st.image(Image.open(caminho_logo), width=40)
+                    # Logotipo ampliado proporcionalmente com a nova largura do header
+                    st.image(Image.open(caminho_logo), width=64)
                 except Exception:
-                    st.markdown("☕")
+                    st.markdown("<h2 style='margin:0;'>☕</h2>", unsafe_allow_html=True)
             else:
-                st.markdown("☕")
+                st.markdown("<h2 style='margin:0;'>☕</h2>", unsafe_allow_html=True)
         with col_txt:
             st.markdown("""
                 <div style="line-height:1.15;">
@@ -542,14 +557,14 @@ def main():
         """, unsafe_allow_html=True)
 
     with c_act1:
-        st.markdown('<div class="btn-util">', unsafe_allow_html=True)
+        st.markdown('<div class="btn-sync">', unsafe_allow_html=True)
         if st.button("⟳ Sincronizar", key="btn_top_sync"):
             st.cache_data.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_act2:
-        st.markdown('<div class="btn-util">', unsafe_allow_html=True)
+        st.markdown('<div class="btn-exit">', unsafe_allow_html=True)
         if st.button("→ Sair", key="btn_top_exit"):
             st.session_state.clear()
             st.query_params.clear()
@@ -583,7 +598,7 @@ def main():
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
-                <div class="kpi-card" style="border-left: 4px solid #0284C7;">
+                <div class="kpi-card" style="border-left: 4px solid #2563EB;">
                     <p class="kpi-title">Total de Viagens</p>
                     <p class="kpi-value">{total_viagens}</p>
                     <p class="kpi-caption">Histórico acumulado</p>
@@ -630,7 +645,7 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO (CSS E ESTRUTURA DOS CARDS PRESERVADOS)
+        # 2. VEÍCULOS EM ABERTO NO TOPO (ESTRUTURA E CSS DOS CARDS PRESERVADOS)
         st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✔ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -683,7 +698,7 @@ def main():
                 df_acumulado_veiculo["rotulo_km"] = df_acumulado_veiculo["Km_Total"].apply(lambda v: f"{v:,.0f} km")
 
                 bars1 = alt.Chart(df_acumulado_veiculo).mark_bar(
-                    color="#0284C7", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                    color="#2563EB", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
                 ).encode(
                     x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
                     y=alt.Y("Km_Total:Q", title="Km Total Acumulado"),
@@ -696,7 +711,7 @@ def main():
                     dy=-4,
                     fontSize=11,
                     fontWeight=700,
-                    color="#0369A1"
+                    color="#1E40AF"
                 ).encode(
                     x=alt.X("Placa:N", sort="-y"),
                     y=alt.Y("Km_Total:Q"),
