@@ -358,9 +358,9 @@ st.markdown("""
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-GID_USUARIOS = "426012097"       # Aba Condutores / Logins
+GID_USUARIOS = "426012097"       # Aba Usuario
 GID_VEICULOS = "0"               # Aba Frota
-GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
+GID_LANCAMENTOS = "379222602"    # Aba Controle de Uso
 
 # -------------------------------------------------------------
 # 3. SUPORTE A LOGOTIPO CORPORATIVO E IMAGEM DA FROTA
@@ -566,7 +566,7 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
-    """Envia requisição POST ao Google Apps Script tratando status de sucesso em pt e en."""
+    """Envia requisição POST ao Google Apps Script tratando respostas de sucesso em qualquer formato."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
@@ -587,20 +587,17 @@ def enviar_requisicao_apps_script(payload):
                 status_resp = str(ret.get("status", "")).lower().strip()
                 sucesso_bool = ret.get("sucesso") is True or ret.get("success") is True
 
-                # Valida 'sucesso', 'success', 'ok', etc.
                 if status_resp in ["success", "sucesso", "ok", "concluido", "concluído"] or sucesso_bool:
                     msg = ret.get("message") or ret.get("mensagem") or "Operação realizada com sucesso!"
                     return True, msg
                 
-                # Se status explicitamente erro
                 msg_erro = ret.get("message") or ret.get("error") or ret.get("mensagem") or str(ret)
                 return False, msg_erro
             except Exception:
-                # Caso o Apps Script responda em texto plano
                 texto = resposta.text
                 if any(termo in texto.lower() for termo in ["success", "sucesso", "ok"]):
                     return True, "Operação realizada com sucesso!"
-                return False, f"Resposta bruta do Apps Script: {texto[:200]}"
+                return False, f"Resposta do Script: {texto[:200]}"
         elif resposta.status_code == 403:
             return False, "Erro 403: No Apps Script, acesse 'Implantar' > 'Gerenciar Implantações' e certifique-se de que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
         else:
