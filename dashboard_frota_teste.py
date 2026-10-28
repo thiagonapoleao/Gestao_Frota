@@ -269,8 +269,8 @@ GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 GID_FROTA = "1438914619"
 
-# URL do Apps Script Webhook (opcional, pode ser colocado em st.secrets ou diretamente aqui)
-WEBHOOK_APPS_SCRIPT_URL = st.secrets.get("APPS_SCRIPT_URL", "")
+# URL do Apps Script Webhook para gravação direta na aba de Usuários
+WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
 # -------------------------------------------------------------
 # 3. SUPORTE A LOGOTIPO E UTILITÁRIOS
@@ -294,7 +294,7 @@ def normalizar_texto(texto):
 # -------------------------------------------------------------
 # 4. CARREGAMENTO E GRAVAÇÃO DE DADOS (ETL)
 # -------------------------------------------------------------
-@st.cache_data(ttl=45)
+@st.cache_data(ttl=15)
 def carregar_usuarios():
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
@@ -336,17 +336,25 @@ def obter_usuarios_ativos():
     return df_base_user
 
 def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
-    """Envia o novo utilizador para persistência na Google Spreadsheet."""
+    """Envia o novo usuário para persistência na planilha Google Sheets via Webhook."""
     if WEBHOOK_APPS_SCRIPT_URL:
         try:
             r = requests.post(
                 WEBHOOK_APPS_SCRIPT_URL,
                 data=json.dumps(usuario_dict),
                 headers={"Content-Type": "application/json"},
-                timeout=8
+                allow_redirects=True,
+                timeout=12
             )
-            return r.status_code == 200
-        except Exception:
+            if r.status_code == 200:
+                try:
+                    res_json = r.json()
+                    return res_json.get("status") == "sucesso"
+                except Exception:
+                    return True
+            return False
+        except Exception as e:
+            st.error(f"Erro ao conectar com a planilha: {e}")
             return False
     return False
 
@@ -1105,7 +1113,7 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: USUÁRIOS (COM ACESSO E PERSISTÊNCIA)
+    # PÁGINA 4: USUÁRIOS (COM ACESSO E PERSISTÊNCIA DIRETA NA PLANILHA)
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == opcoes_menu[3]:
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
@@ -1125,7 +1133,6 @@ def main():
             st.caption(f"Total: {len(df_usuarios)} usuário(s) ativos.")
 
         with tab_novo:
-            # Lista de localidades conhecidas da frota para pré-seleção
             locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
             
             with st.form("form_cadastrar_usuario"):
@@ -1149,7 +1156,6 @@ def main():
                     nova_senha = st.text_input("Senha Inicial:", type="password", placeholder="Digite a senha")
                     confirma_senha = st.text_input("Confirme a Senha:", type="password", placeholder="Repita a senha")
                     
-                    # Exibe os veículos correspondentes ao acesso escolhido
                     st.markdown("<b>Veículos liberados para este perfil:</b>", unsafe_allow_html=True)
                     if not df_frota.empty and "Local de pernoite" in df_frota.columns:
                         if cidade_acesso == "Geral":
@@ -1178,20 +1184,22 @@ def main():
                             "acesso": cidade_acesso
                         }
 
-                        # Tenta gravar de forma permanente na folha de cálculo
+                        # Grava diretamente na planilha Google através do Webhook do Apps Script
                         gravou_nuvem = gravar_usuario_na_planilha(novo_reg)
-
-                        if "novos_usuarios_sessao" not in st.session_state:
-                            st.session_state["novos_usuarios_sessao"] = []
-                        st.session_state["novos_usuarios_sessao"].append(novo_reg)
 
                         if gravou_nuvem:
                             st.cache_data.clear()
                             st.success(f"✔ Usuário **{novo_nome}** (`{novo_login}`) cadastrado e salvo com sucesso na folha de cálculo!")
+                            st.rerun()
                         else:
-                            st.info(f"✔ Usuário **{novo_nome}** adicionado à sessão. (Para gravar permanentemente na folha Google sem recarregar apenas em memória, implante o Webhook do Google Apps Script e defina `APPS_SCRIPT_URL`).")
-
-                        st.rerun()
+                            # Fallback na sessão caso o Webhook encontre erro de conexão ou permissão
+                            if "novos_usuarios_sessao" not in st.session_state:
+                                st.session_state["novos_usuarios_sessao"] = []
+                            st.session_state["novos_usuarios_sessao"].append(novo_reg)
+                            st.warning(
+                                f"✔ Usuário adicionado apenas à sessão. Verifique se a implantação do Webhook no Apps Script está autorizada para 'Qualquer pessoa'."
+                            )
+                            st.rerun()
 
 if __name__ == "__main__":
     main()
