@@ -293,10 +293,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* ------------------------------------------------------------- */
-        /* 7. BOTÕES COM DEGRADÊ DO FUNDO EXPANDIDOS DE FORA A FORA      */
-        /* (Aplica com especificidade total em 'Entrar no Sistema' e forms) */
-        /* ------------------------------------------------------------- */
+        /* 7. BOTÕES COM DEGRADÊ */
         div[data-testid="stFormSubmitButton"],
         div[data-testid="stFormSubmitButton"] > button,
         div.stButton > button[kind="primary"],
@@ -329,7 +326,6 @@ st.markdown("""
             margin-top: 14px !important;
         }
 
-        /* Garante que qualquer texto interno (p ou span) fique branco */
         div[data-testid="stFormSubmitButton"] > button p,
         div[data-testid="stFormSubmitButton"] > button span,
         form[data-testid="stForm"] button p,
@@ -570,6 +566,7 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
+    """Envia requisição POST ao Google Apps Script e decodifica mensagens de erro/sucesso."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
@@ -587,22 +584,28 @@ def enviar_requisicao_apps_script(payload):
         if resposta.status_code == 200:
             try:
                 ret = resposta.json()
-                if ret.get("status") == "success":
-                    return True, ret.get("message", "Operação realizada!")
-                return False, ret.get("message", "Erro retornado pelo script.")
+                # Verifica status de sucesso
+                if ret.get("status") == "success" or ret.get("sucesso") is True:
+                    return True, ret.get("message", ret.get("mensagem", "Operação realizada com sucesso!"))
+                
+                # Obtém o erro específico retornado pelo Apps Script
+                erro_especifico = ret.get("message") or ret.get("error") or ret.get("mensagem") or str(ret)
+                return False, erro_especifico
             except Exception:
-                if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
+                # Caso a resposta seja texto puro ou HTML
+                texto = resposta.text
+                if "success" in texto.lower() or "sucesso" in texto.lower():
                     return True, "Operação realizada com sucesso!"
-                return True, "Registro atualizado!"
+                return False, f"Resposta do Script: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, configure 'Quem tem acesso' para 'Qualquer pessoa'."
+            return False, "Erro 403: No Apps Script, acesse 'Implantar' > 'Gerenciar Implantações' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
     except Exception as e:
-        return False, f"Falha na comunicação: {str(e)}"
+        return False, f"Falha na comunicação com o servidor: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (COM BOTÃO EXPANDIDO EM DEGRADÊ)
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
@@ -708,7 +711,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO CONDUTOR - BOTÃO CENTRALIZADO DE FORA A FORA NO DEGRADÊ DA PÁGINA
+    # MENU DO CONDUTOR
     # ---------------------------------------------------------------------------------
     with st.expander("Menu do Condutor", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
@@ -726,7 +729,6 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-    # Cabeçalho Principal (Logotipo colado imediatamente abaixo do menu)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
@@ -791,13 +793,19 @@ def main():
                 return
             st.session_state["ultima_transacao"] = chave_transacao_final
 
+            # Envia tanto chaves completas quanto alternativas para compatibilidade total com o script
             payload_finalizar = {
                 "acao": "finalizar",
                 "gid_destino": GID_LANCAMENTOS,
                 "rv": dados_ativos.get("rv"),
+                "placa": dados_ativos.get("placa"),
+                "condutor": dados_ativos.get("condutor"),
                 "data_final": data_fim.strftime("%d/%m/%Y"),
+                "data_fim": data_fim.strftime("%d/%m/%Y"),
                 "horario_final": hora_fim.strftime("%H:%M:%S"),
+                "hora_fim": hora_fim.strftime("%H:%M:%S"),
                 "km_final": int(km_fim),
+                "km_fim": int(km_fim),
                 "km_percorrido": km_percorrido,
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
