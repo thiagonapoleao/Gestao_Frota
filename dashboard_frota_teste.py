@@ -206,35 +206,22 @@ st.markdown("""
             background: #DC2626 !important;
         }
 
-        /* 5. CABEÇALHO DA PÁGINA PRINCIPAL COM LOGO */
-        .main-top-banner {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 12px 20px;
-            margin-bottom: 1.2rem;
-            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
-        }
-
+        /* 5. CABEÇALHO DA PÁGINA PRINCIPAL HARMONIZADO */
         .main-header-title {
-            font-size: 1.35rem;
-            font-weight: 800;
-            color: #0F172A;
-            line-height: 1.2;
-            letter-spacing: -0.02em;
-            margin: 0;
+            font-size: 1.15rem !important;
+            font-weight: 700 !important;
+            color: #0F172A !important;
+            line-height: 1.25 !important;
+            letter-spacing: -0.015em !important;
+            margin: 0 !important;
         }
 
         .main-header-sub {
-            font-size: 0.78rem;
-            color: #64748B;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin: 0;
+            font-size: 0.75rem !important;
+            color: #64748B !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.02em !important;
+            margin: 2px 0 0 0 !important;
         }
 
         /* 6. CARDS, KPIS E COMPONENTES NO CONTEÚDO PRINCIPAL */
@@ -684,7 +671,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     # =========================================================================
-    # ÁREA PRINCIPAL: BANNER TOPO COM LOGOTIPO INTEGRADO
+    # ÁREA PRINCIPAL: BANNER TOPO COM LOGOTIPO PROPORCIONAL E TÍTULO HARMONIZADO
     # =========================================================================
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
@@ -697,36 +684,36 @@ def main():
     pagina_atual = st.session_state["pagina_selecionada_id"]
 
     titulos_paginas = {
-        "dash": ("📊 Dashboard Geral", "Indicadores operacionais consolidados e veículos em atividade"),
-        "consultas": ("🔍 Consultas & Relatórios", "Pesquise históricos com múltiplos filtros e exporte extratos"),
-        "editar": ("✍️ Edição & Fechamento de Viagens", "Retificação de dados de saída e encerramento de percursos"),
-        "usuarios": ("👥 Gestão de Usuários", "Controle de credenciais, permissões de frota e cadastro sincronizado")
+        "dash": ("Dashboard Geral", "Indicadores operacionais consolidados e veículos em atividade"),
+        "consultas": ("Consultas & Relatórios", "Pesquise históricos com múltiplos filtros e exporte extratos"),
+        "editar": ("Edição & Fechamento de Viagens", "Retificação de dados de saída e encerramento de percursos"),
+        "usuarios": ("Gestão de Usuários", "Controle de credenciais, permissões de frota e cadastro sincronizado")
     }
 
     titulo_pg, sub_pg = titulos_paginas.get(pagina_atual, ("Painel de Frotas", "Master Café Gestão"))
 
-    # CABEÇALHO SUPERIOR DA PÁGINA COM LOGO INTEGRADO E PROPORCIONAL
-    col_banner_logo, col_banner_txt = st.columns([0.10, 0.90], gap="small", vertical_alignment="center")
+    # CABEÇALHO PROPORCIONAL COM LOGO AUMENTADO E TEXTO DISCRETO
+    col_banner_logo, col_banner_txt = st.columns([0.16, 0.84], gap="medium", vertical_alignment="center")
     caminho_logo = obter_caminho_logotipo()
 
     with col_banner_logo:
         if caminho_logo:
             try:
-                st.image(Image.open(caminho_logo), width=72)
+                st.image(Image.open(caminho_logo), width=110)
             except Exception:
-                st.markdown("<h2 style='margin:0; font-size:2.2rem;'>☕</h2>", unsafe_allow_html=True)
+                st.markdown("<h1 style='margin:0; font-size:2.8rem;'>☕</h1>", unsafe_allow_html=True)
         else:
-            st.markdown("<h2 style='margin:0; font-size:2.2rem;'>☕</h2>", unsafe_allow_html=True)
+            st.markdown("<h1 style='margin:0; font-size:2.8rem;'>☕</h1>", unsafe_allow_html=True)
 
     with col_banner_txt:
         st.markdown(f"""
-            <div style="line-height:1.2;">
-                <h2 class="main-header-title">{titulo_pg}</h2>
-                <p style="margin:0; color:#64748B; font-size:0.83rem; font-weight:500;">{sub_pg}</p>
+            <div style="line-height:1.25;">
+                <h3 class="main-header-title">{titulo_pg}</h3>
+                <p class="main-header-sub">{sub_pg}</p>
             </div>
         """, unsafe_allow_html=True)
 
-    st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 10px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
     # =========================================================================
     # PÁGINA 1: DASHBOARD
