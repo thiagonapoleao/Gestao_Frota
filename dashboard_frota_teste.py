@@ -41,13 +41,13 @@ st.markdown("""
 
         header[data-testid="stHeader"] {
             background-color: transparent !important;
-            height: 2.5rem !important;
+            height: 2.0rem !important;
         }
 
         /* 2. BASE DO CONTAINER PRINCIPAL */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 1rem !important;
+            padding-top: 0.8rem !important;
             padding-bottom: 2.5rem !important;
             padding-left: 2rem !important;
             padding-right: 2rem !important;
@@ -90,7 +90,6 @@ st.markdown("""
             padding-right: 1rem !important;
         }
 
-        /* TIPOGRAFIA E ELEMENTOS DA SIDEBAR */
         section[data-testid="stSidebar"] h1, 
         section[data-testid="stSidebar"] h2, 
         section[data-testid="stSidebar"] h3, 
@@ -99,16 +98,7 @@ st.markdown("""
             color: #F8FAFC !important;
         }
 
-        .brand-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding-bottom: 1rem;
-            margin-bottom: 1rem;
-            border-bottom: 1px solid #1E293B;
-        }
-
-        .brand-title {
+        .sidebar-brand-title {
             font-size: 1.15rem;
             font-weight: 800;
             color: #FFFFFF !important;
@@ -116,7 +106,7 @@ st.markdown("""
             letter-spacing: -0.02em;
         }
 
-        .brand-sub {
+        .sidebar-brand-sub {
             font-size: 0.70rem;
             color: #94A3B8 !important;
             font-weight: 600;
@@ -216,16 +206,38 @@ st.markdown("""
             background: #DC2626 !important;
         }
 
-        /* 5. CARDS, KPIS E COMPONENTES NO CONTEÚDO PRINCIPAL */
-        .main-header {
+        /* 5. CABEÇALHO DA PÁGINA PRINCIPAL COM LOGO */
+        .main-top-banner {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            padding-bottom: 10px;
-            margin-bottom: 18px;
-            border-bottom: 1px solid #E2E8F0;
+            justify-content: space-between;
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 12px 20px;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
         }
 
+        .main-header-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.2;
+            letter-spacing: -0.02em;
+            margin: 0;
+        }
+
+        .main-header-sub {
+            font-size: 0.78rem;
+            color: #64748B;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0;
+        }
+
+        /* 6. CARDS, KPIS E COMPONENTES NO CONTEÚDO PRINCIPAL */
         .filter-panel, .kpi-card {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -624,22 +636,13 @@ def main():
         st.session_state["pagina_selecionada_id"] = "dash"
 
     # =========================================================================
-    # SIDEBAR: MENU LATERAL CORPORATIVO MODERNO
+    # SIDEBAR: MENU LATERAL (SEM LOGO, APENAS BRANDING TEXTUAL E NAVEGAÇÃO)
     # =========================================================================
     with st.sidebar:
-        caminho_logo = obter_caminho_logotipo()
-        if caminho_logo:
-            try:
-                st.image(Image.open(caminho_logo), width=75)
-            except Exception:
-                st.markdown("<span style='font-size:2rem;'>☕</span>", unsafe_allow_html=True)
-        else:
-            st.markdown("<span style='font-size:2rem;'>☕</span>", unsafe_allow_html=True)
-
         st.markdown("""
-            <div style="margin-bottom: 1.2rem;">
-                <div class="brand-title">Painel de Frotas</div>
-                <div class="brand-sub">Master Café Gestão</div>
+            <div style="margin-bottom: 1.2rem; padding-bottom: 0.8rem; border-bottom: 1px solid #1E293B;">
+                <div class="sidebar-brand-title">Painel de Frotas</div>
+                <div class="sidebar-brand-sub">Master Café Gestão</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -681,7 +684,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     # =========================================================================
-    # ÁREA PRINCIPAL
+    # ÁREA PRINCIPAL: BANNER TOPO COM LOGOTIPO INTEGRADO
     # =========================================================================
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
@@ -693,19 +696,42 @@ def main():
     hoje_brasil = obter_agora_brasil().date()
     pagina_atual = st.session_state["pagina_selecionada_id"]
 
+    titulos_paginas = {
+        "dash": ("📊 Dashboard Geral", "Indicadores operacionais consolidados e veículos em atividade"),
+        "consultas": ("🔍 Consultas & Relatórios", "Pesquise históricos com múltiplos filtros e exporte extratos"),
+        "editar": ("✍️ Edição & Fechamento de Viagens", "Retificação de dados de saída e encerramento de percursos"),
+        "usuarios": ("👥 Gestão de Usuários", "Controle de credenciais, permissões de frota e cadastro sincronizado")
+    }
+
+    titulo_pg, sub_pg = titulos_paginas.get(pagina_atual, ("Painel de Frotas", "Master Café Gestão"))
+
+    # CABEÇALHO SUPERIOR DA PÁGINA COM LOGO INTEGRADO E PROPORCIONAL
+    col_banner_logo, col_banner_txt = st.columns([0.10, 0.90], gap="small", vertical_alignment="center")
+    caminho_logo = obter_caminho_logotipo()
+
+    with col_banner_logo:
+        if caminho_logo:
+            try:
+                st.image(Image.open(caminho_logo), width=72)
+            except Exception:
+                st.markdown("<h2 style='margin:0; font-size:2.2rem;'>☕</h2>", unsafe_allow_html=True)
+        else:
+            st.markdown("<h2 style='margin:0; font-size:2.2rem;'>☕</h2>", unsafe_allow_html=True)
+
+    with col_banner_txt:
+        st.markdown(f"""
+            <div style="line-height:1.2;">
+                <h2 class="main-header-title">{titulo_pg}</h2>
+                <p style="margin:0; color:#64748B; font-size:0.83rem; font-weight:500;">{sub_pg}</p>
+            </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
+
     # =========================================================================
     # PÁGINA 1: DASHBOARD
     # =========================================================================
     if pagina_atual == "dash":
-        st.markdown("""
-            <div class="main-header">
-                <div>
-                    <h2 style="margin:0; font-weight:800; color:#0F172A;">📊 Dashboard Geral</h2>
-                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Indicadores operacionais consolidados e veículos em atividade</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
         total_em_aberto = len(viagens_abertas_df)
@@ -955,15 +981,6 @@ def main():
     # PÁGINA 2: CONSULTAS & FILTROS AVANÇADOS
     # =========================================================================
     elif pagina_atual == "consultas":
-        st.markdown("""
-            <div class="main-header">
-                <div>
-                    <h2 style="margin:0; font-weight:800; color:#0F172A;">🔍 Consultas & Relatórios</h2>
-                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Pesquise históricos com múltiplos filtros e exporte extratos</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
         st.markdown("<p style='font-size:0.90rem; font-weight:700; color:#0F172A; margin-bottom:6px;'>◈ Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
         
@@ -1074,15 +1091,6 @@ def main():
     # PÁGINA 3: EDITAR VIAGENS
     # =========================================================================
     elif pagina_atual == "editar":
-        st.markdown("""
-            <div class="main-header">
-                <div>
-                    <h2 style="margin:0; font-weight:800; color:#0F172A;">✍️ Edição & Fechamento de Viagens</h2>
-                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Retificação de dados de saída e encerramento de percursos</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
         if "edicoes_viagens" not in st.session_state:
             st.session_state["edicoes_viagens"] = {}
 
@@ -1181,15 +1189,6 @@ def main():
     # PÁGINA 4: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN E GRAVAÇÃO DEFINITIVA)
     # =========================================================================
     elif pagina_atual == "usuarios":
-        st.markdown("""
-            <div class="main-header">
-                <div>
-                    <h2 style="margin:0; font-weight:800; color:#0F172A;">👥 Gestão de Usuários</h2>
-                    <p style="margin:0; color:#64748B; font-size:0.85rem;">Controle de credenciais, permissões de frota e cadastro sincronizado</p>
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
 
         with tab_lista:
@@ -1209,21 +1208,18 @@ def main():
         with tab_novo:
             locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
             
-            # Campo para digitação do nome que gera dinamicamente o login do usuário
             nome_digitado = st.text_input(
                 "Nome Completo:",
                 key="input_nome_cadastro",
                 placeholder="Ex: Roberto da Silva"
             )
 
-            # O sistema gera automaticamente o login (primeira letra do nome + sobrenome)
             usuario_gerado = gerar_usuario_padrao(nome_digitado)
             nome_formatado = formatar_nome_padrao(nome_digitado)
 
             with st.form("form_cadastrar_usuario"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
-                    # Exibição do usuário gerado pelo sistema
                     st.text_input(
                         "Usuário:",
                         value=usuario_gerado,
@@ -1288,7 +1284,6 @@ def main():
                             "acesso": cidade_acesso
                         }
 
-                        # Grava diretamente na planilha Google através do Webhook do Apps Script
                         gravou_nuvem = gravar_usuario_na_planilha(novo_reg)
 
                         if gravou_nuvem:
