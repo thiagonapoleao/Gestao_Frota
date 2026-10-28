@@ -20,26 +20,20 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (DESIGN COMPACTO INTEGRADO)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (DESIGN CLEAN & INTEGRADO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
-    page_icon="📊",
+    page_icon="🚘",
     layout="wide",
     initial_sidebar_state="collapsed"
 )
 
 st.markdown("""
     <style>
-        /* 1. MANTÉM OS CONTROLES ESSENCIAIS E OCULTA O RESTANTE */
+        /* 1. OCULTA SIDEBAR, CABEÇALHOS E ELEMENTOS NATIVOS NÃO UTILIZADOS */
         [data-testid="collapsedControl"],
-        button[kind="header"] {
-            display: flex !important;
-            visibility: visible !important;
-            color: #0F172A !important;
-            z-index: 1000000 !important;
-        }
-
+        section[data-testid="stSidebar"],
         #MainMenu, footer, .stDeployButton, [data-testid="stToolbarActions"],
         [data-testid="manage-app-button"], div[data-testid="stDecoration"] {
             display: none !important;
@@ -47,18 +41,17 @@ st.markdown("""
         }
 
         header[data-testid="stHeader"] {
-            background-color: transparent !important;
-            height: 1.5rem !important;
+            display: none !important;
         }
 
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.5rem !important;
+            padding-top: 0.6rem !important;
             padding-bottom: 2rem !important;
             max-width: 98% !important;
         }
 
-        /* 2. BASE DE CORES */
+        /* 2. BASE DE CORES DO SISTEMA */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -80,75 +73,78 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* 3. CONTAINER ÚNICO DO TOPO (BRANDING + NAVEGAÇÃO COMPACTA) */
-        .brand-inline-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            height: 100%;
-        }
-
+        /* 3. BRANDING PRINCIPAL COMPACTO */
         .brand-title {
-            font-size: 1.25rem;
+            font-size: 1.35rem;
             font-weight: 800;
             color: #0F172A;
             line-height: 1.1;
+            letter-spacing: -0.025em;
             white-space: nowrap;
-            letter-spacing: -0.02em;
         }
         .brand-sub {
-            font-size: 0.72rem;
+            font-size: 0.68rem;
             color: #64748B;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
         }
 
-        /* BOTÕES DE NAVEGAÇÃO */
+        /* 4. BOTÕES DE NAVEGAÇÃO (AZUL CLARO / MINIMALISTA) */
         div.stButton > button {
-            background: #2563EB !important;
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
+            background: #E0F2FE !important;
+            color: #0369A1 !important;
+            -webkit-text-fill-color: #0369A1 !important;
             border-radius: 6px !important;
             font-weight: 600 !important;
             font-size: 0.82rem !important;
-            border: 1px solid #1D4ED8 !important;
-            padding: 5px 8px !important;
-            min-height: 2.2rem !important;
-            height: 2.2rem !important;
+            border: 1px solid #BAE6FD !important;
+            padding: 4px 8px !important;
+            min-height: 2.1rem !important;
+            height: 2.1rem !important;
             width: 100% !important;
-            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2) !important;
+            box-shadow: none !important;
             transition: all 0.15s ease-in-out !important;
         }
 
         div.stButton > button:hover {
-            background: #1D4ED8 !important;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35) !important;
+            background: #BAE6FD !important;
+            color: #0284C7 !important;
+            -webkit-text-fill-color: #0284C7 !important;
+            border-color: #7DD3FC !important;
         }
 
-        /* DESTAQUE DE BOTÃO ATIVO */
+        /* DESTAQUE DO BOTÃO ATIVO */
         .nav-active div.stButton > button {
-            background: #1E40AF !important;
-            border-color: #172554 !important;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 2px rgba(37, 99, 235, 0.3) !important;
-            font-weight: 800 !important;
+            background: #0284C7 !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
+            border-color: #0369A1 !important;
+            box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3) !important;
+            font-weight: 700 !important;
+        }
+        .nav-active div.stButton > button:hover {
+            background: #0369A1 !important;
+            color: #FFFFFF !important;
+            -webkit-text-fill-color: #FFFFFF !important;
         }
 
-        /* BOTÕES DE UTILITÁRIOS (ATUALIZAR / SAIR) */
+        /* BOTÕES UTILITÁRIOS (SINCRONIZAR / SAIR) */
         .btn-util div.stButton > button {
             background: #FFFFFF !important;
-            color: #475569 !important;
-            -webkit-text-fill-color: #475569 !important;
-            border: 1px solid #CBD5E1 !important;
+            color: #64748B !important;
+            -webkit-text-fill-color: #64748B !important;
+            border: 1px solid #E2E8F0 !important;
             box-shadow: none !important;
         }
         .btn-util div.stButton > button:hover {
             background: #F1F5F9 !important;
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
+            border-color: #CBD5E1 !important;
         }
 
-        /* CARDS E FORMULÁRIOS */
+        /* 5. CARDS E COMPONENTES */
         .filter-panel {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
@@ -413,13 +409,13 @@ def tela_login(df_usuarios):
     with col2:
         if caminho_logo:
             try:
-                st.image(Image.open(caminho_logo), width=150)
+                st.image(Image.open(caminho_logo), width=140)
             except Exception:
                 st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
         else:
             st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
 
-        st.markdown("<p style='text-align:center; color:#64748B; font-weight:500;'>Acesso ao Painel de Frotas</p>", unsafe_allow_html=True)
+        st.markdown("<p style='text-align:center; color:#64748B; font-weight:500; margin-bottom:1rem;'>Acesso ao Painel de Frotas</p>", unsafe_allow_html=True)
 
         with st.form("form_login_dash"):
             usuario_digitado = st.text_input("Usuário Gestor:", placeholder="Digite seu usuário").strip().lower()
@@ -467,10 +463,11 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
+    # Itens de navegação solicitados com ícones discretos
     opcoes_menu = [
-        "📊 Visão Geral",
-        "🔍 Consultas",
-        "✏️ Editar Viagens",
+        "◈ Deshboar",
+        "⌕ Consultas",
+        "✎ Editar Viagens",
         "👥 Usuários"
     ]
 
@@ -478,25 +475,25 @@ def main():
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
     # =========================================================================
-    # CONTAINER TOPO COMPACTO: LOGOTIPO + PAINEL DE FROTAS + NAVEGAÇÃO
+    # CABEÇALHO COMPACTO: BRANDING PRINCIPAL + NAVEGAÇÃO INTEGRADA (SEM SIDEBAR)
     # =========================================================================
-    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_act1, c_act2 = st.columns(
-        [2.6, 1.4, 1.3, 1.4, 1.2, 0.9, 0.8],
+    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_info, c_act1, c_act2 = st.columns(
+        [2.8, 1.3, 1.2, 1.4, 1.1, 1.8, 1.1, 0.8],
         vertical_alignment="center"
     )
 
     with c_brand:
         caminho_logo = obter_caminho_logotipo()
-        c_b1, c_b2 = st.columns([0.8, 3.2], vertical_alignment="center")
-        with c_b1:
+        col_img, col_txt = st.columns([0.28, 0.72], vertical_alignment="center")
+        with col_img:
             if caminho_logo:
                 try:
-                    st.image(Image.open(caminho_logo), width=36)
+                    st.image(Image.open(caminho_logo), width=40)
                 except Exception:
                     st.markdown("☕")
             else:
                 st.markdown("☕")
-        with c_b2:
+        with col_txt:
             st.markdown("""
                 <div style="line-height:1.15;">
                     <span class="brand-title">Painel de Frotas</span><br>
@@ -536,27 +533,30 @@ def main():
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
+    with c_info:
+        st.markdown(f"""
+            <div style="font-size:0.75rem; color:#475569; text-align:right; line-height:1.2;">
+                <b>Gestor:</b> {nome_gestor}<br>
+                <span style="color:#94A3B8;">{obter_agora_brasil().strftime('%d/%m/%Y %H:%M')}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
     with c_act1:
         st.markdown('<div class="btn-util">', unsafe_allow_html=True)
-        if st.button("🔄 Sync", key="btn_top_sync"):
+        if st.button("⟳ Sincronizar", key="btn_top_sync"):
             st.cache_data.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_act2:
         st.markdown('<div class="btn-util">', unsafe_allow_html=True)
-        if st.button("🚪 Sair", key="btn_top_exit"):
+        if st.button("→ Sair", key="btn_top_exit"):
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
-
-    # BARRA LATERAL (APENAS IDENTIFICAÇÃO)
-    with st.sidebar:
-        st.markdown(f"👤 **Gestor:** {nome_gestor}")
-        st.caption(f"Sincronizado: {obter_agora_brasil().strftime('%d/%m/%Y %H:%M')}")
 
     df_base = obter_viagens_consolidadas()
 
@@ -567,7 +567,7 @@ def main():
     hoje_brasil = obter_agora_brasil().date()
 
     # =========================================================================
-    # PÁGINA 1: VISÃO GERAL & KPIS
+    # PÁGINA 1: DESHBOAR & KPIS
     # =========================================================================
     if st.session_state["pagina_selecionada"] == opcoes_menu[0]:
         total_viagens = len(df_base)
@@ -583,7 +583,7 @@ def main():
         kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
         with kpi1:
             st.markdown(f"""
-                <div class="kpi-card" style="border-left: 4px solid #2563EB;">
+                <div class="kpi-card" style="border-left: 4px solid #0284C7;">
                     <p class="kpi-title">Total de Viagens</p>
                     <p class="kpi-value">{total_viagens}</p>
                     <p class="kpi-caption">Histórico acumulado</p>
@@ -630,10 +630,10 @@ def main():
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO
-        st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
+        # 2. VEÍCULOS EM ABERTO NO TOPO (CSS E ESTRUTURA DOS CARDS PRESERVADOS)
+        st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
-            st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
+            st.success("✔ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
         else:
             grid_abertos = st.columns(min(len(viagens_abertas_df), 3))
             for idx, (_, v_aberta) in enumerate(viagens_abertas_df.iterrows()):
@@ -658,7 +658,7 @@ def main():
                 )
                 with col_target:
                     st.markdown(card_aberto_html, unsafe_allow_html=True)
-                    if st.button(f"✏️ Editar/Baixar ({v_aberta['rv']})", key=f"btn_quick_{v_aberta['rv']}"):
+                    if st.button(f"✎ Editar/Baixar ({v_aberta['rv']})", key=f"btn_quick_{v_aberta['rv']}"):
                         st.session_state["rv_para_editar"] = v_aberta["rv"]
                         st.session_state["pagina_selecionada"] = opcoes_menu[2]
                         st.rerun()
@@ -666,11 +666,11 @@ def main():
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # 3. GRÁFICOS
-        st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
+        st.markdown("### 📊 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
         with g_col1:
-            st.markdown("##### 🏆 **Km Total Acumulado por Veículo**")
+            st.markdown("##### ◈ **Km Total Acumulado por Veículo**")
             if not viagens_concluidas.empty:
                 df_acumulado_veiculo = (
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
@@ -683,7 +683,7 @@ def main():
                 df_acumulado_veiculo["rotulo_km"] = df_acumulado_veiculo["Km_Total"].apply(lambda v: f"{v:,.0f} km")
 
                 bars1 = alt.Chart(df_acumulado_veiculo).mark_bar(
-                    color="#2563EB", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                    color="#0284C7", cornerRadiusTopLeft=6, cornerRadiusTopRight=6
                 ).encode(
                     x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
                     y=alt.Y("Km_Total:Q", title="Km Total Acumulado"),
@@ -696,7 +696,7 @@ def main():
                     dy=-4,
                     fontSize=11,
                     fontWeight=700,
-                    color="#1E3A8A"
+                    color="#0369A1"
                 ).encode(
                     x=alt.X("Placa:N", sort="-y"),
                     y=alt.Y("Km_Total:Q"),
@@ -709,7 +709,7 @@ def main():
                 st.caption("Sem dados suficientes para calcular valores acumulados.")
 
         with g_col2:
-            st.markdown("##### 🚙 **Média de Km por Veículo**")
+            st.markdown("##### ◈ **Média de Km por Veículo**")
             if not viagens_concluidas.empty:
                 df_media_veiculo = (
                     viagens_concluidas.groupby("placa")["km_percorrido_num"]
@@ -749,7 +749,7 @@ def main():
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-        # 4. CARROS UTILIZADOS NO DIA
+        # 4. CARROS UTILIZADOS NO DIA (ESTRUTURA E CSS PRESERVADOS)
         st.markdown("### 📅 **Carros Utilizados no Dia**")
         c_dia_col1, c_dia_col2 = st.columns([1.5, 4])
         with c_dia_col1:
@@ -848,7 +848,7 @@ def main():
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == opcoes_menu[1]:
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
-        st.markdown("<p style='font-size:0.90rem; font-weight:700; color:#0F172A; margin-bottom:6px;'>🎯 Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.90rem; font-weight:700; color:#0F172A; margin-bottom:6px;'>◈ Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
         
         f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.8, 1.8, 1.4])
 
@@ -955,7 +955,7 @@ def main():
             )
 
         if not df_conc_consulta.empty:
-            with st.expander("📊 **Visualizar Matriz Cruzada: Km Total por Veículo e por Condutor**"):
+            with st.expander("◈ **Visualizar Matriz Cruzada: Km Total por Veículo e por Condutor**"):
                 pivot_km = df_conc_consulta.pivot_table(
                     index="veiculo",
                     columns="condutor",
@@ -999,7 +999,7 @@ def main():
                 """, unsafe_allow_html=True)
 
             with st.form("form_editar_viagem"):
-                st.markdown("##### 📝 Dados da Viagem")
+                st.markdown("##### ✎ Dados da Viagem")
                 e_col1, e_col2, e_col3 = st.columns(3)
                 
                 with e_col1:
@@ -1015,7 +1015,7 @@ def main():
                     novo_km_inicial = st.number_input("Km Inicial:", min_value=0.0, value=float(dados_v["km_inicial_num"]) if pd.notna(dados_v["km_inicial_num"]) else 0.0, step=1.0)
 
                 st.markdown("---")
-                st.markdown("##### 🏁 Retorno / Fechamento")
+                st.markdown("##### ◷ Retorno / Fechamento")
                 fechar_agora = st.checkbox("Encerrar e fechar esta viagem agora?", value=(dados_v["status"] == "Concluída"))
 
                 f_col1, f_col2, f_col3 = st.columns(3)
@@ -1060,7 +1060,7 @@ def main():
                             dict_atualizacao["status"] = "Em Aberto"
 
                         st.session_state["edicoes_viagens"][rv_selecionado] = dict_atualizacao
-                        st.success(f"✅ Viagem `{rv_selecionado}` atualizada com sucesso!")
+                        st.success(f"✔ Viagem `{rv_selecionado}` atualizada com sucesso!")
                         st.rerun()
 
     # =========================================================================
@@ -1110,7 +1110,7 @@ def main():
                         if "novos_usuarios_sessao" not in st.session_state:
                             st.session_state["novos_usuarios_sessao"] = []
                         st.session_state["novos_usuarios_sessao"].append(novo_reg)
-                        st.success(f"🎉 Usuário **{novo_nome}** (`{novo_login}`) cadastrado!")
+                        st.success(f"✔ Usuário **{novo_nome}** (`{novo_login}`) cadastrado!")
                         st.rerun()
 
 if __name__ == "__main__":
