@@ -20,7 +20,7 @@ def obter_agora_brasil():
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
-# 1. CONFIGURAÇÃO DA PÁGINA E CSS (DESIGN SYSTEM FRONT-END)
+# 1. CONFIGURAÇÃO DA PÁGINA E CSS (DESIGN COMPACTO INTEGRADO)
 # -------------------------------------------------------------
 st.set_page_config(
     page_title="Painel de Frotas",
@@ -31,7 +31,7 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. CONTROLE E BOTÕES DO STREAMLIT */
+        /* 1. MANTÉM OS CONTROLES ESSENCIAIS E OCULTA O RESTANTE */
         [data-testid="collapsedControl"],
         button[kind="header"] {
             display: flex !important;
@@ -48,17 +48,17 @@ st.markdown("""
 
         header[data-testid="stHeader"] {
             background-color: transparent !important;
-            height: 2.2rem !important;
+            height: 1.5rem !important;
         }
 
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.8rem !important;
-            padding-bottom: 2.5rem !important;
-            max-width: 96% !important;
+            padding-top: 0.5rem !important;
+            padding-bottom: 2rem !important;
+            max-width: 98% !important;
         }
 
-        /* 2. BASE DE CORES E TIPOGRAFIA */
+        /* 2. BASE DE CORES */
         :root, html, body {
             background-color: #F8FAFC !important;
             color: #0F172A !important;
@@ -80,104 +80,96 @@ st.markdown("""
             font-size: 0.88rem !important;
         }
 
-        /* 3. BARRA SUPERIOR (NAVTOP) & BOTÕES PRIMÁRIOS */
-        .navtop-wrapper {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 8px 12px;
-            margin-bottom: 1.4rem;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+        /* 3. CONTAINER ÚNICO DO TOPO (BRANDING + NAVEGAÇÃO COMPACTA) */
+        .brand-inline-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            height: 100%;
         }
 
-        /* Botões padrão primários */
+        .brand-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #0F172A;
+            line-height: 1.1;
+            white-space: nowrap;
+            letter-spacing: -0.02em;
+        }
+        .brand-sub {
+            font-size: 0.72rem;
+            color: #64748B;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* BOTÕES DE NAVEGAÇÃO */
         div.stButton > button {
             background: #2563EB !important;
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
-            border-radius: 8px !important;
+            border-radius: 6px !important;
             font-weight: 600 !important;
-            font-size: 0.90rem !important;
+            font-size: 0.82rem !important;
             border: 1px solid #1D4ED8 !important;
-            box-shadow: 0 2px 4px rgba(37, 99, 235, 0.18) !important;
-            transition: all 0.2s ease-in-out !important;
+            padding: 5px 8px !important;
+            min-height: 2.2rem !important;
+            height: 2.2rem !important;
             width: 100% !important;
-            padding: 8px 14px !important;
+            box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2) !important;
+            transition: all 0.15s ease-in-out !important;
         }
 
         div.stButton > button:hover {
             background: #1D4ED8 !important;
-            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3) !important;
-            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35) !important;
         }
 
-        /* Destaque para aba/botão ATIVO no NavTop */
+        /* DESTAQUE DE BOTÃO ATIVO */
         .nav-active div.stButton > button {
             background: #1E40AF !important;
             border-color: #172554 !important;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.35), 0 4px 8px rgba(0,0,0,0.12) !important;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 0 2px rgba(37, 99, 235, 0.3) !important;
             font-weight: 800 !important;
         }
 
-        /* Botões de Ação Secundária (Ex: Cancelar / Sair) */
-        .btn-secondary div.stButton > button {
-            background: #F1F5F9 !important;
-            color: #334155 !important;
-            -webkit-text-fill-color: #334155 !important;
+        /* BOTÕES DE UTILITÁRIOS (ATUALIZAR / SAIR) */
+        .btn-util div.stButton > button {
+            background: #FFFFFF !important;
+            color: #475569 !important;
+            -webkit-text-fill-color: #475569 !important;
             border: 1px solid #CBD5E1 !important;
             box-shadow: none !important;
         }
-        .btn-secondary div.stButton > button:hover {
-            background: #E2E8F0 !important;
+        .btn-util div.stButton > button:hover {
+            background: #F1F5F9 !important;
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
         }
 
-        /* Header e Cards */
-        .dash-header-container {
-            background: #FFFFFF;
-            padding: 16px 24px;
-            border-radius: 12px;
-            border: 1px solid #E2E8F0;
-            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
-            margin-bottom: 1rem;
-            margin-top: 0px;
-        }
-
-        .dash-title {
-            font-size: 1.45rem;
-            font-weight: 800;
-            color: #0F172A;
-            margin: 0;
-            letter-spacing: -0.02em;
-        }
-        .dash-subtitle {
-            font-size: 0.88rem;
-            color: #64748B;
-            margin: 2px 0 0 0;
-        }
-
+        /* CARDS E FORMULÁRIOS */
         .filter-panel {
             background-color: #FFFFFF;
             border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 18px 20px 10px 20px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03);
-            margin-bottom: 1.2rem;
+            border-radius: 10px;
+            padding: 14px 18px 8px 18px;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
+            margin-bottom: 1rem;
         }
 
         .kpi-card {
             background: #FFFFFF;
             border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 18px 20px;
-            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+            border-radius: 10px;
+            padding: 14px 16px;
+            box-shadow: 0 1px 4px rgba(15, 23, 42, 0.03);
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
         .kpi-title {
-            font-size: 0.80rem;
+            font-size: 0.75rem;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.05em;
@@ -185,14 +177,14 @@ st.markdown("""
             margin: 0;
         }
         .kpi-value {
-            font-size: 1.85rem;
+            font-size: 1.65rem;
             font-weight: 800;
             color: #0F172A;
             line-height: 1.1;
             margin: 0;
         }
         .kpi-caption {
-            font-size: 0.78rem;
+            font-size: 0.74rem;
             color: #94A3B8;
             margin: 0;
         }
@@ -200,30 +192,28 @@ st.markdown("""
         .badge-open {
             background-color: #FEF3C7;
             color: #92400E;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.76rem;
+            padding: 3px 8px;
+            border-radius: 14px;
+            font-size: 0.72rem;
             font-weight: 700;
-            display: inline-block;
             border: 1px solid #FDE68A;
         }
         .badge-done {
             background-color: #DEF7EC;
             color: #03543F;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 0.76rem;
+            padding: 3px 8px;
+            border-radius: 14px;
+            font-size: 0.72rem;
             font-weight: 700;
-            display: inline-block;
             border: 1px solid #BCF0DA;
         }
 
         [data-testid="stForm"] {
             background-color: #FFFFFF !important;
             border: 1px solid #E2E8F0 !important;
-            border-radius: 14px !important;
-            box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
-            padding: 24px !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
+            padding: 20px !important;
         }
 
         div[data-baseweb="input"],
@@ -235,7 +225,7 @@ st.markdown("""
             background-color: #FFFFFF !important;
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
-            border-radius: 8px !important;
+            border-radius: 6px !important;
         }
         input {
             background-color: #FFFFFF !important;
@@ -245,7 +235,7 @@ st.markdown("""
 
         div[data-testid="stDataFrame"] {
             border: 1px solid #E2E8F0 !important;
-            border-radius: 10px !important;
+            border-radius: 8px !important;
             overflow: hidden !important;
         }
     </style>
@@ -259,7 +249,7 @@ GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 
 # -------------------------------------------------------------
-# 3. SUPORTE A LOGOTIPO E CABEÇALHO
+# 3. SUPORTE A LOGOTIPO
 # -------------------------------------------------------------
 def obter_caminho_logotipo():
     extensoes = [".png", ".jpg", ".jpeg", ".svg", ".webp", ""]
@@ -270,41 +260,6 @@ def obter_caminho_logotipo():
             if os.path.exists(caminho) and not os.path.isdir(caminho):
                 return caminho
     return None
-
-def renderizar_cabecalho_com_logo(subtitulo="Monitoramento em Tempo Real de Viagens e Quilometragem"):
-    caminho_logo = obter_caminho_logotipo()
-    agora = obter_agora_brasil()
-
-    st.markdown('<div class="dash-header-container">', unsafe_allow_html=True)
-    c_logo, c_texto, c_hora = st.columns([1.2, 5, 2.3])
-
-    with c_logo:
-        if caminho_logo:
-            try:
-                logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=140)
-            except Exception:
-                st.markdown("### ☕")
-        else:
-            st.markdown("### ☕")
-
-    with c_texto:
-        st.markdown(f"""
-            <div style="padding-left: 8px;">
-                <div class="dash-title">Painel de Frotas</div>
-                <div class="dash-subtitle">{subtitulo}</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    with c_hora:
-        st.markdown(f"""
-            <div style="text-align: right; padding-top: 4px;">
-                <span style="font-size: 0.78rem; color: #64748B; font-weight: 600; text-transform: uppercase;">Sincronizado</span><br>
-                <span style="font-size: 0.92rem; font-weight: 700; color: #0F172A;">{agora.strftime("%d/%m/%Y às %H:%M:%S")}</span>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 def normalizar_texto(texto):
     if not isinstance(texto, str):
@@ -340,7 +295,6 @@ def carregar_usuarios():
     return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Gestor Master Café"}])
 
 def obter_usuarios_ativos():
-    """Retorna os usuários carregados combinados com os criados na sessão atual."""
     df_base_user = carregar_usuarios()
     if "novos_usuarios_sessao" not in st.session_state:
         st.session_state["novos_usuarios_sessao"] = []
@@ -418,7 +372,6 @@ def carregar_dados_viagens():
     return df
 
 def obter_viagens_consolidadas():
-    """Retorna dados de viagens mesclando com edições em memória da sessão."""
     df = carregar_dados_viagens().copy()
     if df.empty:
         return df
@@ -430,7 +383,6 @@ def obter_viagens_consolidadas():
                 for col, valor in dados_editados.items():
                     df.loc[idx_match, col] = valor
 
-                # Recalcula status e métricas para a linha editada
                 for idx in idx_match:
                     r = df.loc[idx]
                     try:
@@ -461,8 +413,7 @@ def tela_login(df_usuarios):
     with col2:
         if caminho_logo:
             try:
-                logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=160)
+                st.image(Image.open(caminho_logo), width=150)
             except Exception:
                 st.markdown("<h2 style='text-align:center;'>☕</h2>", unsafe_allow_html=True)
         else:
@@ -473,7 +424,7 @@ def tela_login(df_usuarios):
         with st.form("form_login_dash"):
             usuario_digitado = st.text_input("Usuário Gestor:", placeholder="Digite seu usuário").strip().lower()
             senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
-            btn_login = st.form_submit_button("Acessar Painel Gerencial")
+            btn_login = st.form_submit_button("Acessar Painel")
 
             if btn_login:
                 if df_usuarios.empty:
@@ -516,10 +467,9 @@ def main():
 
     nome_gestor = st.session_state.get("dash_nome", "Gestor")
 
-    # Modulos Disponíveis
     opcoes_menu = [
-        "📊 Visão Geral & KPIs",
-        "🔍 Consulta & Filtros Avançados",
+        "📊 Visão Geral",
+        "🔍 Consultas",
         "✏️ Editar Viagens",
         "👥 Usuários"
     ]
@@ -528,79 +478,85 @@ def main():
         st.session_state["pagina_selecionada"] = opcoes_menu[0]
 
     # =========================================================================
-    # NAVTOP (NAVEGAÇÃO NO TOPO DA PÁGINA COM DESTAQUE PRIMÁRIO)
+    # CONTAINER TOPO COMPACTO: LOGOTIPO + PAINEL DE FROTAS + NAVEGAÇÃO
     # =========================================================================
-    st.markdown('<div class="navtop-wrapper">', unsafe_allow_html=True)
-    c_nav1, c_nav2, c_nav3, c_nav4, c_sep, c_act1, c_act2 = st.columns([2.2, 2.6, 2.0, 1.8, 0.4, 1.3, 1.1])
+    c_brand, c_nav1, c_nav2, c_nav3, c_nav4, c_act1, c_act2 = st.columns(
+        [2.6, 1.4, 1.3, 1.4, 1.2, 0.9, 0.8],
+        vertical_alignment="center"
+    )
+
+    with c_brand:
+        caminho_logo = obter_caminho_logotipo()
+        c_b1, c_b2 = st.columns([0.8, 3.2], vertical_alignment="center")
+        with c_b1:
+            if caminho_logo:
+                try:
+                    st.image(Image.open(caminho_logo), width=36)
+                except Exception:
+                    st.markdown("☕")
+            else:
+                st.markdown("☕")
+        with c_b2:
+            st.markdown("""
+                <div style="line-height:1.15;">
+                    <span class="brand-title">Painel de Frotas</span><br>
+                    <span class="brand-sub">Master Café Gestão</span>
+                </div>
+            """, unsafe_allow_html=True)
 
     with c_nav1:
         is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[0])
-        container_class = "nav-active" if is_active else ""
-        st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[0], key="btn_nav_kpis"):
+        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+        if st.button(opcoes_menu[0], key="top_nav_0"):
             st.session_state["pagina_selecionada"] = opcoes_menu[0]
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_nav2:
         is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[1])
-        container_class = "nav-active" if is_active else ""
-        st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[1], key="btn_nav_consultas"):
+        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+        if st.button(opcoes_menu[1], key="top_nav_1"):
             st.session_state["pagina_selecionada"] = opcoes_menu[1]
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_nav3:
         is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[2])
-        container_class = "nav-active" if is_active else ""
-        st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[2], key="btn_nav_editar"):
+        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+        if st.button(opcoes_menu[2], key="top_nav_2"):
             st.session_state["pagina_selecionada"] = opcoes_menu[2]
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_nav4:
         is_active = (st.session_state["pagina_selecionada"] == opcoes_menu[3])
-        container_class = "nav-active" if is_active else ""
-        st.markdown(f'<div class="{container_class}">', unsafe_allow_html=True)
-        if st.button(opcoes_menu[3], key="btn_nav_usuarios"):
+        st.markdown(f'<div class="{"nav-active" if is_active else ""}">', unsafe_allow_html=True)
+        if st.button(opcoes_menu[3], key="top_nav_3"):
             st.session_state["pagina_selecionada"] = opcoes_menu[3]
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_act1:
-        st.markdown('<div class="btn-secondary">', unsafe_allow_html=True)
-        if st.button("🔄 Atualizar", key="btn_nav_atualizar"):
+        st.markdown('<div class="btn-util">', unsafe_allow_html=True)
+        if st.button("🔄 Sync", key="btn_top_sync"):
             st.cache_data.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
     with c_act2:
-        st.markdown('<div class="btn-secondary">', unsafe_allow_html=True)
-        if st.button("🚪 Sair", key="btn_nav_sair"):
+        st.markdown('<div class="btn-util">', unsafe_allow_html=True)
+        if st.button("🚪 Sair", key="btn_top_exit"):
             st.session_state.clear()
             st.query_params.clear()
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("<hr style='margin: 8px 0 16px 0; border: none; border-top: 1px solid #E2E8F0;'>", unsafe_allow_html=True)
 
-    # BARRA LATERAL (INFORMATIVA E COMPACTA)
+    # BARRA LATERAL (APENAS IDENTIFICAÇÃO)
     with st.sidebar:
-        caminho_logo = obter_caminho_logotipo()
-        if caminho_logo:
-            try:
-                logo_img = Image.open(caminho_logo)
-                st.image(logo_img, width=150)
-            except Exception:
-                st.markdown("### ☕")
-        else:
-            st.markdown("### ☕")
-
-        st.markdown(f"👤 **Gestor Conectado:**\n**{nome_gestor}**")
-        st.markdown("---")
-        st.caption("Central de Frotas & Operações de Deslocamento")
+        st.markdown(f"👤 **Gestor:** {nome_gestor}")
+        st.caption(f"Sincronizado: {obter_agora_brasil().strftime('%d/%m/%Y %H:%M')}")
 
     df_base = obter_viagens_consolidadas()
 
@@ -613,9 +569,7 @@ def main():
     # =========================================================================
     # PÁGINA 1: VISÃO GERAL & KPIS
     # =========================================================================
-    if st.session_state["pagina_selecionada"] == "📊 Visão Geral & KPIs":
-        renderizar_cabecalho_com_logo("Visão Geral, Controle de Veículos em Trânsito e Indicadores")
-
+    if st.session_state["pagina_selecionada"] == opcoes_menu[0]:
         total_viagens = len(df_base)
         viagens_abertas_df = df_base[df_base["status"] == "Em Aberto"]
         total_em_aberto = len(viagens_abertas_df)
@@ -650,7 +604,7 @@ def main():
             st.markdown(f"""
                 <div class="kpi-card" style="border-left: 4px solid #10B981;">
                     <p class="kpi-title">Km Total Rodado</p>
-                    <p class="kpi-value">{total_km_rodado:,.0f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-value">{total_km_rodado:,.0f} <span style="font-size: 0.85rem; font-weight: 500;">km</span></p>
                     <p class="kpi-caption">Viagens concluídas</p>
                 </div>
             """, unsafe_allow_html=True)
@@ -659,7 +613,7 @@ def main():
             st.markdown(f"""
                 <div class="kpi-card" style="border-left: 4px solid #6366F1;">
                     <p class="kpi-title">Média Km / Viagem</p>
-                    <p class="kpi-value">{media_km_geral:,.1f} <span style="font-size: 0.95rem; font-weight: 500;">km</span></p>
+                    <p class="kpi-value">{media_km_geral:,.1f} <span style="font-size: 0.85rem; font-weight: 500;">km</span></p>
                     <p class="kpi-caption">Média por percurso</p>
                 </div>
             """, unsafe_allow_html=True)
@@ -674,9 +628,9 @@ def main():
                 </div>
             """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # 2. VEÍCULOS EM ABERTO NO TOPO COM ATALHO DE EDIÇÃO
+        # 2. VEÍCULOS EM ABERTO NO TOPO
         st.markdown("### 🚨 **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
             st.success("✅ **Todos os veículos estão no pátio.** Nenhuma viagem em aberto no momento.")
@@ -686,32 +640,32 @@ def main():
                 col_target = grid_abertos[idx % 3]
                 dest_aberta = str(v_aberta['destino']).strip() if v_aberta.get('destino') and str(v_aberta['destino']).lower() != 'nan' else 'Não especificado'
                 card_aberto_html = (
-                    f'<div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 14px 16px; border-radius: 10px; margin-bottom: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">'
-                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">'
-                    f'<span style="font-weight: 800; font-size: 1.05rem; color: #92400E;">🚗 {v_aberta["placa"]}</span>'
+                    f'<div style="background: #FFFBEB; border: 1px solid #FDE68A; border-left: 4px solid #F59E0B; padding: 12px 14px; border-radius: 8px; margin-bottom: 6px;">'
+                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">'
+                    f'<span style="font-weight: 800; font-size: 1rem; color: #92400E;">🚗 {v_aberta["placa"]}</span>'
                     f'<span class="badge-open">EM TRÂNSITO</span>'
                     f'</div>'
-                    f'<div style="font-size: 0.88rem; color: #78350F; font-weight: 600;">{v_aberta["veiculo"]}</div>'
-                    f'<hr style="margin: 8px 0; border: none; border-top: 1px solid #FEE382;">'
-                    f'<div style="font-size: 0.84rem; color: #451A03; line-height: 1.5;">'
+                    f'<div style="font-size: 0.85rem; color: #78350F; font-weight: 600;">{v_aberta["veiculo"]}</div>'
+                    f'<hr style="margin: 6px 0; border: none; border-top: 1px solid #FEE382;">'
+                    f'<div style="font-size: 0.82rem; color: #451A03; line-height: 1.4;">'
                     f'<b>Condutor:</b> {v_aberta["condutor"]}<br>'
                     f'<b>Saída:</b> {v_aberta["data_inicial"]} às {v_aberta["horario_inicial"]}<br>'
                     f'<b>Km Saída:</b> {v_aberta["km_inicial"]} km<br>'
                     f'<b>Destino:</b> {dest_aberta}<br>'
-                    f'<b>Código RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{v_aberta["rv"]}</code>'
+                    f'<b>RV:</b> <code style="background: #FEF3C7; color: #92400E; padding: 1px 4px; border-radius: 4px;">{v_aberta["rv"]}</code>'
                     f'</div>'
                     f'</div>'
                 )
                 with col_target:
                     st.markdown(card_aberto_html, unsafe_allow_html=True)
-                    if st.button(f"✏️ Editar / Fechar ({v_aberta['rv']})", key=f"btn_edit_quick_{v_aberta['rv']}"):
+                    if st.button(f"✏️ Editar/Baixar ({v_aberta['rv']})", key=f"btn_quick_{v_aberta['rv']}"):
                         st.session_state["rv_para_editar"] = v_aberta["rv"]
-                        st.session_state["pagina_selecionada"] = "✏️ Editar Viagens"
+                        st.session_state["pagina_selecionada"] = opcoes_menu[2]
                         st.rerun()
 
-        st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
-        # 3. GRÁFICOS ACUMULATIVOS
+        # 3. GRÁFICOS
         st.markdown("### 📈 **Quilometragem Acumulada da Frota**")
         g_col1, g_col2 = st.columns(2)
 
@@ -740,7 +694,7 @@ def main():
                     align="center",
                     baseline="bottom",
                     dy=-4,
-                    fontSize=12,
+                    fontSize=11,
                     fontWeight=700,
                     color="#1E3A8A"
                 ).encode(
@@ -749,7 +703,7 @@ def main():
                     text="rotulo_km:N"
                 )
 
-                grafico_km_total = (bars1 + text1).properties(height=320)
+                grafico_km_total = (bars1 + text1).properties(height=300)
                 st.altair_chart(grafico_km_total, use_container_width=True)
             else:
                 st.caption("Sem dados suficientes para calcular valores acumulados.")
@@ -779,7 +733,7 @@ def main():
                     align="center",
                     baseline="bottom",
                     dy=-4,
-                    fontSize=12,
+                    fontSize=11,
                     fontWeight=700,
                     color="#064E3B"
                 ).encode(
@@ -788,12 +742,12 @@ def main():
                     text="rotulo_media:N"
                 )
 
-                grafico_media_km = (bars2 + text2).properties(height=320)
+                grafico_media_km = (bars2 + text2).properties(height=300)
                 st.altair_chart(grafico_media_km, use_container_width=True)
             else:
                 st.caption("Sem dados suficientes para calcular médias.")
 
-        st.markdown("<div style='height: 22px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         # 4. CARROS UTILIZADOS NO DIA
         st.markdown("### 📅 **Carros Utilizados no Dia**")
@@ -805,7 +759,6 @@ def main():
                 format="DD/MM/YYYY",
                 key="filtro_dia_atual"
             )
-        
         with c_dia_col2:
             st.caption(f"Exibindo deslocamentos com saída registrada em **{dia_selecionado.strftime('%d/%m/%Y')}**.")
 
@@ -819,13 +772,11 @@ def main():
 
             m1, m2, m3 = st.columns(3)
             with m1:
-                st.metric("Veículos Ativados no Dia", f"{qtd_carros_dia}")
+                st.metric("Veículos Ativados", f"{qtd_carros_dia}")
             with m2:
-                st.metric("Viagens Registradas no Dia", f"{len(df_carros_dia)}")
+                st.metric("Viagens Registradas", f"{len(df_carros_dia)}")
             with m3:
-                st.metric("Km Total Rodado no Dia", f"{km_dia_total:,.0f} km")
-
-            st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+                st.metric("Km Total no Dia", f"{km_dia_total:,.0f} km")
 
             df_cards_dia = df_carros_dia.sort_values(by=["status", "horario_inicial"], ascending=[True, False])
 
@@ -871,20 +822,20 @@ def main():
                     bloco_retorno = f'<b>Retorno:</b> {hora_ret_txt}<br><b>Km Retorno:</b> {km_ret_txt}<br><b>Km Rodado:</b> <span style="font-weight: 700; color: #047857;">{km_rod_txt}</span><br>'
 
                 card_html = (
-                    f'<div style="background: {card_bg}; border: 1px solid {card_border}; border-left: 4px solid {card_border_left}; padding: 14px 16px; border-radius: 10px; margin-bottom: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">'
-                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">'
-                    f'<span style="font-weight: 800; font-size: 1.05rem; color: {title_color};">🚗 {v_dia["placa"]}</span>'
+                    f'<div style="background: {card_bg}; border: 1px solid {card_border}; border-left: 4px solid {card_border_left}; padding: 12px 14px; border-radius: 8px; margin-bottom: 8px;">'
+                    f'<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">'
+                    f'<span style="font-weight: 800; font-size: 1rem; color: {title_color};">🚗 {v_dia["placa"]}</span>'
                     f'{badge_html}'
                     f'</div>'
-                    f'<div style="font-size: 0.88rem; color: {sub_color}; font-weight: 600;">{v_dia["veiculo"]}</div>'
-                    f'<hr style="margin: 8px 0; border: none; border-top: 1px solid {divider_color};">'
-                    f'<div style="font-size: 0.84rem; color: {text_color}; line-height: 1.5;">'
+                    f'<div style="font-size: 0.85rem; color: {sub_color}; font-weight: 600;">{v_dia["veiculo"]}</div>'
+                    f'<hr style="margin: 6px 0; border: none; border-top: 1px solid {divider_color};">'
+                    f'<div style="font-size: 0.82rem; color: {text_color}; line-height: 1.4;">'
                     f'<b>Condutor:</b> {v_dia["condutor"]}<br>'
                     f'<b>Saída:</b> {v_dia["data_inicial"]} às {v_dia["horario_inicial"]}<br>'
                     f'<b>Km Saída:</b> {km_sai_txt}<br>'
                     f'{bloco_retorno}'
                     f'<b>Destino:</b> {destino_txt}<br>'
-                    f'<b>Código RV:</b> <code style="background: {rv_bg}; color: {rv_color}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">{rv_txt}</code>'
+                    f'<b>RV:</b> <code style="background: {rv_bg}; color: {rv_color}; padding: 1px 4px; border-radius: 4px;">{rv_txt}</code>'
                     f'</div>'
                     f'</div>'
                 )
@@ -893,13 +844,11 @@ def main():
                     st.markdown(card_html, unsafe_allow_html=True)
 
     # =========================================================================
-    # PÁGINA 2: CONSULTA & FILTROS AVANÇADOS
+    # PÁGINA 2: CONSULTAS & FILTROS AVANÇADOS
     # =========================================================================
-    elif st.session_state["pagina_selecionada"] == "🔍 Consulta & Filtros Avançados":
-        renderizar_cabecalho_com_logo("Pesquisa Cruzada por Veículo, Condutor, Período e Status")
-
+    elif st.session_state["pagina_selecionada"] == opcoes_menu[1]:
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
-        st.markdown("<p style='font-size:0.95rem; font-weight:700; color:#0F172A; margin-bottom:8px;'>🎯 Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.90rem; font-weight:700; color:#0F172A; margin-bottom:6px;'>🎯 Parâmetros de Pesquisa</p>", unsafe_allow_html=True)
         
         f_col1, f_col2, f_col3, f_col4 = st.columns([1.2, 1.8, 1.8, 1.4])
 
@@ -912,7 +861,7 @@ def main():
             veiculos_sel = st.multiselect(
                 "Veículo(s):",
                 options=lista_veiculos,
-                placeholder="Todos os veículos..."
+                placeholder="Todos..."
             )
 
         with f_col3:
@@ -920,7 +869,7 @@ def main():
             condutores_sel = st.multiselect(
                 "Condutor(es):",
                 options=lista_condutores,
-                placeholder="Todos os condutores..."
+                placeholder="Todos..."
             )
 
         with f_col4:
@@ -965,7 +914,6 @@ def main():
         with r_col3:
             st.metric("Média Km / Viagem", f"{media_km_res:,.1f} km")
 
-        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
         st.markdown("#### 📋 **Extrato Detalhado de Viagens**")
 
         if df_consulta.empty:
@@ -1018,25 +966,17 @@ def main():
                 st.dataframe(pivot_km.style.format("{:,.0f} km"), use_container_width=True)
 
     # =========================================================================
-    # PÁGINA 3: EDITAR VIAGEM / FECHAMENTO PARCIAL OU TOTAL
+    # PÁGINA 3: EDITAR VIAGENS
     # =========================================================================
-    elif st.session_state["pagina_selecionada"] == "✏️ Editar Viagens":
-        renderizar_cabecalho_com_logo("Edição de Deslocamentos e Fechamento de Viagens")
-
+    elif st.session_state["pagina_selecionada"] == opcoes_menu[2]:
         if "edicoes_viagens" not in st.session_state:
             st.session_state["edicoes_viagens"] = {}
 
         viagens_em_aberto = df_base[df_base["status"] == "Em Aberto"].copy()
 
-        st.markdown("""
-            Edite os dados caso o condutor ainda não feche a viagem (ex: ajuste de destino, horário de saída ou condutor)
-            ou **realize a baixa definitiva** informando a data/horário e quilometragem final.
-        """)
-
         opcoes_rv = list(viagens_em_aberto["rv"].unique())
         if not opcoes_rv:
-            st.info("ℹ️ Não existem viagens com status **Em Aberto** para edição no momento.")
-            st.markdown("Selecione abaixo para editar o histórico de uma viagem já concluída, se necessário:")
+            st.info("ℹ️ Não existem viagens com status **Em Aberto** no momento. Selecione uma viagem concluída para retificação:")
             opcoes_rv = list(df_base["rv"].unique())
 
         rv_padrao = st.session_state.get("rv_para_editar", opcoes_rv[0] if opcoes_rv else "")
@@ -1044,7 +984,7 @@ def main():
 
         c_sel_rv, c_info_rv = st.columns([2, 3])
         with c_sel_rv:
-            rv_selecionado = st.selectbox("Selecione o Registro de Viagem (RV):", options=opcoes_rv, index=idx_padrao)
+            rv_selecionado = st.selectbox("Registro de Viagem (RV):", options=opcoes_rv, index=idx_padrao)
         
         linha_viagem = df_base[df_base["rv"] == rv_selecionado]
 
@@ -1052,16 +992,14 @@ def main():
             dados_v = linha_viagem.iloc[0]
             with c_info_rv:
                 st.markdown(f"""
-                    <div style="background:#F1F5F9; border:1px solid #CBD5E1; padding:10px 14px; border-radius:8px; font-size:0.85rem;">
-                        <b>Veículo:</b> {dados_v['placa']} ({dados_v['veiculo']}) | <b>Status Atual:</b> <code>{dados_v['status']}</code><br>
-                        <b>Condutor Atual:</b> {dados_v['condutor']} | <b>Saída:</b> {dados_v['data_inicial']} às {dados_v['horario_inicial']}
+                    <div style="background:#F1F5F9; border:1px solid #CBD5E1; padding:8px 12px; border-radius:6px; font-size:0.83rem;">
+                        <b>Veículo:</b> {dados_v['placa']} ({dados_v['veiculo']}) | <b>Status:</b> <code>{dados_v['status']}</code><br>
+                        <b>Condutor:</b> {dados_v['condutor']} | <b>Saída:</b> {dados_v['data_inicial']} às {dados_v['horario_inicial']}
                     </div>
                 """, unsafe_allow_html=True)
 
-            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
-
             with st.form("form_editar_viagem"):
-                st.markdown("##### 📝 Dados Cadastrais da Viagem")
+                st.markdown("##### 📝 Dados da Viagem")
                 e_col1, e_col2, e_col3 = st.columns(3)
                 
                 with e_col1:
@@ -1074,10 +1012,10 @@ def main():
                     novo_destino = st.text_input("Destino Informado:", value=str(dados_v["destino"]))
 
                 with e_col3:
-                    novo_km_inicial = st.number_input("Km Inicial (Saída):", min_value=0.0, value=float(dados_v["km_inicial_num"]) if pd.notna(dados_v["km_inicial_num"]) else 0.0, step=1.0)
+                    novo_km_inicial = st.number_input("Km Inicial:", min_value=0.0, value=float(dados_v["km_inicial_num"]) if pd.notna(dados_v["km_inicial_num"]) else 0.0, step=1.0)
 
                 st.markdown("---")
-                st.markdown("##### 🏁 Fechamento / Retorno do Veículo")
+                st.markdown("##### 🏁 Retorno / Fechamento")
                 fechar_agora = st.checkbox("Encerrar e fechar esta viagem agora?", value=(dados_v["status"] == "Concluída"))
 
                 f_col1, f_col2, f_col3 = st.columns(3)
@@ -1087,17 +1025,17 @@ def main():
                 
                 with f_col2:
                     hora_fim_default = dados_v["horario_final"] if dados_v["horario_final"] else obter_agora_brasil().strftime("%H:%M")
-                    novo_hora_fim = st.text_input("Horário de Retorno (HH:MM):", value=hora_fim_default)
+                    novo_hora_fim = st.text_input("Horário Retorno (HH:MM):", value=hora_fim_default)
 
                 with f_col3:
                     km_fim_val = float(dados_v["km_final_num"]) if pd.notna(dados_v["km_final_num"]) else float(novo_km_inicial)
-                    novo_km_final = st.number_input("Km Final (Chegada):", min_value=0.0, value=km_fim_val, step=1.0)
+                    novo_km_final = st.number_input("Km Final:", min_value=0.0, value=km_fim_val, step=1.0)
 
-                btn_salvar_edicao = st.form_submit_button("💾 Salvar Alterações na Viagem")
+                btn_salvar_edicao = st.form_submit_button("💾 Salvar Alterações")
 
                 if btn_salvar_edicao:
                     if fechar_agora and novo_km_final < novo_km_inicial:
-                        st.error("❌ O Km Final de retorno não pode ser menor que o Km Inicial de saída.")
+                        st.error("❌ O Km Final de retorno não pode ser menor que o Km Inicial.")
                     else:
                         dict_atualizacao = {
                             "condutor": novo_condutor,
@@ -1126,15 +1064,12 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: CADASTRO E GESTÃO DE USUÁRIOS
+    # PÁGINA 4: USUÁRIOS
     # =========================================================================
-    elif st.session_state["pagina_selecionada"] == "👥 Usuários":
-        renderizar_cabecalho_com_logo("Cadastro e Gestão de Usuários e Condutores")
-
+    elif st.session_state["pagina_selecionada"] == opcoes_menu[3]:
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
 
         with tab_lista:
-            st.markdown("##### 👥 Usuários e Condutores Ativos")
             st.dataframe(
                 df_usuarios[["nome", "usuario"]],
                 use_container_width=True,
@@ -1144,20 +1079,17 @@ def main():
                     "usuario": st.column_config.TextColumn("Login de Acesso", width="medium"),
                 }
             )
-            st.caption(f"Total de {len(df_usuarios)} usuário(s) carregados da base.")
+            st.caption(f"Total: {len(df_usuarios)} usuário(s) ativos.")
 
         with tab_novo:
-            st.markdown("##### ➕ Formulário de Cadastro")
-            st.write("Cadastre um novo condutor/gestor utilizando como base a tabela de acessos.")
-
             with st.form("form_cadastrar_usuario"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
-                    novo_nome = st.text_input("Nome Completo do Condutor/Gestor:", placeholder="Ex: Roberto Silva")
-                    novo_login = st.text_input("Usuário / Login:", placeholder="Ex: roberto.silva").strip().lower()
+                    novo_nome = st.text_input("Nome Completo:", placeholder="Ex: Roberto Silva")
+                    novo_login = st.text_input("Login:", placeholder="Ex: roberto.silva").strip().lower()
                 
                 with u_col2:
-                    nova_senha = st.text_input("Senha Inicial:", type="password", placeholder="Digite uma senha")
+                    nova_senha = st.text_input("Senha Inicial:", type="password", placeholder="Digite a senha")
                     confirma_senha = st.text_input("Confirme a Senha:", type="password", placeholder="Repita a senha")
 
                 btn_cadastrar = st.form_submit_button("Cadastrar Usuário")
@@ -1178,7 +1110,7 @@ def main():
                         if "novos_usuarios_sessao" not in st.session_state:
                             st.session_state["novos_usuarios_sessao"] = []
                         st.session_state["novos_usuarios_sessao"].append(novo_reg)
-                        st.success(f"🎉 Usuário **{novo_nome}** (`{novo_login}`) cadastrado com sucesso!")
+                        st.success(f"🎉 Usuário **{novo_nome}** (`{novo_login}`) cadastrado!")
                         st.rerun()
 
 if __name__ == "__main__":
