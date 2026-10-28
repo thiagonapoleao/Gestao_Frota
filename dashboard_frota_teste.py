@@ -154,7 +154,7 @@ st.markdown("""
             color: #FFFFFF !important;
             -webkit-text-fill-color: #FFFFFF !important;
             border: 1px solid #15803D !important;
-            box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2) !important;
+            box-shadow: 0 1px 2px rgba(220, 38, 38, 0.2) !important;
             font-weight: 600 !important;
         }
 
@@ -294,7 +294,7 @@ def formatar_nome_padrao(nome: str) -> str:
     return " ".join(resultado)
 
 def gerar_usuario_padrao(nome_completo: str) -> str:
-    """Gera o login automático: primeira letra do nome + sobrenome em minúsculas e sem acento."""
+    """Gera o login automático: primeira letra do nome + último sobrenome em minúsculas e sem acento."""
     texto_sem_acento = unicodedata.normalize('NFKD', str(nome_completo)).encode('ASCII', 'ignore').decode('ASCII')
     partes = re.sub(r'[^a-zA-Z\s]', '', texto_sem_acento).strip().split()
     if not partes:
@@ -1127,7 +1127,7 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: USUÁRIOS (COM PADRONIZAÇÃO E GRAVAÇÃO DEFINITIVA)
+    # PÁGINA 4: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN E GRAVAÇÃO DEFINITIVA)
     # =========================================================================
     elif st.session_state["pagina_selecionada"] == opcoes_menu[3]:
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
@@ -1149,30 +1149,27 @@ def main():
         with tab_novo:
             locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
             
-            # Campo para digitação prévia do nome com atualização dinâmica do login padrão
+            # Campo para digitação do nome que gera dinamicamente o login do usuário
             nome_digitado = st.text_input(
-                "Digite o Nome Completo:",
-                key="input_nome_temp",
+                "Nome Completo:",
+                key="input_nome_cadastro",
                 placeholder="Ex: Roberto da Silva"
             )
 
-            # Padronizações em tempo real
-            nome_formatado_padrao = formatar_nome_padrao(nome_digitado)
-            usuario_sugerido = gerar_usuario_padrao(nome_digitado)
+            # O sistema gera automaticamente o login (primeira letra do nome + sobrenome)
+            usuario_gerado = gerar_usuario_padrao(nome_digitado)
+            nome_formatado = formatar_nome_padrao(nome_digitado)
 
             with st.form("form_cadastrar_usuario"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
-                    novo_nome = st.text_input(
-                        "Nome Completo (Primeiras letras maiúsculas):",
-                        value=nome_formatado_padrao,
-                        placeholder="Ex: Roberto da Silva"
+                    # Exibição do usuário gerado pelo sistema (desabilitado para garantir o padrão)
+                    st.text_input(
+                        "Usuário:",
+                        value=usuario_gerado,
+                        disabled=True,
+                        help="Gerado automaticamente pelo sistema a partir do nome informado."
                     )
-                    novo_login = st.text_input(
-                        "Usuário (Todas as letras minúsculas):",
-                        value=usuario_sugerido,
-                        placeholder="Ex: rsilva"
-                    ).strip().lower()
                     
                     tipo_acesso_modo = st.radio(
                         "Tipo de Acesso:",
@@ -1187,14 +1184,14 @@ def main():
 
                 with u_col2:
                     nova_senha = st.text_input(
-                        "Senha Inicial (Apenas números):",
+                        "Senha Inicial:",
                         type="password",
-                        placeholder="Ex: 123456"
+                        placeholder="Digite a senha (apenas números)"
                     ).strip()
                     confirma_senha = st.text_input(
-                        "Confirme a Senha (Apenas números):",
+                        "Confirme a Senha:",
                         type="password",
-                        placeholder="Repita os números da senha"
+                        placeholder="Repita a senha (apenas números)"
                     ).strip()
                     
                     st.markdown("<b>Veículos liberados para este perfil:</b>", unsafe_allow_html=True)
@@ -1211,23 +1208,23 @@ def main():
                 btn_cadastrar = st.form_submit_button("💾 Cadastrar e Salvar Usuário")
 
                 if btn_cadastrar:
-                    # Aplica as padronizações estritas
-                    nome_final = formatar_nome_padrao(novo_nome)
-                    usuario_final = novo_login.strip().lower()
-
-                    if not nome_final or not usuario_final or not nova_senha:
-                        st.error("Preencha todos os campos obrigatórios.")
+                    if not nome_formatado:
+                        st.error("Informe o Nome Completo antes de cadastrar.")
+                    elif not usuario_gerado:
+                        st.error("Não foi possível gerar o usuário a partir do nome informado.")
+                    elif not nova_senha:
+                        st.error("Preencha a senha.")
                     elif not nova_senha.isdigit():
                         st.error("❌ A senha deve conter apenas números.")
                     elif nova_senha != confirma_senha:
                         st.error("❌ As senhas digitadas não coincidem.")
-                    elif usuario_final in df_usuarios["usuario"].values:
-                        st.error("❌ Este nome de usuário já está cadastrado.")
+                    elif usuario_gerado in df_usuarios["usuario"].values:
+                        st.error(f"❌ O usuário gerado `{usuario_gerado}` já está cadastrado.")
                     else:
                         novo_reg = {
-                            "usuario": usuario_final,
+                            "usuario": usuario_gerado,
                             "senha": nova_senha,
-                            "nome": nome_final,
+                            "nome": nome_formatado,
                             "acesso": cidade_acesso
                         }
 
@@ -1236,7 +1233,7 @@ def main():
 
                         if gravou_nuvem:
                             st.cache_data.clear()
-                            st.success(f"✔ Usuário **{nome_final}** (`{usuario_final}`) cadastrado e salvo com sucesso na folha de cálculo!")
+                            st.success(f"✔ Usuário **{nome_formatado}** (`{usuario_gerado}`) cadastrado e salvo com sucesso na folha de cálculo!")
                             st.rerun()
                         else:
                             if "novos_usuarios_sessao" not in st.session_state:
