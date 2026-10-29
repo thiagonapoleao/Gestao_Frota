@@ -44,14 +44,18 @@ st.markdown("""
             height: 2.0rem !important;
         }
 
-        /* 2. BASE DO CONTAINER PRINCIPAL */
+        /* 2. BASE DO CONTAINER PRINCIPAL COM MARGENS EM AMBOS OS LADOS */
         .block-container,
-        div[data-testid="stAppViewContainer"] > .main > .block-container {
-            padding-top: 0.8rem !important;
-            padding-bottom: 2.5rem !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-            max-width: 100% !important;
+        div[data-testid="stAppViewContainer"] > .main > .block-container,
+        div[data-testid="stAppViewBlockContainer"] {
+            padding-top: 1.2rem !important;
+            padding-bottom: 3rem !important;
+            padding-left: 2.5rem !important;
+            padding-right: 2.5rem !important;
+            max-width: 1320px !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            width: 100% !important;
         }
 
         :root, html, body {
@@ -160,7 +164,7 @@ st.markdown("""
             transition: all 0.2s ease-in-out !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: center !important;
+            justify-content: flex-start !important;
             text-align: left !important;
             margin-bottom: 6px !important;
         }
@@ -1197,7 +1201,6 @@ def main():
         with tab_novo:
             locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
             
-            # Controle de estado para reset e limpeza completa pós-cadastro
             if "reset_cadastro_key" not in st.session_state:
                 st.session_state["reset_cadastro_key"] = 0
 
@@ -1283,7 +1286,6 @@ def main():
 
                         if gravou_nuvem:
                             st.cache_data.clear()
-                            # Incrementa a chave para limpar todos os inputs do formulário
                             st.session_state["reset_cadastro_key"] += 1
                             st.success(f"✔ Usuário **{nome_formatado}** (`{usuario_gerado}`) cadastrado e salvo com sucesso na folha de cálculo!")
                             st.rerun()
@@ -1291,7 +1293,6 @@ def main():
                             if "novos_usuarios_sessao" not in st.session_state:
                                 st.session_state["novos_usuarios_sessao"] = []
                             st.session_state["novos_usuarios_sessao"].append(novo_reg)
-                            # Incrementa a chave para limpar todos os inputs do formulário
                             st.session_state["reset_cadastro_key"] += 1
                             st.warning(
                                 "✔ Usuário adicionado temporariamente à sessão. Verifique a implantação do Apps Script para gravação em nuvem."
