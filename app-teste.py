@@ -31,7 +31,6 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-        /* 1. ELIMINA DIVS VAZIAS E ELEMENTOS FANTASMAS */
         div[data-testid="stMarkdownContainer"]:empty,
         div[data-testid="stMarkdownContainer"]:has(> style:only-child) {
             display: none !important;
@@ -48,7 +47,6 @@ st.markdown("""
             padding: 0px !important;
         }
 
-        /* 2. OCULTA A SIDEBAR NATIVA E O HEADER EXTERNO */
         section[data-testid="stSidebar"],
         [data-testid="stSidebar"],
         header[data-testid="stHeader"],
@@ -70,7 +68,6 @@ st.markdown("""
             visibility: hidden !important;
         }
 
-        /* 3. DEGRADÊ RADIAL NO BACKGROUND GERAL */
         :root, html, body, .stApp, [data-testid="stAppViewContainer"] {
             background-color: #110426 !important;
             background-image: 
@@ -87,7 +84,6 @@ st.markdown("""
             background-size: cover !important;
         }
 
-        /* 4. CONTAINER BRANCO UNIFICADO ELEVADO */
         .block-container,
         div[data-testid="stAppViewContainer"] > .main > .block-container,
         div[data-testid="stAppViewBlockContainer"] {
@@ -104,7 +100,6 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU EXPANSÍVEL */
         div[data-testid="stExpander"] {
             border: 1px solid rgba(147, 51, 234, 0.4) !important;
             border-radius: 12px !important;
@@ -169,14 +164,12 @@ st.markdown("""
             border-top: 1px solid #E2E8F0 !important;
         }
 
-        /* 6. LOGOTIPO */
         .logo-wrapper {
             margin-top: 0px !important;
             padding-top: 0px !important;
             margin-bottom: 4px !important;
         }
 
-        /* Tipografia Base */
         h1, h2, h3, h4, h5, h6, p, span, label {
             color: #0F172A !important;
         }
@@ -252,7 +245,6 @@ st.markdown("""
             color: #1E3A8A !important;
         }
 
-        /* Inputs */
         div[data-baseweb="input"],
         div[data-baseweb="base-input"],
         div[data-baseweb="select"],
@@ -287,7 +279,6 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* 7. BOTÕES COM DEGRADÊ */
         div[data-testid="stFormSubmitButton"] > button,
         div.stButton > button[kind="primary"] {
             background-color: #110426 !important;
@@ -675,7 +666,6 @@ def main():
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            # Aberta = Sem Data Final ou Sem Km Final
             viagem_aberta = eh_vazio_ou_nan(data_fim) or eh_vazio_ou_nan(km_fim)
 
             if viagem_aberta and rv_row:
@@ -781,11 +771,11 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            # Campo inicializado vazio (value=None) para exibir o placeholder
+            # Campo inicializado completamente vazio com o texto solicitado
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
-                placeholder=f"Digite o Km Final (superior a {km_inicial_val})...", 
+                placeholder="Digite o KM Final", 
                 min_value=0.0, 
                 step=1.0, 
                 format="%.0f", 
@@ -832,7 +822,7 @@ def main():
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
-            with st.spinner(f"Gravando encerramento ({km_percorrido} km rodados) na planilha..."):
+            with st.spinner(f"Gravando encerramento ({km_percorrido} km rodados) na coluna K da planilha..."):
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
