@@ -723,36 +723,6 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-        st.markdown("---")
-        with st.expander("➕ Cadastrar Novo Condutor", expanded=False):
-            with st.form("form_novo_usuario"):
-                novo_login = st.text_input("Usuário (Login):", placeholder="ex: joao.silva").strip().lower()
-                nova_senha = st.text_input("Senha:", type="password", placeholder="Digite uma senha").strip()
-                novo_nome = st.text_input("Nome Completo:", placeholder="ex: João da Silva").strip()
-                novo_acesso = st.text_input("Base / Local de Acesso:", value=acesso_local if acesso_local != "Geral" else "Geral").strip()
-                btn_cadastrar_user = st.form_submit_button("Salvar Novo Condutor", use_container_width=True)
-
-            if btn_cadastrar_user:
-                if not novo_login or not nova_senha or not novo_nome:
-                    st.error("Preencha usuário, senha e nome completo.")
-                else:
-                    payload_user = {
-                        "acao": "cadastrar_usuario",
-                        "usuario": novo_login,
-                        "senha": nova_senha,
-                        "nome": novo_nome,
-                        "acesso": novo_acesso
-                    }
-                    with st.spinner("Salvando condutor..."):
-                        ok_user, msg_user = enviar_requisicao_apps_script(payload_user)
-                    if ok_user:
-                        st.success(f"✅ Usuário {novo_nome} cadastrado!")
-                        st.cache_data.clear()
-                        time.sleep(1.5)
-                        st.rerun()
-                    else:
-                        st.error(f"❌ {msg_user}")
-
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
