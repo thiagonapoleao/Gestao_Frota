@@ -350,10 +350,9 @@ def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
     st.markdown('<div class="logo-wrapper">', unsafe_allow_html=True)
     if caminho_logo:
         try:
-            logo_img = Image.open(caminho_logo)
             col_l1, col_logo, col_l2 = st.columns([1, 1.4, 1])
             with col_logo:
-                st.image(logo_img, use_container_width=True)
+                st.image(Image.open(caminho_logo), use_container_width=True)
         except Exception:
             st.markdown('<div class="corporate-title" style="text-align: center;">🚗 Controle de Frotas</div>', unsafe_allow_html=True)
     else:
@@ -383,12 +382,32 @@ def eh_vazio_ou_nan(val):
     return s in ["", "nan", "none", "null", "-", "--"]
 
 def extrair_inteiro_km(valor):
-    """Higieniza qualquer formato (ex: '1.250', '1250,0', 1250) para int puro."""
+    """Higieniza qualquer formato para int puro."""
     if valor is None:
         return 0
     s = str(valor).split(",")[0].split(".")[0].strip()
     s = re.sub(r'[^0-9]', '', s)
     return int(s) if s else 0
+
+def calcular_duracao(data_ini_str, hora_ini_str, data_fim_obj, hora_fim_obj):
+    """Calcula a duração total e retorna no formato HH:MM:SS."""
+    try:
+        dt_ini = datetime.strptime(f"{data_ini_str.strip()} {hora_ini_str.strip()}", "%d/%m/%Y %H:%M:%S")
+    except Exception:
+        try:
+            dt_ini = datetime.strptime(f"{data_ini_str.strip()} {hora_ini_str.strip()}", "%d/%m/%Y %H:%M")
+        except Exception:
+            return ""
+
+    dt_fim = datetime.combine(data_fim_obj, hora_fim_obj)
+    if dt_fim < dt_ini:
+        return "00:00:00"
+
+    total_segundos = int((dt_fim - dt_ini).total_seconds())
+    horas = total_segundos // 3600
+    minutos = (total_segundos % 3600) // 60
+    segundos = total_segundos % 60
+    return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
 
 @st.cache_data(ttl=30)
 def carregar_usuarios():
@@ -765,7 +784,6 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            # Campo inicializado completamente vazio
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -794,6 +812,12 @@ def main():
                 return
 
             km_percorrido = int(km_final_int - km_inicial_val)
+            tempo_uso_calculado = calcular_duracao(
+                dados_ativos.get("data_inicial", ""),
+                dados_ativos.get("horario_inicial", ""),
+                data_fim,
+                hora_fim
+            )
 
             chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_final_int}"
             if st.session_state.get("ultima_transacao") == chave_transacao_final:
@@ -812,6 +836,7 @@ def main():
                 "km_inicial": int(km_inicial_val),
                 "km_final": int(km_final_int),
                 "km_percorrido": int(km_percorrido),
+                "tempo_uso": tempo_uso_calculado,
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
