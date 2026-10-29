@@ -416,11 +416,25 @@ def limpar_placa(placa_str):
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str or '')).upper()
 
 def eh_vazio_ou_nan(val):
-    """Auxiliar robusto para checar se célula da planilha está vazia."""
+    """Verifica se célula da planilha está vazia."""
     if val is None:
         return True
     s = str(val).strip().lower()
-    return s in ["", "nan", "none", "null", "-", "--", "0.0", "0"] if s.replace('.', '', 1).isdigit() and float(s) == 0 else s in ["", "nan", "none", "null", "-", "--"]
+    return s in ["", "nan", "none", "null", "-", "--"]
+
+def limpar_numero_km(valor):
+    """Higieniza qualquer formato de KM para int confiável."""
+    if valor is None:
+        return 0
+    s = str(valor).strip()
+    if not s or s.lower() in ["nan", "none", "null"]:
+        return 0
+    s = s.replace(".", "").replace(",", ".")
+    try:
+        return int(float(s))
+    except Exception:
+        apenas_digitos = re.sub(r'[^0-9]', '', s)
+        return int(apenas_digitos) if apenas_digitos else 0
 
 @st.cache_data(ttl=30)
 def carregar_usuarios():
@@ -508,7 +522,7 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    """Carregamento imediato sem cache da aba Controle de Uso."""
+    """Carregamento em tempo real sem cache da aba Controle de Uso."""
     timestamp_atual = int(time.time())
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}",
@@ -575,14 +589,11 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
-    """Envia payload com tratamento estrito de resposta JSON e redirecionamentos."""
+    """Envia requisições ao Google Apps Script e valida respostas estruturadas."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
-        headers = {
-            "Content-Type": "text/plain;charset=utf-8"
-        }
+        headers = {"Content-Type": "text/plain;charset=utf-8"}
         
-        # Follow redirects explícito com session
         with requests.Session() as session:
             resposta = session.post(
                 WEBHOOK_URL,
@@ -602,19 +613,18 @@ def enviar_requisicao_apps_script(payload):
                     return True, msg
                 else:
                     msg_erro = ret.get("mensagem") or ret.get("message") or ret.get("error") or str(ret)
-                    return False, f"Apps Script rejeitou: {msg_erro}"
+                    return False, f"Planilha recusou: {msg_erro}"
             except Exception:
                 texto = resposta.text.strip()
-                # Se não veio JSON válido, o Google retornou página HTML (provável erro interno de script)
                 if "<html" in texto.lower() or "google" in texto.lower():
-                    return False, "O Apps Script retornou erro HTML. Verifique permissões de 'Quem pode acessar' (Qualquer Pessoa) e os logs de execução do Script."
-                return False, f"Resposta não-JSON do servidor: {texto[:200]}"
+                    return False, "O Apps Script retornou página HTML. Certifique-se de implantar como 'Qualquer pessoa'."
+                return False, f"Resposta não-JSON da planilha: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, clique em 'Implantar' > 'Gerenciar Implantações' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa' (Inclusive anônimos)."
+            return False, "Erro 403: No Apps Script, mude 'Quem tem acesso' para 'Qualquer pessoa'."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
     except requests.exceptions.Timeout:
-        return False, "Tempo limite esgotado ao contatar o Google Apps Script (Timeout de 40s)."
+        return False, "Tempo limite excedido ao contatar o Google Apps Script (40s)."
     except Exception as e:
         return False, f"Falha de conexão: {str(e)}"
 
@@ -702,7 +712,7 @@ def main():
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            # Critério rigoroso: Se Data Final ou Km Final não estão preenchidos, a viagem está ABERTA
+            # Aberta = Sem Data Final ou Sem Km Final
             viagem_aberta = eh_vazio_ou_nan(data_fim) or eh_vazio_ou_nan(km_fim)
 
             if viagem_aberta and rv_row:
@@ -728,7 +738,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO CONDUTOR
+    # MENU DO CONDUTOR COM RECURSO DE CADASTRO
     # ---------------------------------------------------------------------------------
     with st.expander("Menu do Condutor", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
@@ -746,6 +756,37 @@ def main():
                 st.session_state.clear()
                 st.query_params.clear()
                 st.rerun()
+
+        # Cadastro de Novo Usuário (Acesso Administrativo ou Geral)
+        st.markdown("---")
+        with st.expander("➕ Cadastrar Novo Condutor", expanded=False):
+            with st.form("form_novo_usuario"):
+                novo_login = st.text_input("Usuário (Login):", placeholder="ex: joao.silva").strip().lower()
+                nova_senha = st.text_input("Senha:", type="password", placeholder="Digite uma senha").strip()
+                novo_nome = st.text_input("Nome Completo:", placeholder="ex: João da Silva").strip()
+                novo_acesso = st.text_input("Base / Local de Acesso:", value=acesso_local if acesso_local != "Geral" else "Geral").strip()
+                btn_cadastrar_user = st.form_submit_button("Salvar Novo Condutor", use_container_width=True)
+
+            if btn_cadastrar_user:
+                if not novo_login or not nova_senha or not novo_nome:
+                    st.error("Preencha usuário, senha e nome completo.")
+                else:
+                    payload_user = {
+                        "acao": "cadastrar_usuario",
+                        "usuario": novo_login,
+                        "senha": nova_senha,
+                        "nome": novo_nome,
+                        "acesso": novo_acesso
+                    }
+                    with st.spinner("Salvando condutor na planilha..."):
+                        ok_user, msg_user = enviar_requisicao_apps_script(payload_user)
+                    if ok_user:
+                        st.success(f"✅ Usuário {novo_nome} cadastrado!")
+                        st.cache_data.clear()
+                        time.sleep(1.5)
+                        st.rerun()
+                    else:
+                        st.error(f"❌ {msg_user}")
 
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
@@ -777,16 +818,13 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            try:
-                km_inicial_val = float(str(dados_ativos.get("km_inicial") or 0).replace(",", "."))
-            except Exception:
-                km_inicial_val = 0.0
+            km_inicial_val = limpar_numero_km(dados_ativos.get("km_inicial"))
 
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
-                placeholder="Digite o Km Final...", 
-                min_value=km_inicial_val, 
+                placeholder=f"Mínimo: {km_inicial_val} km", 
+                min_value=float(km_inicial_val), 
                 step=1.0, 
                 format="%.0f", 
                 key="km_fim_input"
@@ -803,13 +841,16 @@ def main():
             if km_fim is None:
                 st.error("⚠️ Por favor, preencha o Km Final.")
                 return
-            if km_fim < km_inicial_val:
-                st.error("⚠️ O Km Final não pode ser menor que o Km Inicial.")
+            
+            km_final_int = int(km_fim)
+            if km_final_int < km_inicial_val:
+                st.error(f"⚠️ O Km Final ({km_final_int}) não pode ser menor que o Km Inicial ({km_inicial_val}).")
                 return
 
-            km_percorrido = int(km_fim - km_inicial_val)
+            # Cálculo de KM percorrido
+            km_percorrido = int(km_final_int - km_inicial_val)
 
-            chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_fim}"
+            chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_final_int}"
             if st.session_state.get("ultima_transacao") == chave_transacao_final:
                 st.warning("⚠️ Esta finalização já está sendo processada. Aguarde...")
                 return
@@ -823,7 +864,8 @@ def main():
                 "condutor": str(dados_ativos.get("condutor")).strip(),
                 "data_final": data_fim.strftime("%d/%m/%Y"),
                 "horario_final": hora_fim.strftime("%H:%M:%S"),
-                "km_final": int(km_fim),
+                "km_inicial": km_inicial_val,
+                "km_final": km_final_int,
                 "km_percorrido": km_percorrido,
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
@@ -832,7 +874,7 @@ def main():
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada e salva na planilha!")
+                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada! Total percorrido: {km_percorrido} km.")
                 st.balloons()
                 st.cache_data.clear()
                 st.session_state["ultima_transacao"] = None
