@@ -220,7 +220,6 @@ st.markdown("""
             letter-spacing: -0.01em !important;
         }
 
-        /* Remove bordas duplicadas do st.form dentro do container branco */
         [data-testid="stForm"] {
             background-color: transparent !important;
             border: none !important;
@@ -293,10 +292,7 @@ st.markdown("""
             -webkit-text-fill-color: #94A3B8 !important;
         }
 
-        /* ------------------------------------------------------------- */
-        /* 7. BOTÕES COM DEGRADÊ DO FUNDO EXPANDIDOS DE FORA A FORA      */
-        /* (Aplica com especificidade total em 'Entrar no Sistema' e forms) */
-        /* ------------------------------------------------------------- */
+        /* 7. BOTÕES COM DEGRADÊ */
         div[data-testid="stFormSubmitButton"],
         div[data-testid="stFormSubmitButton"] > button,
         div.stButton > button[kind="primary"],
@@ -329,7 +325,6 @@ st.markdown("""
             margin-top: 14px !important;
         }
 
-        /* Garante que qualquer texto interno (p ou span) fique branco */
         div[data-testid="stFormSubmitButton"] > button p,
         div[data-testid="stFormSubmitButton"] > button span,
         form[data-testid="stForm"] button p,
@@ -362,9 +357,9 @@ st.markdown("""
 WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 
-GID_USUARIOS = "426012097"       # Aba Condutores / Logins
+GID_USUARIOS = "426012097"       # Aba Usuario
 GID_VEICULOS = "0"               # Aba Frota
-GID_LANCAMENTOS = "379222602"    # Aba Lançamentos de Viagens
+GID_LANCAMENTOS = "379222602"    # Aba Controle de Uso
 
 # -------------------------------------------------------------
 # 3. SUPORTE A LOGOTIPO CORPORATIVO E IMAGEM DA FROTA
@@ -410,20 +405,28 @@ def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
 # 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
 # -------------------------------------------------------------
 def normalizar_texto(texto):
+    if texto is None:
+        return ""
     if not isinstance(texto, str):
         texto = str(texto)
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto.strip().lower()
 
 def limpar_placa(placa_str):
-    """Remove hífens e caracteres especiais: 'GIZ-1259' -> 'GIZ1259'."""
-    return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
+    return re.sub(r'[^A-Za-z0-9]', '', str(placa_str or '')).upper()
 
-@st.cache_data(ttl=60)
+def eh_vazio_ou_nan(val):
+    """Auxiliar robusto para checar se célula da planilha está vazia."""
+    if val is None:
+        return True
+    s = str(val).strip().lower()
+    return s in ["", "nan", "none", "null", "-", "--", "0.0", "0"] if s.replace('.', '', 1).isdigit() and float(s) == 0 else s in ["", "nan", "none", "null", "-", "--"]
+
+@st.cache_data(ttl=30)
 def carregar_usuarios():
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_USUARIOS}&t={int(time.time())}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_USUARIOS}&t={int(time.time())}"
     ]
     for url in urls:
         try:
@@ -455,11 +458,11 @@ def carregar_usuarios():
             continue
     return pd.DataFrame([{"usuario": "admin", "senha": "123", "nome": "Condutor", "acesso_local": "Geral"}])
 
-@st.cache_data(ttl=30)
+@st.cache_data(ttl=20)
 def carregar_veiculos():
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_VEICULOS}&t={int(time.time())}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_VEICULOS}&t={int(time.time())}"
     ]
     for url in urls:
         try:
@@ -476,7 +479,7 @@ def carregar_veiculos():
                     c_placa = df_raw.columns[4] if len(df_raw.columns) >= 5 else df_raw.columns[0]
 
                 c_veiculo = None
-                for k in ["veiculo", "modelo", "carro", "descricao"]:
+                for k in ["descricao", "veiculo", "modelo", "carro"]:
                     if k in cols_norm:
                         c_veiculo = cols_norm[k]
                         break
@@ -505,9 +508,11 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
+    """Carregamento imediato sem cache da aba Controle de Uso."""
+    timestamp_atual = int(time.time())
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}"
     ]
     for url in urls:
         try:
@@ -526,23 +531,23 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
     condutor_norm_alvo = normalizar_texto(condutor)
     data_ini_alvo = str(data_ini).strip()
     km_ini_alvo = str(int(km_ini)).strip() if km_ini is not None else ""
-    rv_alvo = str(rv_codigo).strip().upper()
+    rv_alvo = str(rv_codigo).replace("-", "").strip().upper()
 
     for _, row in df_lancamentos.iterrows():
-        rv_row = str(row.iloc[12]).strip().upper() if pd.notna(row.iloc[12]) else ""
+        rv_row = str(row.iloc[12]).replace("-", "").strip().upper() if pd.notna(row.iloc[12]) else ""
         placa_row = limpar_placa(row.iloc[8]) if pd.notna(row.iloc[8]) else ""
         cond_row = normalizar_texto(row.iloc[6]) if pd.notna(row.iloc[6]) else ""
         data_row = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
         km_row = str(row.iloc[2]).split(".")[0].strip() if pd.notna(row.iloc[2]) else ""
 
         if rv_row and rv_row == rv_alvo:
-            return True, f"O Registro de Viagem {rv_alvo} já existe na planilha."
+            return True, f"O Registro de Viagem {rv_codigo} já existe na planilha."
 
         if (placa_row == placa_limpa_alvo and 
             cond_row == condutor_norm_alvo and 
             data_row == data_ini_alvo and 
             km_row == km_ini_alvo):
-            return True, f"Já existe uma viagem registrada para este condutor e veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
+            return True, f"Já existe uma viagem registrada para este veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
 
     return False, ""
 
@@ -570,39 +575,51 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
+    """Envia payload com tratamento estrito de resposta JSON e redirecionamentos."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
-            "Content-Type": "text/plain;charset=utf-8",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            "Content-Type": "text/plain;charset=utf-8"
         }
+        
+        # Follow redirects explícito com session
         with requests.Session() as session:
             resposta = session.post(
                 WEBHOOK_URL,
                 data=corpo.encode("utf-8"),
                 headers=headers,
-                timeout=35,
+                timeout=40,
                 allow_redirects=True
             )
+
         if resposta.status_code == 200:
             try:
                 ret = resposta.json()
-                if ret.get("status") == "success":
-                    return True, ret.get("message", "Operação realizada!")
-                return False, ret.get("message", "Erro retornado pelo script.")
+                status_resp = str(ret.get("status", "")).lower().strip()
+                
+                if status_resp in ["sucesso", "success", "ok"]:
+                    msg = ret.get("mensagem") or ret.get("message") or "Operação realizada com sucesso!"
+                    return True, msg
+                else:
+                    msg_erro = ret.get("mensagem") or ret.get("message") or ret.get("error") or str(ret)
+                    return False, f"Apps Script rejeitou: {msg_erro}"
             except Exception:
-                if "success" in resposta.text.lower() or "sucesso" in resposta.text.lower():
-                    return True, "Operação realizada com sucesso!"
-                return True, "Registro atualizado!"
+                texto = resposta.text.strip()
+                # Se não veio JSON válido, o Google retornou página HTML (provável erro interno de script)
+                if "<html" in texto.lower() or "google" in texto.lower():
+                    return False, "O Apps Script retornou erro HTML. Verifique permissões de 'Quem pode acessar' (Qualquer Pessoa) e os logs de execução do Script."
+                return False, f"Resposta não-JSON do servidor: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, configure 'Quem tem acesso' para 'Qualquer pessoa'."
+            return False, "Erro 403: No Apps Script, clique em 'Implantar' > 'Gerenciar Implantações' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa' (Inclusive anônimos)."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
+    except requests.exceptions.Timeout:
+        return False, "Tempo limite esgotado ao contatar o Google Apps Script (Timeout de 40s)."
     except Exception as e:
-        return False, f"Falha na comunicação: {str(e)}"
+        return False, f"Falha de conexão: {str(e)}"
 
 # -------------------------------------------------------------
-# 5. TELA DE LOGIN (COM BOTÃO EXPANDIDO EM DEGRADÊ)
+# 5. TELA DE LOGIN
 # -------------------------------------------------------------
 def tela_login(df_usuarios):
     renderizar_cabecalho("Portal de Acesso do Condutor")
@@ -679,13 +696,16 @@ def main():
 
     if not df_lanc.empty and len(df_lanc.columns) >= 13:
         for _, row in df_lanc.iterrows():
-            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
-            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
+            data_fim = row.iloc[3]
+            km_fim = row.iloc[5]
             cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
+            # Critério rigoroso: Se Data Final ou Km Final não estão preenchidos, a viagem está ABERTA
+            viagem_aberta = eh_vazio_ou_nan(data_fim) or eh_vazio_ou_nan(km_fim)
+
+            if viagem_aberta and rv_row:
                 info_aberta = {
                     "rv": rv_row,
                     "condutor": cond_row,
@@ -708,7 +728,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO CONDUTOR - BOTÃO CENTRALIZADO DE FORA A FORA NO DEGRADÊ DA PÁGINA
+    # MENU DO CONDUTOR
     # ---------------------------------------------------------------------------------
     with st.expander("Menu do Condutor", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
@@ -720,19 +740,19 @@ def main():
         with col_m2:
             if st.button("🔄 Atualizar Dados", use_container_width=True, key="btn_menu_refresh"):
                 st.cache_data.clear()
+                st.session_state["ultima_transacao"] = None
                 st.rerun()
             if st.button("🚪 Sair do Sistema", use_container_width=True, key="btn_menu_logout"):
                 st.session_state.clear()
                 st.query_params.clear()
                 st.rerun()
 
-    # Cabeçalho Principal (Logotipo colado imediatamente abaixo do menu)
     renderizar_cabecalho("Registro e Controle de Saída de Veículos")
     agora = obter_agora_brasil()
     ano_atual = agora.strftime("%Y")
 
     # =========================================================================
-    # CENÁRIO 1: VIAGEM ABERTA (START FINAL)
+    # CENÁRIO 1: VIAGEM ABERTA (FINALIZAR)
     # =========================================================================
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
@@ -757,7 +777,11 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
+            try:
+                km_inicial_val = float(str(dados_ativos.get("km_inicial") or 0).replace(",", "."))
+            except Exception:
+                km_inicial_val = 0.0
+
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -794,7 +818,9 @@ def main():
             payload_finalizar = {
                 "acao": "finalizar",
                 "gid_destino": GID_LANCAMENTOS,
-                "rv": dados_ativos.get("rv"),
+                "rv": str(dados_ativos.get("rv")).strip(),
+                "placa": str(dados_ativos.get("placa")).strip(),
+                "condutor": str(dados_ativos.get("condutor")).strip(),
                 "data_final": data_fim.strftime("%d/%m/%Y"),
                 "horario_final": hora_fim.strftime("%H:%M:%S"),
                 "km_final": int(km_fim),
@@ -802,13 +828,14 @@ def main():
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
-            with st.spinner("Atualizando e concluindo a viagem na planilha..."):
+            with st.spinner("Gravando encerramento na planilha..."):
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso na planilha!")
+                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada e salva na planilha!")
                 st.balloons()
                 st.cache_data.clear()
+                st.session_state["ultima_transacao"] = None
                 time.sleep(2)
                 st.rerun()
             else:
@@ -944,6 +971,7 @@ def main():
                 if sucesso:
                     st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
                     st.cache_data.clear()
+                    st.session_state["ultima_transacao"] = None
                     time.sleep(1.5)
                     st.rerun()
                 else:
