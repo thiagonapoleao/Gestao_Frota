@@ -16,7 +16,7 @@ import time
 from PIL import Image
 
 def obter_agora_brasil():
-    """Retorna datetime atual oficial de Brasília."""
+    """Retorna datetime oficial de Brasília."""
     return datetime.now(FUSO_BRASIL)
 
 # -------------------------------------------------------------
@@ -188,7 +188,6 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
-        /* Cabeçalho Corporativo */
         .corporate-header {
             background: transparent !important;
             padding: 0 0 12px 0 !important;
@@ -782,11 +781,11 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            # Campo inicializado SEM pré-preenchimento (value=None) para exibir o placeholder em branco
+            # Campo inicializado vazio (value=None) para exibir o placeholder
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
-                placeholder=f"Digite o Km Final (mínimo: {km_inicial_val})...", 
+                placeholder=f"Digite o Km Final (superior a {km_inicial_val})...", 
                 min_value=0.0, 
                 step=1.0, 
                 format="%.0f", 
@@ -801,7 +800,7 @@ def main():
             btn_start_final = st.form_submit_button("🏁 Concluir Viagem (Start Final)", use_container_width=True)
 
         if btn_start_final:
-            if km_fim is None:
+            if km_fim is None or km_fim == 0:
                 st.error("⚠️ Por favor, digite o Km Final.")
                 return
             
@@ -827,17 +826,17 @@ def main():
                 "condutor": str(dados_ativos.get("condutor")).strip(),
                 "data_final": data_fim.strftime("%d/%m/%Y"),
                 "horario_final": hora_fim.strftime("%H:%M:%S"),
-                "km_inicial": km_inicial_val,
-                "km_final": km_final_int,
-                "km_percorrido": km_percorrido,
+                "km_inicial": int(km_inicial_val),
+                "km_final": int(km_final_int),
+                "km_percorrido": int(km_percorrido),
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
-            with st.spinner("Gravando encerramento na planilha..."):
+            with st.spinner(f"Gravando encerramento ({km_percorrido} km rodados) na planilha..."):
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
-                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada! Total percorrido: {km_percorrido} km.")
+                st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso! Total percorrido: {km_percorrido} km.")
                 st.balloons()
                 st.cache_data.clear()
                 st.session_state["ultima_transacao"] = None
