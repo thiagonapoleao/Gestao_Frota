@@ -71,15 +71,9 @@ st.markdown("""
         :root, html, body, .stApp, [data-testid="stAppViewContainer"] {
             background-color: #110426 !important;
             background-image: 
-                radial-gradient(at 93.69543598317607% 5.616169708078966%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
-                radial-gradient(at 49.6250738166925% 50.14065564263524%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
-                radial-gradient(at 37.00403509139429% 89.3640844672993%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), 
-                radial-gradient(at 76.13084977631372% 73.97772700476057%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
-                radial-gradient(at 20.535772964012743% 97.27562379868434%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
-                radial-gradient(at 45.86269066661277% 99.26966956219938%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%), 
-                radial-gradient(at 33.24174772772377% 84.28822907756046%, hsla(267.88732394366195, 100%, 13.92156862745098%, 1) 0%, hsla(267.88732394366195, 100%, 13.92156862745098%, 0) 100%), 
-                radial-gradient(at 30.932790321943536% 31.05233181318352%, hsla(264.11764705882354, 100%, 20%, 1) 0%, hsla(264.11764705882354, 100%, 20%, 0) 100%), 
-                radial-gradient(at 87.19757331823584% 4.189116488339084%, hsla(240.81081081081078, 100%, 29.01960784313726%, 1) 0%, hsla(240.81081081081078, 100%, 29.01960784313726%, 0) 100%) !important;
+                radial-gradient(at 93.6% 5.6%, hsla(267.8, 100%, 14%, 1) 0%, hsla(267.8, 100%, 14%, 0) 100%), 
+                radial-gradient(at 49.6% 50.1%, hsla(264.1, 100%, 20%, 1) 0%, hsla(264.1, 100%, 20%, 0) 100%), 
+                radial-gradient(at 37.0% 89.3%, hsla(240.8, 100%, 29%, 1) 0%, hsla(240.8, 100%, 29%, 0) 100%) !important;
             background-attachment: fixed !important;
             background-size: cover !important;
         }
@@ -514,13 +508,13 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
         km_row = str(extrair_inteiro_km(row.iloc[2])) if pd.notna(row.iloc[2]) else ""
 
         if rv_row and rv_row == rv_alvo:
-            return True, f"O Registro de Viagem {rv_codigo} já existe na planilha."
+            return True, f"O Registro de Viagem {rv_codigo} já existe."
 
         if (placa_row == placa_limpa_alvo and 
             cond_row == condutor_norm_alvo and 
             data_row == data_ini_alvo and 
             km_row == km_ini_alvo):
-            return True, f"Já existe uma viagem registrada para este veículo com Data {data_ini_alvo} e Km {km_ini_alvo}."
+            return True, "Já existe uma viagem registrada com esta data e quilometragem."
 
     return False, ""
 
@@ -569,18 +563,18 @@ def enviar_requisicao_apps_script(payload):
                     return True, msg
                 else:
                     msg_erro = ret.get("mensagem") or ret.get("message") or ret.get("error") or str(ret)
-                    return False, f"Planilha recusou: {msg_erro}"
+                    return False, f"Não foi possível concluir: {msg_erro}"
             except Exception:
                 texto = resposta.text.strip()
                 if "<html" in texto.lower() or "google" in texto.lower():
-                    return False, "O Apps Script retornou página HTML. Certifique-se de implantar como 'Qualquer pessoa'."
-                return False, f"Resposta não-JSON da planilha: {texto[:200]}"
+                    return False, "Erro de autorização no serviço de dados."
+                return False, f"Resposta inesperada: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, mude 'Quem tem acesso' para 'Qualquer pessoa'."
+            return False, "Erro de permissão de acesso ao servidor."
         else:
-            return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
+            return False, f"Erro de comunicação ({resposta.status_code})"
     except requests.exceptions.Timeout:
-        return False, "Tempo limite excedido ao contatar o Google Apps Script (40s)."
+        return False, "Tempo de resposta esgotado. Tente novamente."
     except Exception as e:
         return False, f"Falha de conexão: {str(e)}"
 
@@ -608,7 +602,7 @@ def tela_login(df_usuarios):
         
         if btn_login:
             if df_usuarios.empty:
-                st.error("Não foi possível carregar os condutores da planilha.")
+                st.error("Não foi possível carregar os condutores.")
                 return
 
             usuario_valido = df_usuarios[
@@ -730,7 +724,7 @@ def main():
                         "nome": novo_nome,
                         "acesso": novo_acesso
                     }
-                    with st.spinner("Salvando condutor na planilha..."):
+                    with st.spinner("Salvando condutor..."):
                         ok_user, msg_user = enviar_requisicao_apps_script(payload_user)
                     if ok_user:
                         st.success(f"✅ Usuário {novo_nome} cadastrado!")
@@ -771,7 +765,7 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            # Campo inicializado completamente vazio com o texto solicitado
+            # Campo inicializado completamente vazio
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -799,7 +793,6 @@ def main():
                 st.error(f"⚠️ O Km Final ({km_final_int}) não pode ser menor que o Km Inicial ({km_inicial_val}).")
                 return
 
-            # Cálculo exato do KM rodado
             km_percorrido = int(km_final_int - km_inicial_val)
 
             chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_final_int}"
@@ -822,19 +815,18 @@ def main():
                 "destino": destino_atualizado.strip() if destino_atualizado.strip() else dados_ativos.get("destino")
             }
 
-            with st.spinner(f"Gravando encerramento ({km_percorrido} km rodados) na coluna K da planilha..."):
+            with st.spinner("Finalizando viagem..."):
                 sucesso, msg = enviar_requisicao_apps_script(payload_finalizar)
 
             if sucesso:
                 st.success(f"✅ Viagem {dados_ativos.get('rv')} finalizada com sucesso! Total percorrido: {km_percorrido} km.")
-                st.balloons()
                 st.cache_data.clear()
                 st.session_state["ultima_transacao"] = None
                 time.sleep(2)
                 st.rerun()
             else:
                 st.session_state["ultima_transacao"] = None
-                st.error(f"❌ Falha ao finalizar na planilha: {msg}")
+                st.error(f"❌ {msg}")
 
     # =========================================================================
     # CENÁRIO 2: INÍCIO DE NOVA VIAGEM
@@ -842,7 +834,7 @@ def main():
     else:
         df_veiculos_todos = carregar_veiculos()
         if df_veiculos_todos.empty:
-            st.error("Nenhum veículo disponível na base. Verifique a planilha.")
+            st.error("Nenhum veículo disponível na base.")
             return
 
         acesso_norm = normalizar_texto(acesso_local)
@@ -940,7 +932,6 @@ def main():
 
                 if duplicado:
                     st.error(f"🚫 **Lançamento Duplicado Impedido:** {motivo_duplicado}")
-                    st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
                 chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini_val}"
@@ -964,18 +955,18 @@ def main():
                     "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
                 }
 
-                with st.spinner(f"Gravando início da viagem ({codigo_rv_previsto}) na planilha..."):
+                with st.spinner("Registrando saída..."):
                     sucesso, msg = enviar_requisicao_apps_script(payload_iniciar)
 
                 if sucesso:
-                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada e registrada na planilha com sucesso!")
+                    st.success(f"✅ Viagem {codigo_rv_previsto} iniciada com sucesso!")
                     st.cache_data.clear()
                     st.session_state["ultima_transacao"] = None
                     time.sleep(1.5)
                     st.rerun()
                 else:
                     st.session_state["ultima_transacao"] = None
-                    st.error(f"❌ Falha ao iniciar viagem na planilha: {msg}")
+                    st.error(f"❌ {msg}")
 
 if __name__ == "__main__":
     main()
