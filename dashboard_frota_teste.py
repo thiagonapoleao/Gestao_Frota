@@ -314,7 +314,6 @@ GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 GID_FROTA = "1438914619"
 
-# URL do Apps Script Webhook para gravação direta na aba de Usuários
 WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
 # -------------------------------------------------------------
@@ -411,19 +410,25 @@ def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
     """Envia o novo usuário para persistência na planilha Google Sheets via Webhook."""
     if WEBHOOK_APPS_SCRIPT_URL:
         try:
+            payload = usuario_dict.copy()
+            payload["acao"] = "cadastrar_usuario"
+            
+            corpo = json.dumps(payload, ensure_ascii=False)
             r = requests.post(
                 WEBHOOK_APPS_SCRIPT_URL,
-                data=json.dumps(usuario_dict),
-                headers={"Content-Type": "application/json"},
+                data=corpo.encode("utf-8"),
+                headers={"Content-Type": "text/plain;charset=utf-8"},
                 allow_redirects=True,
-                timeout=12
+                timeout=18
             )
             if r.status_code == 200:
                 try:
                     res_json = r.json()
-                    return res_json.get("status") == "sucesso"
+                    status_r = str(res_json.get("status", "")).lower().strip()
+                    return status_r in ["sucesso", "success", "ok"]
                 except Exception:
-                    return True
+                    texto_resp = r.text.lower()
+                    return "sucesso" in texto_resp or "success" in texto_resp
             return False
         except Exception as e:
             st.error(f"Erro ao conectar com a planilha: {e}")
@@ -623,7 +628,7 @@ def main():
         st.session_state["pagina_selecionada_id"] = "dash"
 
     # =========================================================================
-    # SIDEBAR: MENU LATERAL (SEM LOGO, APENAS BRANDING TEXTUAL E NAVEGAÇÃO)
+    # SIDEBAR: MENU LATERAL
     # =========================================================================
     with st.sidebar:
         st.markdown("""
@@ -633,7 +638,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # Card de Perfil do Gestor Logado
         st.markdown(f"""
             <div class="user-card">
                 <p class="user-card-name">👤 {nome_gestor}</p>
@@ -644,7 +648,6 @@ def main():
 
         st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;'>Navegação</p>", unsafe_allow_html=True)
 
-        # Renderização dos botões de navegação padronizados
         for item in itens_menu:
             is_active = (st.session_state["pagina_selecionada_id"] == item["id"])
             prefix = "▶ " if is_active else ""
@@ -671,7 +674,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     # =========================================================================
-    # ÁREA PRINCIPAL: BANNER TOPO COM LOGOTIPO PROPORCIONAL E TÍTULO HARMONIZADO
+    # ÁREA PRINCIPAL: BANNER TOPO
     # =========================================================================
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
@@ -692,7 +695,6 @@ def main():
 
     titulo_pg, sub_pg = titulos_paginas.get(pagina_atual, ("Painel de Frotas", "Master Café Gestão"))
 
-    # CABEÇALHO PROPORCIONAL COM LOGO AUMENTADO E TEXTO DISCRETO
     col_banner_logo, col_banner_txt = st.columns([0.16, 0.84], gap="medium", vertical_alignment="center")
     caminho_logo = obter_caminho_logotipo()
 
@@ -1282,7 +1284,7 @@ def main():
                                 st.session_state["novos_usuarios_sessao"] = []
                             st.session_state["novos_usuarios_sessao"].append(novo_reg)
                             st.warning(
-                                f"✔ Usuário adicionado temporariamente à sessão. Verifique a implantação do Apps Script para gravação em nuvem."
+                                "✔ Usuário adicionado temporariamente à sessão. Verifique a implantação do Apps Script para gravação em nuvem."
                             )
                             st.rerun()
 
