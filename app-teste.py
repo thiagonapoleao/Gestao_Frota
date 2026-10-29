@@ -405,13 +405,22 @@ def renderizar_cabecalho(subtitulo="Portal de Acesso do Condutor"):
 # 4. FUNÇÕES DE SUPORTE E LEITURA DA PLANILHA
 # -------------------------------------------------------------
 def normalizar_texto(texto):
+    if texto is None:
+        return ""
     if not isinstance(texto, str):
         texto = str(texto)
     texto = unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     return texto.strip().lower()
 
 def limpar_placa(placa_str):
-    return re.sub(r'[^A-Za-z0-9]', '', str(placa_str)).upper()
+    return re.sub(r'[^A-Za-z0-9]', '', str(placa_str or '')).upper()
+
+def eh_vazio_ou_nan(val):
+    """Auxiliar robusto para checar se célula da planilha está vazia."""
+    if val is None:
+        return True
+    s = str(val).strip().lower()
+    return s in ["", "nan", "none", "null", "-", "--", "0.0", "0"] if s.replace('.', '', 1).isdigit() and float(s) == 0 else s in ["", "nan", "none", "null", "-", "--"]
 
 @st.cache_data(ttl=30)
 def carregar_usuarios():
@@ -499,7 +508,7 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    # Carregamento imediato sem cache da aba Controle de Uso
+    """Carregamento imediato sem cache da aba Controle de Uso."""
     timestamp_atual = int(time.time())
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}",
@@ -566,43 +575,48 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
+    """Envia payload com tratamento estrito de resposta JSON e redirecionamentos."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {
-            "Content-Type": "text/plain;charset=utf-8",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+            "Content-Type": "text/plain;charset=utf-8"
         }
+        
+        # Follow redirects explícito com session
         with requests.Session() as session:
             resposta = session.post(
                 WEBHOOK_URL,
                 data=corpo.encode("utf-8"),
                 headers=headers,
-                timeout=35,
+                timeout=40,
                 allow_redirects=True
             )
+
         if resposta.status_code == 200:
             try:
                 ret = resposta.json()
                 status_resp = str(ret.get("status", "")).lower().strip()
                 
-                # Validação rigorosa do status
                 if status_resp in ["sucesso", "success", "ok"]:
                     msg = ret.get("mensagem") or ret.get("message") or "Operação realizada com sucesso!"
                     return True, msg
-                
-                msg_erro = ret.get("mensagem") or ret.get("message") or ret.get("error") or str(ret)
-                return False, msg_erro
+                else:
+                    msg_erro = ret.get("mensagem") or ret.get("message") or ret.get("error") or str(ret)
+                    return False, f"Apps Script rejeitou: {msg_erro}"
             except Exception:
-                texto = resposta.text
-                if any(k in texto.lower() for k in ["sucesso", "success"]):
-                    return True, "Operação realizada com sucesso!"
-                return False, f"Resposta inesperada do Script: {texto[:200]}"
+                texto = resposta.text.strip()
+                # Se não veio JSON válido, o Google retornou página HTML (provável erro interno de script)
+                if "<html" in texto.lower() or "google" in texto.lower():
+                    return False, "O Apps Script retornou erro HTML. Verifique permissões de 'Quem pode acessar' (Qualquer Pessoa) e os logs de execução do Script."
+                return False, f"Resposta não-JSON do servidor: {texto[:200]}"
         elif resposta.status_code == 403:
-            return False, "Erro 403: No Apps Script, acesse 'Implantar' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa'."
+            return False, "Erro 403: No Apps Script, clique em 'Implantar' > 'Gerenciar Implantações' e garanta que 'Quem tem acesso' esteja como 'Qualquer pessoa' (Inclusive anônimos)."
         else:
             return False, f"Erro HTTP {resposta.status_code}: {resposta.text[:180]}"
+    except requests.exceptions.Timeout:
+        return False, "Tempo limite esgotado ao contatar o Google Apps Script (Timeout de 40s)."
     except Exception as e:
-        return False, f"Falha na conexão: {str(e)}"
+        return False, f"Falha de conexão: {str(e)}"
 
 # -------------------------------------------------------------
 # 5. TELA DE LOGIN
@@ -682,14 +696,16 @@ def main():
 
     if not df_lanc.empty and len(df_lanc.columns) >= 13:
         for _, row in df_lanc.iterrows():
-            data_fim = str(row.iloc[3]).strip() if pd.notna(row.iloc[3]) else ""
-            km_fim = str(row.iloc[5]).strip() if pd.notna(row.iloc[5]) else ""
+            data_fim = row.iloc[3]
+            km_fim = row.iloc[5]
             cond_row = str(row.iloc[6]).strip() if pd.notna(row.iloc[6]) else ""
             placa_row = str(row.iloc[8]).strip() if pd.notna(row.iloc[8]) else ""
             rv_row = str(row.iloc[12]).strip() if pd.notna(row.iloc[12]) else ""
 
-            # Aberta = Sem Data Final ou Km Final
-            if (not data_fim or data_fim.lower() == "nan") and (not km_fim or km_fim.lower() == "nan"):
+            # Critério rigoroso: Se Data Final ou Km Final não estão preenchidos, a viagem está ABERTA
+            viagem_aberta = eh_vazio_ou_nan(data_fim) or eh_vazio_ou_nan(km_fim)
+
+            if viagem_aberta and rv_row:
                 info_aberta = {
                     "rv": rv_row,
                     "condutor": cond_row,
@@ -761,7 +777,11 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = float(dados_ativos.get("km_inicial") or 0)
+            try:
+                km_inicial_val = float(str(dados_ativos.get("km_inicial") or 0).replace(",", "."))
+            except Exception:
+                km_inicial_val = 0.0
+
             km_fim = st.number_input(
                 "Km Final:", 
                 value=None, 
@@ -798,9 +818,9 @@ def main():
             payload_finalizar = {
                 "acao": "finalizar",
                 "gid_destino": GID_LANCAMENTOS,
-                "rv": dados_ativos.get("rv"),
-                "placa": dados_ativos.get("placa"),
-                "condutor": dados_ativos.get("condutor"),
+                "rv": str(dados_ativos.get("rv")).strip(),
+                "placa": str(dados_ativos.get("placa")).strip(),
+                "condutor": str(dados_ativos.get("condutor")).strip(),
                 "data_final": data_fim.strftime("%d/%m/%Y"),
                 "horario_final": hora_fim.strftime("%H:%M:%S"),
                 "km_final": int(km_fim),
