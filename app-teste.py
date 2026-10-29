@@ -104,7 +104,7 @@ st.markdown("""
             border: 1px solid rgba(255, 255, 255, 0.15) !important;
         }
 
-        /* 5. MENU EXPANSÍVEL: DE FORA A FORA E CENTRALIZADO NO DEGRADÊ */
+        /* 5. MENU EXPANSÍVEL */
         div[data-testid="stExpander"] {
             border: 1px solid rgba(147, 51, 234, 0.4) !important;
             border-radius: 12px !important;
@@ -169,7 +169,7 @@ st.markdown("""
             border-top: 1px solid #E2E8F0 !important;
         }
 
-        /* 6. LOGOTIPO COLADO APÓS O MENU */
+        /* 6. LOGOTIPO */
         .logo-wrapper {
             margin-top: 0px !important;
             padding-top: 0px !important;
@@ -188,7 +188,6 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
-        /* Cabeçalho Corporativo */
         .corporate-header {
             background: transparent !important;
             padding: 0 0 12px 0 !important;
@@ -287,17 +286,10 @@ st.markdown("""
             font-size: 0.94rem !important;
             font-weight: 500 !important;
         }
-        input::placeholder {
-            color: #94A3B8 !important;
-            -webkit-text-fill-color: #94A3B8 !important;
-        }
 
-        /* 7. BOTÕES COM DEGRADÊ */
-        div[data-testid="stFormSubmitButton"],
+        /* 7. BOTÕES */
         div[data-testid="stFormSubmitButton"] > button,
-        div.stButton > button[kind="primary"],
-        div[data-testid="stForm"] div.stButton > button,
-        form[data-testid="stForm"] button {
+        div.stButton > button[kind="primary"] {
             background-color: #110426 !important;
             background-image: 
                 radial-gradient(at 93% 5%, hsla(267.8, 100%, 18%, 1) 0%, transparent 100%),
@@ -309,44 +301,17 @@ st.markdown("""
             border: 1px solid rgba(147, 51, 234, 0.45) !important;
             border-radius: 12px !important;
             height: 50px !important;
-            min-height: 50px !important;
             font-size: 1rem !important;
             font-weight: 700 !important;
-            letter-spacing: 0.02em !important;
-            box-shadow: 0 4px 16px rgba(17, 4, 38, 0.35) !important;
+            width: 100% !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
-            width: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            text-align: center !important;
-            box-sizing: border-box !important;
-            margin-top: 14px !important;
-        }
-
-        div[data-testid="stFormSubmitButton"] > button p,
-        div[data-testid="stFormSubmitButton"] > button span,
-        form[data-testid="stForm"] button p,
-        form[data-testid="stForm"] button span {
-            color: #FFFFFF !important;
-            -webkit-text-fill-color: #FFFFFF !important;
-            font-weight: 700 !important;
-            font-size: 1rem !important;
         }
 
         div[data-testid="stFormSubmitButton"] > button:hover,
-        form[data-testid="stForm"] button:hover {
+        div.stButton > button[kind="primary"]:hover {
             filter: brightness(1.18) !important;
             transform: translateY(-1px) !important;
-            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5) !important;
-            border-color: rgba(168, 85, 247, 0.75) !important;
-        }
-
-        div[data-testid="stFormSubmitButton"] > button:active,
-        form[data-testid="stForm"] button:active {
-            transform: translateY(1px) !important;
-            filter: brightness(0.95) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -422,19 +387,13 @@ def eh_vazio_ou_nan(val):
     s = str(val).strip().lower()
     return s in ["", "nan", "none", "null", "-", "--"]
 
-def limpar_numero_km(valor):
-    """Higieniza qualquer formato de KM para int confiável."""
+def extrair_inteiro_km(valor):
+    """Higieniza qualquer formato de KM para int puro de forma segura."""
     if valor is None:
         return 0
-    s = str(valor).strip()
-    if not s or s.lower() in ["nan", "none", "null"]:
-        return 0
-    s = s.replace(".", "").replace(",", ".")
-    try:
-        return int(float(s))
-    except Exception:
-        apenas_digitos = re.sub(r'[^0-9]', '', s)
-        return int(apenas_digitos) if apenas_digitos else 0
+    s = str(valor).split(",")[0].split(".")[0].strip()
+    s = re.sub(r'[^0-9]', '', s)
+    return int(s) if s else 0
 
 @st.cache_data(ttl=30)
 def carregar_usuarios():
@@ -544,7 +503,7 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
     placa_limpa_alvo = limpar_placa(placa)
     condutor_norm_alvo = normalizar_texto(condutor)
     data_ini_alvo = str(data_ini).strip()
-    km_ini_alvo = str(int(km_ini)).strip() if km_ini is not None else ""
+    km_ini_alvo = str(extrair_inteiro_km(km_ini))
     rv_alvo = str(rv_codigo).replace("-", "").strip().upper()
 
     for _, row in df_lancamentos.iterrows():
@@ -552,7 +511,7 @@ def verificar_lancamento_duplicado(df_lancamentos, rv_codigo, placa, condutor, d
         placa_row = limpar_placa(row.iloc[8]) if pd.notna(row.iloc[8]) else ""
         cond_row = normalizar_texto(row.iloc[6]) if pd.notna(row.iloc[6]) else ""
         data_row = str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else ""
-        km_row = str(row.iloc[2]).split(".")[0].strip() if pd.notna(row.iloc[2]) else ""
+        km_row = str(extrair_inteiro_km(row.iloc[2])) if pd.notna(row.iloc[2]) else ""
 
         if rv_row and rv_row == rv_alvo:
             return True, f"O Registro de Viagem {rv_codigo} já existe na planilha."
@@ -723,7 +682,7 @@ def main():
                     "veiculo": str(row.iloc[9]).strip() if pd.notna(row.iloc[9]) else "",
                     "data_inicial": str(row.iloc[0]).strip() if pd.notna(row.iloc[0]) else "",
                     "horario_inicial": str(row.iloc[1]).strip() if pd.notna(row.iloc[1]) else "",
-                    "km_inicial": str(row.iloc[2]).strip() if pd.notna(row.iloc[2]) else "0",
+                    "km_inicial": str(extrair_inteiro_km(row.iloc[2])),
                     "destino": str(row.iloc[7]).strip() if pd.notna(row.iloc[7]) else ""
                 }
                 
@@ -757,7 +716,7 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-        # Cadastro de Novo Usuário (Acesso Administrativo ou Geral)
+        # Cadastro de Novo Usuário Isolado
         st.markdown("---")
         with st.expander("➕ Cadastrar Novo Condutor", expanded=False):
             with st.form("form_novo_usuario"):
@@ -818,11 +777,11 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = limpar_numero_km(dados_ativos.get("km_inicial"))
+            km_inicial_val = extrair_inteiro_km(dados_ativos.get("km_inicial"))
 
             km_fim = st.number_input(
                 "Km Final:", 
-                value=None, 
+                value=float(km_inicial_val), 
                 placeholder=f"Mínimo: {km_inicial_val} km", 
                 min_value=float(km_inicial_val), 
                 step=1.0, 
@@ -842,7 +801,7 @@ def main():
                 st.error("⚠️ Por favor, preencha o Km Final.")
                 return
             
-            km_final_int = int(km_fim)
+            km_final_int = extrair_inteiro_km(km_fim)
             if km_final_int < km_inicial_val:
                 st.error(f"⚠️ O Km Final ({km_final_int}) não pode ser menor que o Km Inicial ({km_inicial_val}).")
                 return
@@ -952,7 +911,7 @@ def main():
 
                 km_ini = st.number_input(
                     "Km Inicial:", 
-                    value=None, 
+                    value=0.0, 
                     placeholder="Digite o Km Inicial...", 
                     min_value=0.0, 
                     step=1.0, 
@@ -964,7 +923,8 @@ def main():
                 btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)", use_container_width=True)
 
             if btn_start_inicial:
-                if km_ini is None or km_ini <= 0:
+                km_ini_val = extrair_inteiro_km(km_ini)
+                if km_ini_val <= 0:
                     st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
                     return
                 if not destino_ini.strip():
@@ -978,7 +938,7 @@ def main():
                     placa=placa,
                     condutor=nome_condutor,
                     data_ini=data_ini.strftime("%d/%m/%Y"),
-                    km_ini=km_ini
+                    km_ini=km_ini_val
                 )
 
                 if duplicado:
@@ -986,7 +946,7 @@ def main():
                     st.warning("Recarregue a página ou aguarde a atualização da planilha antes de tentar novamente.")
                     return
 
-                chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini}"
+                chave_transacao_ini = f"iniciar_{codigo_rv_previsto}_{placa}_{km_ini_val}"
                 if st.session_state.get("ultima_transacao") == chave_transacao_ini:
                     st.warning("⚠️ Esta viagem já está sendo enviada. Aguarde a confirmação...")
                     return
@@ -1002,7 +962,7 @@ def main():
                     "veiculo": modelo,
                     "data_inicial": data_ini.strftime("%d/%m/%Y"),
                     "horario_inicial": hora_ini.strftime("%H:%M:%S"),
-                    "km_inicial": int(km_ini),
+                    "km_inicial": km_ini_val,
                     "destino": destino_ini.strip(),
                     "data_registro": agora.strftime("%d/%m/%Y %H:%M:%S")
                 }
