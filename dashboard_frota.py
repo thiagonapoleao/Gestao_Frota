@@ -160,7 +160,7 @@ st.markdown("""
             transition: all 0.2s ease-in-out !important;
             display: flex !important;
             align-items: center !important;
-            justify-content: flex-start !important;
+            justify-content: center !important;
             text-align: left !important;
             margin-bottom: 6px !important;
         }
@@ -314,7 +314,6 @@ GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 GID_FROTA = "1438914619"
 
-# URL do Apps Script Webhook para gravação direta na aba de Usuários
 WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
 # -------------------------------------------------------------
@@ -411,19 +410,25 @@ def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
     """Envia o novo usuário para persistência na planilha Google Sheets via Webhook."""
     if WEBHOOK_APPS_SCRIPT_URL:
         try:
+            payload = usuario_dict.copy()
+            payload["acao"] = "cadastrar_usuario"
+            
+            corpo = json.dumps(payload, ensure_ascii=False)
             r = requests.post(
                 WEBHOOK_APPS_SCRIPT_URL,
-                data=json.dumps(usuario_dict),
-                headers={"Content-Type": "application/json"},
+                data=corpo.encode("utf-8"),
+                headers={"Content-Type": "text/plain;charset=utf-8"},
                 allow_redirects=True,
-                timeout=12
+                timeout=18
             )
             if r.status_code == 200:
                 try:
                     res_json = r.json()
-                    return res_json.get("status") == "sucesso"
+                    status_r = str(res_json.get("status", "")).lower().strip()
+                    return status_r in ["sucesso", "success", "ok"]
                 except Exception:
-                    return True
+                    texto_resp = r.text.lower()
+                    return "sucesso" in texto_resp or "success" in texto_resp
             return False
         except Exception as e:
             st.error(f"Erro ao conectar com a planilha: {e}")
@@ -623,7 +628,7 @@ def main():
         st.session_state["pagina_selecionada_id"] = "dash"
 
     # =========================================================================
-    # SIDEBAR: MENU LATERAL (SEM LOGO, APENAS BRANDING TEXTUAL E NAVEGAÇÃO)
+    # SIDEBAR: MENU LATERAL
     # =========================================================================
     with st.sidebar:
         st.markdown("""
@@ -633,7 +638,6 @@ def main():
             </div>
         """, unsafe_allow_html=True)
 
-        # Card de Perfil do Gestor Logado
         st.markdown(f"""
             <div class="user-card">
                 <p class="user-card-name">👤 {nome_gestor}</p>
@@ -644,7 +648,6 @@ def main():
 
         st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; text-transform:uppercase; letter-spacing:0.06em; margin-bottom:8px;'>Navegação</p>", unsafe_allow_html=True)
 
-        # Renderização dos botões de navegação padronizados
         for item in itens_menu:
             is_active = (st.session_state["pagina_selecionada_id"] == item["id"])
             prefix = "▶ " if is_active else ""
@@ -671,7 +674,7 @@ def main():
         st.markdown('</div>', unsafe_allow_html=True)
 
     # =========================================================================
-    # ÁREA PRINCIPAL: BANNER TOPO COM LOGOTIPO PROPORCIONAL E TÍTULO HARMONIZADO
+    # ÁREA PRINCIPAL: BANNER TOPO
     # =========================================================================
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
@@ -692,7 +695,6 @@ def main():
 
     titulo_pg, sub_pg = titulos_paginas.get(pagina_atual, ("Painel de Frotas", "Master Café Gestão"))
 
-    # CABEÇALHO PROPORCIONAL COM LOGO AUMENTADO E TEXTO DISCRETO
     col_banner_logo, col_banner_txt = st.columns([0.16, 0.84], gap="medium", vertical_alignment="center")
     caminho_logo = obter_caminho_logotipo()
 
@@ -1173,7 +1175,7 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN E GRAVAÇÃO DEFINITIVA)
+    # PÁGINA 4: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN, GRAVAÇÃO E LIMPEZA)
     # =========================================================================
     elif pagina_atual == "usuarios":
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
@@ -1195,16 +1197,22 @@ def main():
         with tab_novo:
             locais_conhecidos = ["Geral", "Araraquara", "Ribeirão Preto", "São Paulo", "São José do Rio Preto", "São José dos Campos", "Campinas"]
             
+            # Controle de estado para reset e limpeza completa pós-cadastro
+            if "reset_cadastro_key" not in st.session_state:
+                st.session_state["reset_cadastro_key"] = 0
+
+            reset_idx = st.session_state["reset_cadastro_key"]
+
             nome_digitado = st.text_input(
                 "Nome Completo:",
-                key="input_nome_cadastro",
+                key=f"input_nome_cadastro_{reset_idx}",
                 placeholder="Ex: Roberto da Silva"
             )
 
             usuario_gerado = gerar_usuario_padrao(nome_digitado)
             nome_formatado = formatar_nome_padrao(nome_digitado)
 
-            with st.form("form_cadastrar_usuario"):
+            with st.form(f"form_cadastrar_usuario_{reset_idx}"):
                 u_col1, u_col2 = st.columns(2)
                 with u_col1:
                     st.text_input(
@@ -1275,14 +1283,18 @@ def main():
 
                         if gravou_nuvem:
                             st.cache_data.clear()
+                            # Incrementa a chave para limpar todos os inputs do formulário
+                            st.session_state["reset_cadastro_key"] += 1
                             st.success(f"✔ Usuário **{nome_formatado}** (`{usuario_gerado}`) cadastrado e salvo com sucesso na folha de cálculo!")
                             st.rerun()
                         else:
                             if "novos_usuarios_sessao" not in st.session_state:
                                 st.session_state["novos_usuarios_sessao"] = []
                             st.session_state["novos_usuarios_sessao"].append(novo_reg)
+                            # Incrementa a chave para limpar todos os inputs do formulário
+                            st.session_state["reset_cadastro_key"] += 1
                             st.warning(
-                                f"✔ Usuário adicionado temporariamente à sessão. Verifique a implantação do Apps Script para gravação em nuvem."
+                                "✔ Usuário adicionado temporariamente à sessão. Verifique a implantação do Apps Script para gravação em nuvem."
                             )
                             st.rerun()
 
