@@ -188,6 +188,7 @@ st.markdown("""
             margin-bottom: 4px !important;
         }
 
+        /* Cabeçalho Corporativo */
         .corporate-header {
             background: transparent !important;
             padding: 0 0 12px 0 !important;
@@ -287,7 +288,7 @@ st.markdown("""
             font-weight: 500 !important;
         }
 
-        /* 7. BOTÕES */
+        /* 7. BOTÕES COM DEGRADÊ */
         div[data-testid="stFormSubmitButton"] > button,
         div.stButton > button[kind="primary"] {
             background-color: #110426 !important;
@@ -301,17 +302,28 @@ st.markdown("""
             border: 1px solid rgba(147, 51, 234, 0.45) !important;
             border-radius: 12px !important;
             height: 50px !important;
+            min-height: 50px !important;
             font-size: 1rem !important;
             font-weight: 700 !important;
-            width: 100% !important;
+            letter-spacing: 0.02em !important;
+            box-shadow: 0 4px 16px rgba(17, 4, 38, 0.35) !important;
             cursor: pointer !important;
             transition: all 0.2s ease-in-out !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            text-align: center !important;
+            box-sizing: border-box !important;
+            margin-top: 14px !important;
         }
 
         div[data-testid="stFormSubmitButton"] > button:hover,
         div.stButton > button[kind="primary"]:hover {
             filter: brightness(1.18) !important;
             transform: translateY(-1px) !important;
+            box-shadow: 0 6px 20px rgba(168, 85, 247, 0.5) !important;
+            border-color: rgba(168, 85, 247, 0.75) !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -381,14 +393,13 @@ def limpar_placa(placa_str):
     return re.sub(r'[^A-Za-z0-9]', '', str(placa_str or '')).upper()
 
 def eh_vazio_ou_nan(val):
-    """Verifica se célula da planilha está vazia."""
     if val is None:
         return True
     s = str(val).strip().lower()
     return s in ["", "nan", "none", "null", "-", "--"]
 
 def extrair_inteiro_km(valor):
-    """Higieniza qualquer formato de KM para int puro de forma segura."""
+    """Higieniza qualquer formato (ex: '1.250', '1250,0', 1250) para int puro."""
     if valor is None:
         return 0
     s = str(valor).split(",")[0].split(".")[0].strip()
@@ -481,7 +492,6 @@ def carregar_veiculos():
     return pd.DataFrame(columns=["placa", "veiculo", "local_pernoite"])
 
 def carregar_lancamentos_existentes():
-    """Carregamento em tempo real sem cache da aba Controle de Uso."""
     timestamp_atual = int(time.time())
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_LANCAMENTOS}&cb={timestamp_atual}",
@@ -548,11 +558,9 @@ def gerar_proximo_rv(df_lancamentos, placa, ano_atual):
     return f"{prefixo}{proximo_seq:04d}"
 
 def enviar_requisicao_apps_script(payload):
-    """Envia requisições ao Google Apps Script e valida respostas estruturadas."""
     try:
         corpo = json.dumps(payload, ensure_ascii=False)
         headers = {"Content-Type": "text/plain;charset=utf-8"}
-        
         with requests.Session() as session:
             resposta = session.post(
                 WEBHOOK_URL,
@@ -566,7 +574,6 @@ def enviar_requisicao_apps_script(payload):
             try:
                 ret = resposta.json()
                 status_resp = str(ret.get("status", "")).lower().strip()
-                
                 if status_resp in ["sucesso", "success", "ok"]:
                     msg = ret.get("mensagem") or ret.get("message") or "Operação realizada com sucesso!"
                     return True, msg
@@ -605,10 +612,8 @@ def tela_login(df_usuarios):
 
     with st.form("form_login"):
         st.markdown('<div class="section-subheading">Identificação do Condutor</div>', unsafe_allow_html=True)
-        
         usuario_digitado = st.text_input("Usuário:", placeholder="Digite seu usuário").strip().lower()
         senha_digitada = st.text_input("Senha:", type="password", placeholder="Digite sua senha").strip()
-        
         btn_login = st.form_submit_button("Entrar no Sistema", use_container_width=True)
         
         if btn_login:
@@ -697,7 +702,7 @@ def main():
     viagem_pendente_condutor = viagens_abertas_por_condutor.get(condutor_chave, None)
 
     # ---------------------------------------------------------------------------------
-    # MENU DO CONDUTOR COM RECURSO DE CADASTRO
+    # MENU DO CONDUTOR
     # ---------------------------------------------------------------------------------
     with st.expander("Menu do Condutor", expanded=False):
         col_m1, col_m2 = st.columns([1.5, 1])
@@ -716,7 +721,6 @@ def main():
                 st.query_params.clear()
                 st.rerun()
 
-        # Cadastro de Novo Usuário Isolado
         st.markdown("---")
         with st.expander("➕ Cadastrar Novo Condutor", expanded=False):
             with st.form("form_novo_usuario"):
@@ -756,6 +760,7 @@ def main():
     # =========================================================================
     if viagem_pendente_condutor is not None:
         dados_ativos = viagem_pendente_condutor
+        km_inicial_val = extrair_inteiro_km(dados_ativos.get("km_inicial"))
 
         st.warning("⚠️ **Você possui uma viagem em andamento!** Finalize o retorno para liberar novos lançamentos.")
         st.markdown(f"""
@@ -765,7 +770,7 @@ def main():
                 <b>🚙 Veículo:</b> {dados_ativos.get('veiculo')} (Placa: {dados_ativos.get('placa')})<br>
                 <b>📍 Destino:</b> {dados_ativos.get('destino')}<br>
                 <b>⏱️ Saída:</b> {dados_ativos.get('data_inicial')} às {dados_ativos.get('horario_inicial')}<br>
-                <b>🔢 Km Inicial:</b> {dados_ativos.get('km_inicial')} km
+                <b>🔢 Km Inicial:</b> {km_inicial_val} km
             </div>
         """, unsafe_allow_html=True)
 
@@ -777,13 +782,12 @@ def main():
             with col_hf:
                 hora_fim = st.time_input("Horário Final:", value=agora.time().replace(microsecond=0))
 
-            km_inicial_val = extrair_inteiro_km(dados_ativos.get("km_inicial"))
-
+            # Campo inicializado SEM pré-preenchimento (value=None) para exibir o placeholder em branco
             km_fim = st.number_input(
                 "Km Final:", 
-                value=float(km_inicial_val), 
-                placeholder=f"Mínimo: {km_inicial_val} km", 
-                min_value=float(km_inicial_val), 
+                value=None, 
+                placeholder=f"Digite o Km Final (mínimo: {km_inicial_val})...", 
+                min_value=0.0, 
                 step=1.0, 
                 format="%.0f", 
                 key="km_fim_input"
@@ -798,7 +802,7 @@ def main():
 
         if btn_start_final:
             if km_fim is None:
-                st.error("⚠️ Por favor, preencha o Km Final.")
+                st.error("⚠️ Por favor, digite o Km Final.")
                 return
             
             km_final_int = extrair_inteiro_km(km_fim)
@@ -806,7 +810,7 @@ def main():
                 st.error(f"⚠️ O Km Final ({km_final_int}) não pode ser menor que o Km Inicial ({km_inicial_val}).")
                 return
 
-            # Cálculo de KM percorrido
+            # Cálculo exato do KM rodado
             km_percorrido = int(km_final_int - km_inicial_val)
 
             chave_transacao_final = f"finalizar_{dados_ativos.get('rv')}_{km_final_int}"
@@ -911,7 +915,7 @@ def main():
 
                 km_ini = st.number_input(
                     "Km Inicial:", 
-                    value=0.0, 
+                    value=None, 
                     placeholder="Digite o Km Inicial...", 
                     min_value=0.0, 
                     step=1.0, 
@@ -923,9 +927,13 @@ def main():
                 btn_start_inicial = st.form_submit_button("🚀 Iniciar Viagem (Start Inicial)", use_container_width=True)
 
             if btn_start_inicial:
+                if km_ini is None:
+                    st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
+                    return
+                
                 km_ini_val = extrair_inteiro_km(km_ini)
                 if km_ini_val <= 0:
-                    st.error("⚠️ Por favor, digite o Km Inicial do veículo.")
+                    st.error("⚠️ O Km Inicial deve ser maior que zero.")
                     return
                 if not destino_ini.strip():
                     st.error("⚠️ Por favor, informe o Destino da viagem.")
