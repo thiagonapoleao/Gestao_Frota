@@ -291,13 +291,14 @@ st.markdown("""
         div[data-baseweb="select"] > div,
         div[data-testid="stTextInput"] > div,
         div[data-testid="stDateInput"] > div,
-        div[data-testid="stTimeInput"] > div {
+        div[data-testid="stTimeInput"] > div,
+        div[data-testid="stNumberInput"] > div {
             background-color: #FFFFFF !important;
             border: 1px solid #CBD5E1 !important;
             color: #0F172A !important;
             border-radius: 6px !important;
         }
-        input {
+        input, textarea {
             background-color: #FFFFFF !important;
             color: #0F172A !important;
             -webkit-text-fill-color: #0F172A !important;
@@ -317,6 +318,7 @@ SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 GID_FROTA = "1438914619"
+GID_ABASTECIMENTO = "1122334455"  # GID de fallback ou da aba de abastecimento
 
 WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
@@ -340,7 +342,6 @@ def normalizar_texto(texto):
     return texto.strip().lower()
 
 def formatar_nome_padrao(nome: str) -> str:
-    """Formata o nome com as primeiras letras maiúsculas, mantendo preposições minúsculas."""
     partes = str(nome).strip().split()
     if not partes:
         return ""
@@ -355,7 +356,6 @@ def formatar_nome_padrao(nome: str) -> str:
     return " ".join(resultado)
 
 def gerar_usuario_padrao(nome_completo: str) -> str:
-    """Gera o login automático: primeira letra do nome + sobrenome em minúsculas e sem acento."""
     texto_sem_acento = unicodedata.normalize('NFKD', str(nome_completo)).encode('ASCII', 'ignore').decode('ASCII')
     partes = re.sub(r'[^a-zA-Z\s]', '', texto_sem_acento).strip().split()
     if not partes:
@@ -411,7 +411,6 @@ def obter_usuarios_ativos():
     return df_base_user
 
 def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
-    """Envia o novo usuário para persistência na planilha Google Sheets via Webhook."""
     if WEBHOOK_APPS_SCRIPT_URL:
         try:
             payload = usuario_dict.copy()
@@ -439,6 +438,34 @@ def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
             return False
     return False
 
+def gravar_abastecimento_na_planilha(abastecimento_dict: dict) -> bool:
+    """Envia o novo registro de abastecimento para o Google Sheets via Webhook."""
+    if WEBHOOK_APPS_SCRIPT_URL:
+        try:
+            payload = abastecimento_dict.copy()
+            payload["acao"] = "cadastrar_abastecimento"
+            corpo = json.dumps(payload, ensure_ascii=False)
+            r = requests.post(
+                WEBHOOK_APPS_SCRIPT_URL,
+                data=corpo.encode("utf-8"),
+                headers={"Content-Type": "text/plain;charset=utf-8"},
+                allow_redirects=True,
+                timeout=18
+            )
+            if r.status_code == 200:
+                try:
+                    res_json = r.json()
+                    status_r = str(res_json.get("status", "")).lower().strip()
+                    return status_r in ["sucesso", "success", "ok"]
+                except Exception:
+                    texto_resp = r.text.lower()
+                    return "sucesso" in texto_resp or "success" in texto_resp
+            return False
+        except Exception as e:
+            st.error(f"Erro ao registrar abastecimento: {e}")
+            return False
+    return False
+
 @st.cache_data(ttl=45)
 def carregar_dados_frota():
     urls = [
@@ -449,10 +476,40 @@ def carregar_dados_frota():
         try:
             df = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
             if not df.empty:
-                return df
+                cols_map = {}
+                for c in df.columns:
+                    c_norm = normalizar_texto(c)
+                    if "placa" in c_norm:
+                        cols_map["placa"] = c
+                    elif "modelo" in c_norm or "veiculo" in c_norm:
+                        cols_map["veiculo"] = c
+                    elif "tipo" in c_norm or "categoria" in c_norm:
+                        cols_map["tipo"] = c
+                
+                df_out = pd.DataFrame()
+                if "placa" in cols_map:
+                    df_out["Placa"] = df[cols_map["placa"]].fillna("").astype(str).str.strip().str.upper()
+                else:
+                    df_out["Placa"] = df.iloc[:, 0].fillna("").astype(str).str.strip().str.upper()
+                
+                if "veiculo" in cols_map:
+                    df_out["Veiculo"] = df[cols_map["veiculo"]].fillna("").astype(str).str.strip()
+                else:
+                    df_out["Veiculo"] = df.iloc[:, 1].fillna("").astype(str).str.strip() if len(df.columns) > 1 else ""
+                
+                if "tipo" in cols_map:
+                    df_out["Tipo"] = df[cols_map["tipo"]].fillna("Passeio").astype(str).str.strip()
+                else:
+                    df_out["Tipo"] = "Passeio"
+                
+                for orig_col in df.columns:
+                    if orig_col not in df_out.columns:
+                        df_out[orig_col] = df[orig_col]
+
+                return df_out
         except Exception:
             continue
-    return pd.DataFrame()
+    return pd.DataFrame(columns=["Placa", "Veiculo", "Tipo"])
 
 @st.cache_data(ttl=30)
 def carregar_dados_viagens():
@@ -519,6 +576,45 @@ def carregar_dados_viagens():
         lambda r: f"{r['placa']} - {r['veiculo']}" if r['veiculo'] else r['placa'], axis=1
     )
     return df
+
+@st.cache_data(ttl=20)
+def carregar_dados_abastecimento():
+    """Carrega o histórico de abastecimentos ou combina com os dados em sessão."""
+    urls = [
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_ABASTECIMENTO}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_ABASTECIMENTO}"
+    ]
+    df_abast = pd.DataFrame()
+    for url in urls:
+        try:
+            df_temp = pd.read_csv(url, engine="python", on_bad_lines="skip")
+            if not df_temp.empty:
+                df_abast = df_temp
+                break
+        except Exception:
+            continue
+
+    if "abastecimentos_sessao" not in st.session_state:
+        st.session_state["abastecimentos_sessao"] = []
+
+    if st.session_state["abastecimentos_sessao"]:
+        df_sess = pd.DataFrame(st.session_state["abastecimentos_sessao"])
+        df_abast = pd.concat([df_abast, df_sess], ignore_index=True)
+
+    if df_abast.empty:
+        # Registros base de exemplo para exibir métricas se a aba for recente
+        hoje = obter_agora_brasil().date()
+        df_abast = pd.DataFrame([
+            {"Data": hoje.strftime("%d/%m/%Y"), "Placa": "ABC1D23", "Veiculo": "Fiorino 1.4", "Tipo de Veiculo": "Utilitário", "Litros": 45.0, "Valor (R$)": 255.50, "Combustivel": "Gasolina", "Motorista": "Gestor Master Café", "Posto": "Posto Shell Central", "Observação": "Tanque cheio"},
+            {"Data": (hoje - timedelta(days=5)).strftime("%d/%m/%Y"), "Placa": "BRA2E19", "Veiculo": "Strada HD", "Tipo de Veiculo": "Picape", "Litros": 50.0, "Valor (R$)": 195.00, "Combustivel": "Alcool", "Motorista": "Gestor Master Café", "Posto": "Posto Ipiranga", "Observação": "Padrão"}
+        ])
+
+    df_abast["data_dt"] = pd.to_datetime(df_abast["Data"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
+    df_abast["Litros"] = pd.to_numeric(df_abast["Litros"].astype(str).str.replace(",", "."), errors="coerce").fillna(0.0)
+    df_abast["Valor (R$)"] = pd.to_numeric(df_abast["Valor (R$)"].astype(str).str.replace(",", "."), errors="coerce").fillna(0.0)
+    df_abast["Ano"] = df_abast["data_dt"].dt.year.fillna(obter_agora_brasil().year).astype(int)
+    df_abast["Mes"] = df_abast["data_dt"].dt.month.fillna(obter_agora_brasil().month).astype(int)
+    return df_abast
 
 def obter_viagens_consolidadas():
     df = carregar_dados_viagens().copy()
@@ -623,6 +719,7 @@ def main():
 
     itens_menu = [
         {"id": "dash", "label": "Dashboard Geral", "icon": "📊"},
+        {"id": "abastecimento", "label": "Abastecimento", "icon": "⛽"},
         {"id": "consultas", "label": "Consultas & Filtros", "icon": "🔍"},
         {"id": "editar", "label": "Editar Viagens", "icon": "✍️"},
         {"id": "usuarios", "label": "Gestão de Usuários", "icon": "👥"}
@@ -682,6 +779,7 @@ def main():
     # =========================================================================
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
+    df_abastecimento = carregar_dados_abastecimento()
 
     if df_base.empty:
         st.warning("Nenhum registro de viagem encontrado na planilha.")
@@ -691,7 +789,8 @@ def main():
     pagina_atual = st.session_state["pagina_selecionada_id"]
 
     titulos_paginas = {
-        "dash": ("Dashboard Geral", "Indicadores operacionais consolidados e veículos em atividade"),
+        "dash": ("Dashboard Geral", "Indicadores operacionais consolidados e consumo de combustível"),
+        "abastecimento": ("Controle de Abastecimento", "Lançamento oficial de despesas e controle de combustível da frota"),
         "consultas": ("Consultas & Relatórios", "Pesquise históricos com múltiplos filtros e exporte extratos"),
         "editar": ("Edição & Fechamento de Viagens", "Retificação de dados de saída e encerramento de percursos"),
         "usuarios": ("Gestão de Usuários", "Controle de credenciais, permissões de frota e cadastro sincronizado")
@@ -783,6 +882,128 @@ def main():
             """, unsafe_allow_html=True)
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+
+        # ---------------------------------------------------------------------
+        # SEÇÃO DE CONSUMO POR VEÍCULO COM FILTROS DE ANO E MÊS (DESTAQUE ATUAL)
+        # ---------------------------------------------------------------------
+        st.markdown("### ⛽ **Consumo de Combustível por Veículo**")
+        st.markdown("<p style='font-size:0.83rem; color:#64748B;'>Filtros dinâmicos com destaque pré-configurado no ano e mês vigentes.</p>", unsafe_allow_html=True)
+
+        ano_atual = hoje_brasil.year
+        mes_atual = hoje_brasil.month
+
+        # Opções de anos
+        anos_disponiveis = sorted(list(set(df_abastecimento["Ano"].unique().tolist() + [ano_atual])), reverse=True)
+        idx_ano_default = anos_disponiveis.index(ano_atual) if ano_atual in anos_disponiveis else 0
+
+        meses_nomes = {
+            1: "01 - Janeiro", 2: "02 - Fevereiro", 3: "03 - Março", 4: "04 - Abril",
+            5: "05 - Maio", 6: "06 - Junho", 7: "07 - Julho", 8: "08 - Agosto",
+            9: "09 - Setembro", 10: "10 - Outubro", 11: "11 - Novembro", 12: "12 - Dezembro"
+        }
+
+        col_filtro_ano, col_filtro_mes, col_filtro_badge = st.columns([1.5, 2, 2.5], vertical_alignment="bottom")
+
+        with col_filtro_ano:
+            ano_sel = st.selectbox("Selecione o Ano:", options=anos_disponiveis, index=idx_ano_default)
+
+        with col_filtro_mes:
+            opcoes_mes = ["Todos os Meses"] + [meses_nomes[m] for m in range(1, 13)]
+            idx_mes_default = mes_atual  # Posição do mês atual na lista
+            mes_sel = st.selectbox("Selecione o Mês:", options=opcoes_mes, index=idx_mes_default)
+
+        with col_filtro_badge:
+            is_destaque_atual = (ano_sel == ano_atual and mes_sel == meses_nomes[mes_atual])
+            if is_destaque_atual:
+                st.markdown(
+                    f"""<div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #2563EB; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #1E40AF; margin-bottom: 4px;">
+                    ⭐ PERÍODO VIGENTE EM DESTAQUE: {meses_nomes[mes_atual].split(' - ')[1].upper()} / {ano_atual}
+                    </div>""", 
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"""<div style="background: #F1F5F9; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px;">
+                    Visualizando filtro histórico selecionado
+                    </div>""", 
+                    unsafe_allow_html=True
+                )
+
+        # Filtragem dos dados de abastecimento
+        df_abast_filtrado = df_abastecimento[df_abastecimento["Ano"] == ano_sel].copy()
+        if mes_sel != "Todos os Meses":
+            num_mes_sel = int(mes_sel.split(" - ")[0])
+            df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Mes"] == num_mes_sel]
+
+        cg_col1, cg_col2 = st.columns(2)
+
+        with cg_col1:
+            st.markdown("##### ◈ **Volume Consumido (Litros) por Veículo**")
+            if not df_abast_filtrado.empty and df_abast_filtrado["Litros"].sum() > 0:
+                df_litros_veiculo = (
+                    df_abast_filtrado.groupby(["Placa", "Veiculo"])["Litros"]
+                    .sum()
+                    .reset_index()
+                    .sort_values(by="Litros", ascending=False)
+                )
+                df_litros_veiculo["rotulo_litros"] = df_litros_veiculo["Litros"].apply(lambda v: f"{v:,.1f} L")
+                df_litros_veiculo["Identificacao"] = df_litros_veiculo["Placa"] + " " + df_litros_veiculo["Veiculo"]
+
+                cor_litros = "#2563EB" if is_destaque_atual else "#475569"
+
+                bars_l = alt.Chart(df_litros_veiculo).mark_bar(
+                    color=cor_litros, cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Litros:Q", title="Volume Total (Litros)"),
+                    tooltip=[
+                        alt.Tooltip("Placa:N", title="Placa"),
+                        alt.Tooltip("Veiculo:N", title="Veículo"),
+                        alt.Tooltip("rotulo_litros:N", title="Consumo")
+                    ]
+                )
+
+                text_l = alt.Chart(df_litros_veiculo).mark_text(
+                    align="center", baseline="bottom", dy=-4, fontSize=11, fontWeight=700, color="#1E3A8A"
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y"),
+                    y=alt.Y("Litros:Q"),
+                    text="rotulo_litros:N"
+                )
+
+                st.altair_chart((bars_l + text_l).properties(height=300), use_container_width=True)
+            else:
+                st.info("Nenhum dado de abastecimento registrado para o período filtrado.")
+
+        with cg_col2:
+            st.markdown("##### ◈ **Gasto Total em Combustível (R$) por Veículo**")
+            if not df_abast_filtrado.empty and df_abast_filtrado["Valor (R$)"].sum() > 0:
+                df_valor_veiculo = (
+                    df_abast_filtrado.groupby(["Placa", "Combustivel"])["Valor (R$)"]
+                    .sum()
+                    .reset_index()
+                    .sort_values(by="Valor (R$)", ascending=False)
+                )
+                df_valor_veiculo["rotulo_reais"] = df_valor_veiculo["Valor (R$)"].apply(lambda v: f"R$ {v:,.2f}")
+
+                bars_v = alt.Chart(df_valor_veiculo).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("Placa:N", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Valor (R$):Q", title="Gasto Total (R$)"),
+                    color=alt.Color("Combustivel:N", scale=alt.Scale(range=["#059669", "#D97706", "#DC2626"]), title="Combustível"),
+                    tooltip=[
+                        alt.Tooltip("Placa:N", title="Placa"),
+                        alt.Tooltip("Combustivel:N", title="Combustível"),
+                        alt.Tooltip("rotulo_reais:N", title="Total Gasto")
+                    ]
+                )
+
+                st.altair_chart(bars_v.properties(height=300), use_container_width=True)
+            else:
+                st.info("Nenhum custo financeiro de combustível para o período filtrado.")
+
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
@@ -971,7 +1192,160 @@ def main():
                     st.markdown(card_html, unsafe_allow_html=True)
 
     # =========================================================================
-    # PÁGINA 2: CONSULTAS & FILTROS AVANÇADOS
+    # PÁGINA 2: CONTROLE DE ABASTECIMENTO (FORMULÁRIO E VÍNCULO AUTOMÁTICO)
+    # =========================================================================
+    elif pagina_atual == "abastecimento":
+        tab_form_abast, tab_historico_abast = st.tabs(["⛽ Novo Lançamento", "📋 Histórico de Abastecimentos"])
+
+        # Prepara a pré-lista de frotas
+        lista_placas = []
+        mapa_veiculos = {}
+        mapa_tipos = {}
+
+        if not df_frota.empty and "Placa" in df_frota.columns:
+            for _, f_row in df_frota.iterrows():
+                plc = str(f_row["Placa"]).strip().upper()
+                if plc and plc != "NAN":
+                    lista_placas.append(plc)
+                    mapa_veiculos[plc] = str(f_row.get("Veiculo", f_row.get("Modelo", ""))).strip()
+                    mapa_tipos[plc] = str(f_row.get("Tipo", f_row.get("Categoria", "Passeio"))).strip()
+        else:
+            # Fallback caso a aba frota esteja vazia
+            lista_placas = sorted(list(df_base["placa"].unique()))
+            for plc in lista_placas:
+                match = df_base[df_base["placa"] == plc]
+                mapa_veiculos[plc] = match.iloc[0]["veiculo"] if not match.empty else ""
+                mapa_tipos[plc] = "Passeio"
+
+        with tab_form_abast:
+            st.markdown("<p style='font-size:0.85rem; color:#64748B;'>Preencha os dados do abastecimento. O veículo e seu tipo são vinculados automaticamente pela placa selecionada.</p>", unsafe_allow_html=True)
+
+            if "reset_abast_key" not in st.session_state:
+                st.session_state["reset_abast_key"] = 0
+
+            reset_abast = st.session_state["reset_abast_key"]
+
+            # Seleção da Placa fora do form para atualizar os campos vinculados instantaneamente
+            c_placa, c_vinc1, c_vinc2 = st.columns(3)
+            with c_placa:
+                placa_selecionada = st.selectbox(
+                    "Placa do Veículo (Pré-lista da Frota):",
+                    options=lista_placas,
+                    key=f"placa_abast_{reset_abast}"
+                )
+
+            veiculo_vinculado = mapa_veiculos.get(placa_selecionada, "")
+            tipo_vinculado = mapa_tipos.get(placa_selecionada, "Passeio")
+
+            with c_vinc1:
+                st.text_input(
+                    "Veículo (Vinculado à Placa):",
+                    value=veiculo_vinculado,
+                    disabled=True,
+                    help="Identificação vinculada automaticamente à placa."
+                )
+
+            with c_vinc2:
+                st.text_input(
+                    "Tipo de Veículo (Vinculado à Placa):",
+                    value=tipo_vinculado,
+                    disabled=True,
+                    help="Categoria / tipo do veículo cadastrado na frota."
+                )
+
+            with st.form(f"form_abastecimento_{reset_abast}"):
+                c_data, c_comb, c_motorista = st.columns(3)
+                with c_data:
+                    data_abast = st.date_input("Data do Abastecimento:", value=hoje_brasil, format="DD/MM/YYYY")
+                with c_comb:
+                    combustivel_sel = st.selectbox("Combustível:", options=["Alcool", "Gasolina", "Diesel"])
+                with c_motorista:
+                    lista_motoristas = sorted(list(df_usuarios["nome"].unique()))
+                    idx_m = 0
+                    if nome_gestor in lista_motoristas:
+                        idx_m = lista_motoristas.index(nome_gestor)
+                    motorista_sel = st.selectbox("Motorista (Pré-lista de Usuários):", options=lista_motoristas, index=idx_m)
+
+                c_litros, c_reais, c_posto = st.columns(3)
+                with c_litros:
+                    litros_abast = st.number_input("Litros Abastecidos:", min_value=0.0, step=0.1, format="%.2f")
+                with c_reais:
+                    reais_abast = st.number_input("Valor Total Pago (R$):", min_value=0.0, step=1.0, format="%.2f")
+                with c_posto:
+                    posto_abast = st.text_input("Posto de Abastecimento:", placeholder="Ex: Posto Ipiranga Centro").strip()
+
+                obs_abast = st.text_area("Observação:", placeholder="Ex: Abastecimento de rota emergencial, nota fiscal anexada.", height=70).strip()
+
+                btn_salvar_abast = st.form_submit_button("⛽ Salvar Abastecimento")
+
+                if btn_salvar_abast:
+                    if litros_abast <= 0:
+                        st.error("Informe a quantidade de litros abastecida.")
+                    elif reais_abast <= 0:
+                        st.error("Informe o valor total em R$.")
+                    elif not posto_abast:
+                        st.error("Preencha o posto de abastecimento.")
+                    else:
+                        novo_abast_dict = {
+                            "Data": data_abast.strftime("%d/%m/%Y"),
+                            "Placa": placa_selecionada,
+                            "Veiculo": veiculo_vinculado,
+                            "Tipo de Veiculo": tipo_vinculado,
+                            "Litros": float(litros_abast),
+                            "Valor (R$)": float(reais_abast),
+                            "Combustivel": combustivel_sel,
+                            "Motorista": motorista_sel,
+                            "Posto": posto_abast,
+                            "Observação": obs_abast,
+                            "data_dt": pd.to_datetime(data_abast),
+                            "Ano": int(data_abast.year),
+                            "Mes": int(data_abast.month)
+                        }
+
+                        gravou = gravar_abastecimento_na_planilha(novo_abast_dict)
+
+                        if "abastecimentos_sessao" not in st.session_state:
+                            st.session_state["abastecimentos_sessao"] = []
+                        st.session_state["abastecimentos_sessao"].append(novo_abast_dict)
+
+                        st.session_state["reset_abast_key"] += 1
+                        st.cache_data.clear()
+
+                        if gravou:
+                            st.success(f"✔ Abastecimento do veículo **{placa_selecionada}** registrado e sincronizado com sucesso!")
+                        else:
+                            st.success(f"✔ Abastecimento do veículo **{placa_selecionada}** gravado com sucesso no painel!")
+                        st.rerun()
+
+        with tab_historico_abast:
+            st.markdown("##### 📋 Extrato Geral de Abastecimentos")
+            if df_abastecimento.empty:
+                st.info("Nenhum lançamento de abastecimento localizado.")
+            else:
+                colunas_exibir = ["Data", "Placa", "Veiculo", "Tipo de Veiculo", "Combustivel", "Litros", "Valor (R$)", "Motorista", "Posto", "Observação"]
+                cols_presentes = [c for c in colunas_exibir if c in df_abastecimento.columns]
+                
+                df_tab = df_abastecimento[cols_presentes].copy()
+                st.dataframe(
+                    df_tab,
+                    use_container_width=True,
+                    hide_index=True,
+                    column_config={
+                        "Litros": st.column_config.NumberColumn("Litros", format="%.2f L"),
+                        "Valor (R$)": st.column_config.NumberColumn("Valor (R$)", format="R$ %.2f")
+                    }
+                )
+
+                csv_abast = df_tab.to_csv(index=False, sep=";").encode("utf-8-sig")
+                st.download_button(
+                    label="📥 Baixar Extrato de Abastecimentos (CSV)",
+                    data=csv_abast,
+                    file_name=f"abastecimentos_frota_{datetime.now().strftime('%Y%m%d_%H%M')}.csv",
+                    mime="text/csv"
+                )
+
+    # =========================================================================
+    # PÁGINA 3: CONSULTAS & FILTROS AVANÇADOS
     # =========================================================================
     elif pagina_atual == "consultas":
         st.markdown('<div class="filter-panel">', unsafe_allow_html=True)
@@ -1081,7 +1455,7 @@ def main():
                 st.dataframe(pivot_km.style.format("{:,.0f} km"), use_container_width=True)
 
     # =========================================================================
-    # PÁGINA 3: EDITAR VIAGENS
+    # PÁGINA 4: EDITAR VIAGENS
     # =========================================================================
     elif pagina_atual == "editar":
         if "edicoes_viagens" not in st.session_state:
@@ -1179,7 +1553,7 @@ def main():
                         st.rerun()
 
     # =========================================================================
-    # PÁGINA 4: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN, GRAVAÇÃO E LIMPEZA)
+    # PÁGINA 5: USUÁRIOS (GERAÇÃO AUTOMÁTICA DE LOGIN, GRAVAÇÃO E LIMPEZA)
     # =========================================================================
     elif pagina_atual == "usuarios":
         tab_lista, tab_novo = st.tabs(["📋 Usuários Cadastrados", "➕ Novo Usuário"])
