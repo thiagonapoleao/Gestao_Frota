@@ -7,6 +7,7 @@ import requests
 import json
 import os
 import re
+import urllib.parse
 import unicodedata
 from PIL import Image
 
@@ -318,7 +319,8 @@ SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 GID_FROTA = "1438914619"
-GID_ABASTECIMENTO = "1122334455"
+NOME_ABA_ABASTECIMENTO = "Controle de combustivel"
+NOME_ABA_POSTOS = "Posto de Combustivel"
 
 WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
@@ -439,12 +441,11 @@ def gravar_usuario_na_planilha(usuario_dict: dict) -> bool:
     return False
 
 def gravar_abastecimento_na_planilha(abastecimento_dict: dict) -> bool:
-    """Envia o novo registro de abastecimento para o Google Sheets via Webhook."""
+    """Envia o novo registro de abastecimento para a aba 'Controle de combustivel' via Webhook."""
     if WEBHOOK_APPS_SCRIPT_URL:
         try:
             payload = abastecimento_dict.copy()
             payload["acao"] = "cadastrar_abastecimento"
-            # Remove campos de controle interno do dataframe antes do post
             for chave_excluir in ["data_dt", "Ano", "Mes"]:
                 payload.pop(chave_excluir, None)
 
@@ -515,6 +516,38 @@ def carregar_dados_frota():
             continue
     return pd.DataFrame(columns=["Placa", "Veiculo", "Tipo"])
 
+@st.cache_data(ttl=60)
+def carregar_dados_postos():
+    """Carrega os postos cadastrados na coluna A da aba 'Posto de Combustivel'."""
+    sheet_nome_enc = urllib.parse.quote(NOME_ABA_POSTOS)
+    urls = [
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_nome_enc}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&sheet={sheet_nome_enc}"
+    ]
+    for url in urls:
+        try:
+            df_postos = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
+            if not df_postos.empty:
+                col_a = df_postos.iloc[:, 0].dropna().astype(str).str.strip().tolist()
+                nome_col = str(df_postos.columns[0]).strip()
+                
+                lista_postos = []
+                if nome_col and not nome_col.lower().startswith("unnamed") and normalizar_texto(nome_col) not in ["posto", "postos", "nome"]:
+                    lista_postos.append(nome_col)
+                
+                for p in col_a:
+                    if p and p.lower() != "nan" and normalizar_texto(p) not in ["posto", "postos", "nome"]:
+                        lista_postos.append(p)
+                
+                lista_postos = sorted(list(dict.fromkeys(lista_postos)))
+                if lista_postos:
+                    return lista_postos
+        except Exception:
+            continue
+
+    # Fallback caso a aba ainda não esteja preenchida
+    return ["Posto Shell Central", "Posto Ipiranga", "Posto Petrobras", "Posto Graal", "Auto Posto Master"]
+
 @st.cache_data(ttl=30)
 def carregar_dados_viagens():
     urls = [
@@ -583,10 +616,11 @@ def carregar_dados_viagens():
 
 @st.cache_data(ttl=20)
 def carregar_dados_abastecimento():
-    """Carrega o histórico de abastecimentos com tolerância a variações de cabeçalho."""
+    """Carrega o histórico de abastecimentos da aba 'Controle de combustivel' com tolerância a cabeçalhos."""
+    sheet_nome_enc = urllib.parse.quote(NOME_ABA_ABASTECIMENTO)
     urls = [
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_ABASTECIMENTO}",
-        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_ABASTECIMENTO}"
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_nome_enc}",
+        f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&sheet={sheet_nome_enc}"
     ]
     df_abast = pd.DataFrame()
     for url in urls:
@@ -827,6 +861,7 @@ def main():
     df_base = obter_viagens_consolidadas()
     df_frota = carregar_dados_frota()
     df_abastecimento = carregar_dados_abastecimento()
+    lista_postos_combustivel = carregar_dados_postos()
 
     if df_base.empty:
         st.warning("Nenhum registro de viagem encontrado na planilha.")
@@ -929,127 +964,6 @@ def main():
             """, unsafe_allow_html=True)
 
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
-
-        # ---------------------------------------------------------------------
-        # SEÇÃO DE CONSUMO POR VEÍCULO COM FILTROS DE ANO E MÊS
-        # ---------------------------------------------------------------------
-        st.markdown("### ⛽ **Consumo de Combustível por Veículo**")
-        st.markdown("<p style='font-size:0.83rem; color:#64748B;'>Filtros dinâmicos com destaque pré-configurado no ano e mês vigentes.</p>", unsafe_allow_html=True)
-
-        ano_atual = hoje_brasil.year
-        mes_atual = hoje_brasil.month
-
-        anos_disponiveis = sorted(list(set(df_abastecimento["Ano"].dropna().unique().tolist() + [ano_atual])), reverse=True)
-        idx_ano_default = anos_disponiveis.index(ano_atual) if ano_atual in anos_disponiveis else 0
-
-        meses_nomes = {
-            1: "01 - Janeiro", 2: "02 - Fevereiro", 3: "03 - Março", 4: "04 - Abril",
-            5: "05 - Maio", 6: "06 - Junho", 7: "07 - Julho", 8: "08 - Agosto",
-            9: "09 - Setembro", 10: "10 - Outubro", 11: "11 - Novembro", 12: "12 - Dezembro"
-        }
-
-        col_filtro_ano, col_filtro_mes, col_filtro_badge = st.columns([1.5, 2, 2.5], vertical_alignment="bottom")
-
-        with col_filtro_ano:
-            ano_sel = st.selectbox("Selecione o Ano:", options=anos_disponiveis, index=idx_ano_default)
-
-        with col_filtro_mes:
-            opcoes_mes = ["Todos os Meses"] + [meses_nomes[m] for m in range(1, 13)]
-            idx_mes_default = mes_atual
-            mes_sel = st.selectbox("Selecione o Mês:", options=opcoes_mes, index=idx_mes_default)
-
-        with col_filtro_badge:
-            is_destaque_atual = (ano_sel == ano_atual and mes_sel == meses_nomes.get(mes_atual, ""))
-            if is_destaque_atual:
-                st.markdown(
-                    f"""<div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #2563EB; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #1E40AF; margin-bottom: 4px;">
-                    ⭐ PERÍODO VIGENTE EM DESTAQUE: {meses_nomes[mes_atual].split(' - ')[1].upper()} / {ano_atual}
-                    </div>""", 
-                    unsafe_allow_html=True
-                )
-            else:
-                st.markdown(
-                    f"""<div style="background: #F1F5F9; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px;">
-                    Visualizando filtro histórico selecionado
-                    </div>""", 
-                    unsafe_allow_html=True
-                )
-
-        df_abast_filtrado = df_abastecimento[df_abastecimento["Ano"] == ano_sel].copy()
-        if mes_sel != "Todos os Meses":
-            num_mes_sel = int(mes_sel.split(" - ")[0])
-            df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Mes"] == num_mes_sel]
-
-        # Remove linhas com campos vazios caso não haja registros
-        df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Placa"] != ""]
-
-        cg_col1, cg_col2 = st.columns(2)
-
-        with cg_col1:
-            st.markdown("##### ◈ **Volume Consumido (Litros) por Veículo**")
-            if not df_abast_filtrado.empty and df_abast_filtrado["Litros"].sum() > 0:
-                df_litros_veiculo = (
-                    df_abast_filtrado.groupby(["Placa", "Veiculo"])["Litros"]
-                    .sum()
-                    .reset_index()
-                    .sort_values(by="Litros", ascending=False)
-                )
-                df_litros_veiculo["rotulo_litros"] = df_litros_veiculo["Litros"].apply(lambda v: f"{v:,.1f} L")
-                cor_litros = "#2563EB" if is_destaque_atual else "#475569"
-
-                bars_l = alt.Chart(df_litros_veiculo).mark_bar(
-                    color=cor_litros, cornerRadiusTopLeft=6, cornerRadiusTopRight=6
-                ).encode(
-                    x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
-                    y=alt.Y("Litros:Q", title="Volume Total (Litros)"),
-                    tooltip=[
-                        alt.Tooltip("Placa:N", title="Placa"),
-                        alt.Tooltip("Veiculo:N", title="Veículo"),
-                        alt.Tooltip("rotulo_litros:N", title="Consumo")
-                    ]
-                )
-
-                text_l = alt.Chart(df_litros_veiculo).mark_text(
-                    align="center", baseline="bottom", dy=-4, fontSize=11, fontWeight=700, color="#1E3A8A"
-                ).encode(
-                    x=alt.X("Placa:N", sort="-y"),
-                    y=alt.Y("Litros:Q"),
-                    text="rotulo_litros:N"
-                )
-
-                st.altair_chart((bars_l + text_l).properties(height=300), use_container_width=True)
-            else:
-                st.info("Nenhum dado de abastecimento registrado para o período filtrado.")
-
-        with cg_col2:
-            st.markdown("##### ◈ **Gasto Total em Combustível (R$) por Veículo**")
-            if not df_abast_filtrado.empty and df_abast_filtrado["Valor (R$)"].sum() > 0:
-                df_valor_veiculo = (
-                    df_abast_filtrado.groupby(["Placa", "Combustivel"])["Valor (R$)"]
-                    .sum()
-                    .reset_index()
-                    .sort_values(by="Valor (R$)", ascending=False)
-                )
-                df_valor_veiculo["rotulo_reais"] = df_valor_veiculo["Valor (R$)"].apply(lambda v: f"R$ {v:,.2f}")
-
-                bars_v = alt.Chart(df_valor_veiculo).mark_bar(
-                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
-                ).encode(
-                    x=alt.X("Placa:N", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
-                    y=alt.Y("Valor (R$):Q", title="Gasto Total (R$)"),
-                    color=alt.Color("Combustivel:N", scale=alt.Scale(range=["#059669", "#D97706", "#DC2626"]), title="Combustível"),
-                    tooltip=[
-                        alt.Tooltip("Placa:N", title="Placa"),
-                        alt.Tooltip("Combustivel:N", title="Combustível"),
-                        alt.Tooltip("rotulo_reais:N", title="Total Gasto")
-                    ]
-                )
-
-                st.altair_chart(bars_v.properties(height=300), use_container_width=True)
-            else:
-                st.info("Nenhum custo financeiro de combustível para o período filtrado.")
-
-        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
         st.markdown("### ◷ **Veículos em Aberto (Atualmente em Trânsito)**")
         if viagens_abertas_df.empty:
@@ -1155,6 +1069,126 @@ def main():
                 st.altair_chart(grafico_media_km, use_container_width=True)
             else:
                 st.caption("Sem dados suficientes para calcular médias.")
+
+        st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+
+        # ---------------------------------------------------------------------
+        # SEÇÃO DE CONSUMO POR VEÍCULO (ABAIXO DA QUILOMETRAGEM ACUMULADA)
+        # ---------------------------------------------------------------------
+        st.markdown("### ⛽ **Consumo de Combustível por Veículo**")
+        st.markdown("<p style='font-size:0.83rem; color:#64748B;'>Dados obtidos da aba <b>Controle de combustivel</b> com filtros dinâmicos e destaque no ano e mês vigentes.</p>", unsafe_allow_html=True)
+
+        ano_atual = hoje_brasil.year
+        mes_atual = hoje_brasil.month
+
+        anos_disponiveis = sorted(list(set(df_abastecimento["Ano"].dropna().unique().tolist() + [ano_atual])), reverse=True)
+        idx_ano_default = anos_disponiveis.index(ano_atual) if ano_atual in anos_disponiveis else 0
+
+        meses_nomes = {
+            1: "01 - Janeiro", 2: "02 - Fevereiro", 3: "03 - Março", 4: "04 - Abril",
+            5: "05 - Maio", 6: "06 - Junho", 7: "07 - Julho", 8: "08 - Agosto",
+            9: "09 - Setembro", 10: "10 - Outubro", 11: "11 - Novembro", 12: "12 - Dezembro"
+        }
+
+        col_filtro_ano, col_filtro_mes, col_filtro_badge = st.columns([1.5, 2, 2.5], vertical_alignment="bottom")
+
+        with col_filtro_ano:
+            ano_sel = st.selectbox("Selecione o Ano:", options=anos_disponiveis, index=idx_ano_default, key="dash_filtro_ano_comb")
+
+        with col_filtro_mes:
+            opcoes_mes = ["Todos os Meses"] + [meses_nomes[m] for m in range(1, 13)]
+            idx_mes_default = mes_atual
+            mes_sel = st.selectbox("Selecione o Mês:", options=opcoes_mes, index=idx_mes_default, key="dash_filtro_mes_comb")
+
+        with col_filtro_badge:
+            is_destaque_atual = (ano_sel == ano_atual and mes_sel == meses_nomes.get(mes_atual, ""))
+            if is_destaque_atual:
+                st.markdown(
+                    f"""<div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #2563EB; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #1E40AF; margin-bottom: 4px;">
+                    ⭐ PERÍODO VIGENTE EM DESTAQUE: {meses_nomes[mes_atual].split(' - ')[1].upper()} / {ano_atual}
+                    </div>""", 
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"""<div style="background: #F1F5F9; border: 1px solid #CBD5E1; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 600; color: #475569; margin-bottom: 4px;">
+                    Visualizando filtro histórico selecionado
+                    </div>""", 
+                    unsafe_allow_html=True
+                )
+
+        df_abast_filtrado = df_abastecimento[df_abastecimento["Ano"] == ano_sel].copy()
+        if mes_sel != "Todos os Meses":
+            num_mes_sel = int(mes_sel.split(" - ")[0])
+            df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Mes"] == num_mes_sel]
+
+        df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Placa"] != ""]
+
+        cg_col1, cg_col2 = st.columns(2)
+
+        with cg_col1:
+            st.markdown("##### ◈ **Volume Consumido (Litros) por Veículo**")
+            if not df_abast_filtrado.empty and df_abast_filtrado["Litros"].sum() > 0:
+                df_litros_veiculo = (
+                    df_abast_filtrado.groupby(["Placa", "Veiculo"])["Litros"]
+                    .sum()
+                    .reset_index()
+                    .sort_values(by="Litros", ascending=False)
+                )
+                df_litros_veiculo["rotulo_litros"] = df_litros_veiculo["Litros"].apply(lambda v: f"{v:,.1f} L")
+                cor_litros = "#2563EB" if is_destaque_atual else "#475569"
+
+                bars_l = alt.Chart(df_litros_veiculo).mark_bar(
+                    color=cor_litros, cornerRadiusTopLeft=6, cornerRadiusTopRight=6
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Litros:Q", title="Volume Total (Litros)"),
+                    tooltip=[
+                        alt.Tooltip("Placa:N", title="Placa"),
+                        alt.Tooltip("Veiculo:N", title="Veículo"),
+                        alt.Tooltip("rotulo_litros:N", title="Consumo")
+                    ]
+                )
+
+                text_l = alt.Chart(df_litros_veiculo).mark_text(
+                    align="center", baseline="bottom", dy=-4, fontSize=11, fontWeight=700, color="#1E3A8A"
+                ).encode(
+                    x=alt.X("Placa:N", sort="-y"),
+                    y=alt.Y("Litros:Q"),
+                    text="rotulo_litros:N"
+                )
+
+                st.altair_chart((bars_l + text_l).properties(height=300), use_container_width=True)
+            else:
+                st.info("Nenhum dado de abastecimento registrado na aba 'Controle de combustivel' para o período filtrado.")
+
+        with cg_col2:
+            st.markdown("##### ◈ **Gasto Total em Combustível (R$) por Veículo**")
+            if not df_abast_filtrado.empty and df_abast_filtrado["Valor (R$)"].sum() > 0:
+                df_valor_veiculo = (
+                    df_abast_filtrado.groupby(["Placa", "Combustivel"])["Valor (R$)"]
+                    .sum()
+                    .reset_index()
+                    .sort_values(by="Valor (R$)", ascending=False)
+                )
+                df_valor_veiculo["rotulo_reais"] = df_valor_veiculo["Valor (R$)"].apply(lambda v: f"R$ {v:,.2f}")
+
+                bars_v = alt.Chart(df_valor_veiculo).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("Placa:N", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Valor (R$):Q", title="Gasto Total (R$)"),
+                    color=alt.Color("Combustivel:N", scale=alt.Scale(range=["#059669", "#D97706", "#DC2626"]), title="Combustível"),
+                    tooltip=[
+                        alt.Tooltip("Placa:N", title="Placa"),
+                        alt.Tooltip("Combustivel:N", title="Combustível"),
+                        alt.Tooltip("rotulo_reais:N", title="Total Gasto")
+                    ]
+                )
+
+                st.altair_chart(bars_v.properties(height=300), use_container_width=True)
+            else:
+                st.info("Nenhum custo financeiro registrado na aba 'Controle de combustivel' para o período filtrado.")
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
@@ -1318,7 +1352,11 @@ def main():
                 with c_reais:
                     reais_abast = st.number_input("Valor Total Pago (R$):", min_value=0.0, step=1.0, format="%.2f")
                 with c_posto:
-                    posto_abast = st.text_input("Posto de Abastecimento:", placeholder="Ex: Posto Ipiranga Centro").strip()
+                    posto_abast = st.selectbox(
+                        "Posto de Abastecimento:",
+                        options=lista_postos_combustivel,
+                        help="Pré-lista carregada da aba 'Posto de Combustivel' (Coluna A)."
+                    )
 
                 obs_abast = st.text_area("Observação:", placeholder="Ex: Abastecimento de rota emergencial, nota fiscal anexada.", height=70).strip()
 
@@ -1330,7 +1368,7 @@ def main():
                     elif reais_abast <= 0:
                         st.error("Informe o valor total em R$.")
                     elif not posto_abast:
-                        st.error("Preencha o posto de abastecimento.")
+                        st.error("Selecione o posto de abastecimento.")
                     else:
                         novo_abast_dict = {
                             "Data": data_abast.strftime("%d/%m/%Y"),
@@ -1358,16 +1396,16 @@ def main():
                         st.cache_data.clear()
 
                         if gravou:
-                            st.success(f"✔ Abastecimento do veículo **{placa_selecionada}** registrado e sincronizado com sucesso!")
+                            st.success(f"✔ Abastecimento do veículo **{placa_selecionada}** registrado na aba '{NOME_ABA_ABASTECIMENTO}' com sucesso!")
                         else:
                             st.success(f"✔ Abastecimento do veículo **{placa_selecionada}** gravado com sucesso no painel!")
                         st.rerun()
 
         with tab_historico_abast:
-            st.markdown("##### 📋 Extrato Geral de Abastecimentos")
+            st.markdown("##### 📋 Extrato Geral de Abastecimentos (Controle de combustivel)")
             df_abast_valido = df_abastecimento[df_abastecimento["Placa"] != ""].copy()
             if df_abast_valido.empty:
-                st.info("Nenhum lançamento de abastecimento localizado.")
+                st.info("Nenhum lançamento de abastecimento localizado na aba 'Controle de combustivel'.")
             else:
                 colunas_exibir = ["Data", "Placa", "Veiculo", "Tipo de Veiculo", "Combustivel", "Litros", "Valor (R$)", "Motorista", "Posto", "Observação"]
                 cols_presentes = [c for c in colunas_exibir if c in df_abast_valido.columns]
