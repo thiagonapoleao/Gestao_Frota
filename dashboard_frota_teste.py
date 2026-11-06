@@ -318,7 +318,7 @@ SPREADSHEET_ID = "1-Bn0VBnRV1zp_f7QrKTldKB03L9_k7DyRO3YslGMnnU"
 GID_LANCAMENTOS = "379222602"
 GID_USUARIOS = "426012097"
 GID_FROTA = "1438914619"
-GID_ABASTECIMENTO = "1122334455"  # GID de fallback ou da aba de abastecimento
+GID_ABASTECIMENTO = "1122334455"
 
 WEBHOOK_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxXSQRM3lPFIQ6VkDs4OK7HrjnfIDrPEPOTM2sAHhogHNhb2PhSoUSw06fYT-rGeiS2uw/exec"
 
@@ -444,6 +444,10 @@ def gravar_abastecimento_na_planilha(abastecimento_dict: dict) -> bool:
         try:
             payload = abastecimento_dict.copy()
             payload["acao"] = "cadastrar_abastecimento"
+            # Remove campos de controle interno do dataframe antes do post
+            for chave_excluir in ["data_dt", "Ano", "Mes"]:
+                payload.pop(chave_excluir, None)
+
             corpo = json.dumps(payload, ensure_ascii=False)
             r = requests.post(
                 WEBHOOK_APPS_SCRIPT_URL,
@@ -579,7 +583,7 @@ def carregar_dados_viagens():
 
 @st.cache_data(ttl=20)
 def carregar_dados_abastecimento():
-    """Carrega o histórico de abastecimentos ou combina com os dados em sessão."""
+    """Carrega o histórico de abastecimentos com tolerância a variações de cabeçalho."""
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/export?format=csv&gid={GID_ABASTECIMENTO}",
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&gid={GID_ABASTECIMENTO}"
@@ -587,8 +591,8 @@ def carregar_dados_abastecimento():
     df_abast = pd.DataFrame()
     for url in urls:
         try:
-            df_temp = pd.read_csv(url, engine="python", on_bad_lines="skip")
-            if not df_temp.empty:
+            df_temp = pd.read_csv(url, engine="python", on_bad_lines="skip", dtype=str)
+            if not df_temp.empty and len(df_temp.columns) >= 2:
                 df_abast = df_temp
                 break
         except Exception:
@@ -601,19 +605,62 @@ def carregar_dados_abastecimento():
         df_sess = pd.DataFrame(st.session_state["abastecimentos_sessao"])
         df_abast = pd.concat([df_abast, df_sess], ignore_index=True)
 
-    if df_abast.empty:
-        # Registros base de exemplo para exibir métricas se a aba for recente
-        hoje = obter_agora_brasil().date()
-        df_abast = pd.DataFrame([
-            {"Data": hoje.strftime("%d/%m/%Y"), "Placa": "ABC1D23", "Veiculo": "Fiorino 1.4", "Tipo de Veiculo": "Utilitário", "Litros": 45.0, "Valor (R$)": 255.50, "Combustivel": "Gasolina", "Motorista": "Gestor Master Café", "Posto": "Posto Shell Central", "Observação": "Tanque cheio"},
-            {"Data": (hoje - timedelta(days=5)).strftime("%d/%m/%Y"), "Placa": "BRA2E19", "Veiculo": "Strada HD", "Tipo de Veiculo": "Picape", "Litros": 50.0, "Valor (R$)": 195.00, "Combustivel": "Alcool", "Motorista": "Gestor Master Café", "Posto": "Posto Ipiranga", "Observação": "Padrão"}
-        ])
+    if not df_abast.empty:
+        col_map = {}
+        for c in df_abast.columns:
+            cn = normalizar_texto(c)
+            if "data" in cn:
+                col_map["Data"] = c
+            elif "placa" in cn:
+                col_map["Placa"] = c
+            elif "modelo" in cn or "veiculo" in cn:
+                if "tipo" not in cn:
+                    col_map["Veiculo"] = c
+            elif "tipo" in cn or "categoria" in cn:
+                col_map["Tipo de Veiculo"] = c
+            elif "litro" in cn:
+                col_map["Litros"] = c
+            elif "valor" in cn or "r$" in cn or "preco" in cn:
+                col_map["Valor (R$)"] = c
+            elif "combust" in cn:
+                col_map["Combustivel"] = c
+            elif "motorista" in cn or "condutor" in cn:
+                col_map["Motorista"] = c
+            elif "posto" in cn:
+                col_map["Posto"] = c
+            elif "obs" in cn:
+                col_map["Observação"] = c
 
+        df_padronizado = pd.DataFrame()
+        for padrao, original in col_map.items():
+            df_padronizado[padrao] = df_abast[original].fillna("").astype(str).str.strip()
+        df_abast = df_padronizado
+
+    colunas_obrigatorias = [
+        "Data", "Placa", "Veiculo", "Tipo de Veiculo", 
+        "Litros", "Valor (R$)", "Combustivel", "Motorista", "Posto", "Observação"
+    ]
+    for col in colunas_obrigatorias:
+        if col not in df_abast.columns:
+            df_abast[col] = ""
+
+    agora = obter_agora_brasil()
+    
     df_abast["data_dt"] = pd.to_datetime(df_abast["Data"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
-    df_abast["Litros"] = pd.to_numeric(df_abast["Litros"].astype(str).str.replace(",", "."), errors="coerce").fillna(0.0)
-    df_abast["Valor (R$)"] = pd.to_numeric(df_abast["Valor (R$)"].astype(str).str.replace(",", "."), errors="coerce").fillna(0.0)
-    df_abast["Ano"] = df_abast["data_dt"].dt.year.fillna(obter_agora_brasil().year).astype(int)
-    df_abast["Mes"] = df_abast["data_dt"].dt.month.fillna(obter_agora_brasil().month).astype(int)
+    
+    df_abast["Litros"] = pd.to_numeric(
+        df_abast["Litros"].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
+        errors="coerce"
+    ).fillna(0.0)
+
+    df_abast["Valor (R$)"] = pd.to_numeric(
+        df_abast["Valor (R$)"].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
+        errors="coerce"
+    ).fillna(0.0)
+
+    df_abast["Ano"] = df_abast["data_dt"].dt.year.fillna(agora.year).astype(int)
+    df_abast["Mes"] = df_abast["data_dt"].dt.month.fillna(agora.month).astype(int)
+
     return df_abast
 
 def obter_viagens_consolidadas():
@@ -884,7 +931,7 @@ def main():
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
         # ---------------------------------------------------------------------
-        # SEÇÃO DE CONSUMO POR VEÍCULO COM FILTROS DE ANO E MÊS (DESTAQUE ATUAL)
+        # SEÇÃO DE CONSUMO POR VEÍCULO COM FILTROS DE ANO E MÊS
         # ---------------------------------------------------------------------
         st.markdown("### ⛽ **Consumo de Combustível por Veículo**")
         st.markdown("<p style='font-size:0.83rem; color:#64748B;'>Filtros dinâmicos com destaque pré-configurado no ano e mês vigentes.</p>", unsafe_allow_html=True)
@@ -892,8 +939,7 @@ def main():
         ano_atual = hoje_brasil.year
         mes_atual = hoje_brasil.month
 
-        # Opções de anos
-        anos_disponiveis = sorted(list(set(df_abastecimento["Ano"].unique().tolist() + [ano_atual])), reverse=True)
+        anos_disponiveis = sorted(list(set(df_abastecimento["Ano"].dropna().unique().tolist() + [ano_atual])), reverse=True)
         idx_ano_default = anos_disponiveis.index(ano_atual) if ano_atual in anos_disponiveis else 0
 
         meses_nomes = {
@@ -909,11 +955,11 @@ def main():
 
         with col_filtro_mes:
             opcoes_mes = ["Todos os Meses"] + [meses_nomes[m] for m in range(1, 13)]
-            idx_mes_default = mes_atual  # Posição do mês atual na lista
+            idx_mes_default = mes_atual
             mes_sel = st.selectbox("Selecione o Mês:", options=opcoes_mes, index=idx_mes_default)
 
         with col_filtro_badge:
-            is_destaque_atual = (ano_sel == ano_atual and mes_sel == meses_nomes[mes_atual])
+            is_destaque_atual = (ano_sel == ano_atual and mes_sel == meses_nomes.get(mes_atual, ""))
             if is_destaque_atual:
                 st.markdown(
                     f"""<div style="background: #EFF6FF; border: 1px solid #BFDBFE; border-left: 4px solid #2563EB; padding: 6px 12px; border-radius: 6px; font-size: 0.78rem; font-weight: 700; color: #1E40AF; margin-bottom: 4px;">
@@ -929,11 +975,13 @@ def main():
                     unsafe_allow_html=True
                 )
 
-        # Filtragem dos dados de abastecimento
         df_abast_filtrado = df_abastecimento[df_abastecimento["Ano"] == ano_sel].copy()
         if mes_sel != "Todos os Meses":
             num_mes_sel = int(mes_sel.split(" - ")[0])
             df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Mes"] == num_mes_sel]
+
+        # Remove linhas com campos vazios caso não haja registros
+        df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Placa"] != ""]
 
         cg_col1, cg_col2 = st.columns(2)
 
@@ -947,8 +995,6 @@ def main():
                     .sort_values(by="Litros", ascending=False)
                 )
                 df_litros_veiculo["rotulo_litros"] = df_litros_veiculo["Litros"].apply(lambda v: f"{v:,.1f} L")
-                df_litros_veiculo["Identificacao"] = df_litros_veiculo["Placa"] + " " + df_litros_veiculo["Veiculo"]
-
                 cor_litros = "#2563EB" if is_destaque_atual else "#475569"
 
                 bars_l = alt.Chart(df_litros_veiculo).mark_bar(
@@ -1197,7 +1243,6 @@ def main():
     elif pagina_atual == "abastecimento":
         tab_form_abast, tab_historico_abast = st.tabs(["⛽ Novo Lançamento", "📋 Histórico de Abastecimentos"])
 
-        # Prepara a pré-lista de frotas
         lista_placas = []
         mapa_veiculos = {}
         mapa_tipos = {}
@@ -1210,12 +1255,14 @@ def main():
                     mapa_veiculos[plc] = str(f_row.get("Veiculo", f_row.get("Modelo", ""))).strip()
                     mapa_tipos[plc] = str(f_row.get("Tipo", f_row.get("Categoria", "Passeio"))).strip()
         else:
-            # Fallback caso a aba frota esteja vazia
             lista_placas = sorted(list(df_base["placa"].unique()))
             for plc in lista_placas:
                 match = df_base[df_base["placa"] == plc]
                 mapa_veiculos[plc] = match.iloc[0]["veiculo"] if not match.empty else ""
                 mapa_tipos[plc] = "Passeio"
+
+        if not lista_placas:
+            lista_placas = ["PADRAO"]
 
         with tab_form_abast:
             st.markdown("<p style='font-size:0.85rem; color:#64748B;'>Preencha os dados do abastecimento. O veículo e seu tipo são vinculados automaticamente pela placa selecionada.</p>", unsafe_allow_html=True)
@@ -1225,7 +1272,6 @@ def main():
 
             reset_abast = st.session_state["reset_abast_key"]
 
-            # Seleção da Placa fora do form para atualizar os campos vinculados instantaneamente
             c_placa, c_vinc1, c_vinc2 = st.columns(3)
             with c_placa:
                 placa_selecionada = st.selectbox(
@@ -1319,13 +1365,14 @@ def main():
 
         with tab_historico_abast:
             st.markdown("##### 📋 Extrato Geral de Abastecimentos")
-            if df_abastecimento.empty:
+            df_abast_valido = df_abastecimento[df_abastecimento["Placa"] != ""].copy()
+            if df_abast_valido.empty:
                 st.info("Nenhum lançamento de abastecimento localizado.")
             else:
                 colunas_exibir = ["Data", "Placa", "Veiculo", "Tipo de Veiculo", "Combustivel", "Litros", "Valor (R$)", "Motorista", "Posto", "Observação"]
-                cols_presentes = [c for c in colunas_exibir if c in df_abastecimento.columns]
+                cols_presentes = [c for c in colunas_exibir if c in df_abast_valido.columns]
                 
-                df_tab = df_abastecimento[cols_presentes].copy()
+                df_tab = df_abast_valido[cols_presentes].copy()
                 st.dataframe(
                     df_tab,
                     use_container_width=True,
