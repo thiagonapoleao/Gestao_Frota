@@ -368,6 +368,27 @@ def gerar_usuario_padrao(nome_completo: str) -> str:
     sobrenome = partes[-1].lower()
     return f"{primeira_letra}{sobrenome}"
 
+def limpar_numero_float(valor):
+    """Limpa e converte strings monetárias ou numéricas para float de modo seguro."""
+    if pd.isna(valor) or valor is None:
+        return 0.0
+    val_str = str(valor).strip()
+    if not val_str or val_str.lower() in ["nan", "none", "", "-"]:
+        return 0.0
+    # Remove R$, espaços e caracteres não numéricos exceto vírgula e ponto
+    val_limpo = re.sub(r"[^\d,\.]", "", val_str)
+    if not val_limpo:
+        return 0.0
+    # Caso contenha ponto e vírgula: padrão brasileiro (1.500,50 -> 1500.50)
+    if "." in val_limpo and "," in val_limpo:
+        val_limpo = val_limpo.replace(".", "").replace(",", ".")
+    elif "," in val_limpo:
+        val_limpo = val_limpo.replace(",", ".")
+    try:
+        return float(val_limpo)
+    except Exception:
+        return 0.0
+
 # -------------------------------------------------------------
 # 4. CARREGAMENTO E GRAVAÇÃO DE DADOS (ETL)
 # -------------------------------------------------------------
@@ -545,7 +566,6 @@ def carregar_dados_postos():
         except Exception:
             continue
 
-    # Fallback caso a aba ainda não esteja preenchida
     return ["Posto Shell Central", "Posto Ipiranga", "Posto Petrobras", "Posto Graal", "Auto Posto Master"]
 
 @st.cache_data(ttl=30)
@@ -586,20 +606,13 @@ def carregar_dados_viagens():
     df["veiculo"] = df["veiculo"].str.strip()
     df["rv"] = df["rv"].str.upper()
 
-    def converter_numero(val):
-        try:
-            val_limpo = str(val).replace(".", "").replace(",", ".").strip()
-            return float(val_limpo) if val_limpo and val_limpo.lower() != "nan" else np.nan
-        except Exception:
-            return np.nan
+    df["km_inicial_num"] = df["km_inicial"].apply(limpar_numero_float)
+    df["km_final_num"] = df["km_final"].apply(limpar_numero_float)
+    df["km_percorrido_num"] = df["km_percorrido"].apply(limpar_numero_float)
 
-    df["km_inicial_num"] = df["km_inicial"].apply(converter_numero)
-    df["km_final_num"] = df["km_final"].apply(converter_numero)
-    df["km_percorrido_num"] = df["km_percorrido"].apply(converter_numero)
-
-    mascara_recalc = df["km_percorrido_num"].isna() & df["km_inicial_num"].notna() & df["km_final_num"].notna()
+    mascara_recalc = (df["km_percorrido_num"] == 0) & (df["km_inicial_num"] > 0) & (df["km_final_num"] > 0)
     df.loc[mascara_recalc, "km_percorrido_num"] = df.loc[mascara_recalc, "km_final_num"] - df.loc[mascara_recalc, "km_inicial_num"]
-    df["km_percorrido_num"] = df["km_percorrido_num"].apply(lambda x: max(x, 0) if pd.notna(x) else np.nan)
+    df["km_percorrido_num"] = df["km_percorrido_num"].apply(lambda x: max(x, 0) if pd.notna(x) else 0.0)
 
     df["data_ini_dt"] = pd.to_datetime(df["data_inicial"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
     df["data_fim_dt"] = pd.to_datetime(df["data_final"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
@@ -616,7 +629,7 @@ def carregar_dados_viagens():
 
 @st.cache_data(ttl=20)
 def carregar_dados_abastecimento():
-    """Carrega o histórico de abastecimentos da aba 'Controle de combustivel' com tolerância a cabeçalhos."""
+    """Carrega o histórico de abastecimentos da aba 'Controle de combustivel' com conversão numérica robusta."""
     sheet_nome_enc = urllib.parse.quote(NOME_ABA_ABASTECIMENTO)
     urls = [
         f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet={sheet_nome_enc}",
@@ -654,7 +667,7 @@ def carregar_dados_abastecimento():
                 col_map["Tipo de Veiculo"] = c
             elif "litro" in cn:
                 col_map["Litros"] = c
-            elif "valor" in cn or "r$" in cn or "preco" in cn:
+            elif "valor" in cn or "r$" in cn or "preco" in cn or "custo" in cn or "total" in cn:
                 col_map["Valor (R$)"] = c
             elif "combust" in cn:
                 col_map["Combustivel"] = c
@@ -681,19 +694,22 @@ def carregar_dados_abastecimento():
     agora = obter_agora_brasil()
     
     df_abast["data_dt"] = pd.to_datetime(df_abast["Data"], format="%d/%m/%Y", errors="coerce", dayfirst=True)
-    
-    df_abast["Litros"] = pd.to_numeric(
-        df_abast["Litros"].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
-        errors="coerce"
-    ).fillna(0.0)
-
-    df_abast["Valor (R$)"] = pd.to_numeric(
-        df_abast["Valor (R$)"].astype(str).str.replace(".", "", regex=False).str.replace(",", ".", regex=False),
-        errors="coerce"
-    ).fillna(0.0)
+    df_abast["Litros"] = df_abast["Litros"].apply(limpar_numero_float)
+    df_abast["Valor (R$)"] = df_abast["Valor (R$)"].apply(limpar_numero_float)
 
     df_abast["Ano"] = df_abast["data_dt"].dt.year.fillna(agora.year).astype(int)
     df_abast["Mes"] = df_abast["data_dt"].dt.month.fillna(agora.month).astype(int)
+
+    # Padroniza nomes de combustível para cores limpas
+    def padronizar_combustivel(c):
+        cn = normalizar_texto(c)
+        if "diesel" in cn:
+            return "Diesel"
+        elif "alcool" in cn or "etanol" in cn:
+            return "Alcool"
+        return "Gasolina"
+
+    df_abast["Combustivel"] = df_abast["Combustivel"].apply(padronizar_combustivel)
 
     return df_abast
 
@@ -711,17 +727,8 @@ def obter_viagens_consolidadas():
 
                 for idx in idx_match:
                     r = df.loc[idx]
-                    try:
-                        ki = float(str(r["km_inicial"]).replace(".", "").replace(",", "."))
-                        df.loc[idx, "km_inicial_num"] = ki
-                    except Exception:
-                        pass
-                    
-                    try:
-                        kf = float(str(r["km_final"]).replace(".", "").replace(",", "."))
-                        df.loc[idx, "km_final_num"] = kf
-                    except Exception:
-                        pass
+                    df.loc[idx, "km_inicial_num"] = limpar_numero_float(r.get("km_inicial"))
+                    df.loc[idx, "km_final_num"] = limpar_numero_float(r.get("km_final"))
 
                     if pd.notna(df.loc[idx, "km_final_num"]) and pd.notna(df.loc[idx, "km_inicial_num"]):
                         df.loc[idx, "km_percorrido_num"] = max(df.loc[idx, "km_final_num"] - df.loc[idx, "km_inicial_num"], 0)
@@ -1076,7 +1083,7 @@ def main():
         # SEÇÃO DE CONSUMO POR VEÍCULO (ABAIXO DA QUILOMETRAGEM ACUMULADA)
         # ---------------------------------------------------------------------
         st.markdown("### ⛽ **Consumo de Combustível por Veículo**")
-        st.markdown("<p style='font-size:0.83rem; color:#64748B;'>Dados obtidos da aba <b>Controle de combustivel</b> com filtros dinâmicos e destaque no ano e mês vigentes.</p>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.83rem; color:#64748B;'>Dados consolidados da aba <b>Controle de combustivel</b> com filtros dinâmicos e destaque automático para o período atual.</p>", unsafe_allow_html=True)
 
         ano_atual = hoje_brasil.year
         mes_atual = hoje_brasil.month
@@ -1117,13 +1124,18 @@ def main():
                     unsafe_allow_html=True
                 )
 
-        df_abast_filtrado = df_abastecimento[df_abastecimento["Ano"] == ano_sel].copy()
+        # Filtro de dados do ano selecionado
+        df_abast_ano = df_abastecimento[df_abastecimento["Ano"] == ano_sel].copy()
+
+        # Filtro de dados do mês selecionado
+        df_abast_filtrado = df_abast_ano.copy()
         if mes_sel != "Todos os Meses":
             num_mes_sel = int(mes_sel.split(" - ")[0])
             df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Mes"] == num_mes_sel]
 
         df_abast_filtrado = df_abast_filtrado[df_abast_filtrado["Placa"] != ""]
 
+        # LINHA 1 DE GRÁFICOS: POR VEÍCULO
         cg_col1, cg_col2 = st.columns(2)
 
         with cg_col1:
@@ -1160,35 +1172,167 @@ def main():
 
                 st.altair_chart((bars_l + text_l).properties(height=300), use_container_width=True)
             else:
-                st.info("Nenhum dado de abastecimento registrado na aba 'Controle de combustivel' para o período filtrado.")
+                st.info("Nenhum dado de volume (Litros) registrado para o filtro selecionado.")
 
         with cg_col2:
             st.markdown("##### ◈ **Gasto Total em Combustível (R$) por Veículo**")
-            if not df_abast_filtrado.empty and df_abast_filtrado["Valor (R$)"].sum() > 0:
-                df_valor_veiculo = (
+            total_gasto_periodo = df_abast_filtrado["Valor (R$)"].sum() if not df_abast_filtrado.empty else 0.0
+
+            if not df_abast_filtrado.empty and total_gasto_periodo > 0:
+                df_valor_agregado = (
                     df_abast_filtrado.groupby(["Placa", "Combustivel"])["Valor (R$)"]
+                    .sum()
+                    .reset_index()
+                )
+
+                # Total por placa para ordenação correta das barras empilhadas
+                placa_totais = (
+                    df_valor_agregado.groupby("Placa")["Valor (R$)"]
                     .sum()
                     .reset_index()
                     .sort_values(by="Valor (R$)", ascending=False)
                 )
-                df_valor_veiculo["rotulo_reais"] = df_valor_veiculo["Valor (R$)"].apply(lambda v: f"R$ {v:,.2f}")
+                placas_ordenadas = placa_totais["Placa"].tolist()
+                placa_totais["rotulo_total"] = placa_totais["Valor (R$)"].apply(lambda v: f"R$ {v:,.2f}")
 
-                bars_v = alt.Chart(df_valor_veiculo).mark_bar(
+                df_valor_agregado["rotulo_reais"] = df_valor_agregado["Valor (R$)"].apply(lambda v: f"R$ {v:,.2f}")
+
+                bars_v = alt.Chart(df_valor_agregado).mark_bar(
                     cornerRadiusTopLeft=5, cornerRadiusTopRight=5
                 ).encode(
-                    x=alt.X("Placa:N", title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
-                    y=alt.Y("Valor (R$):Q", title="Gasto Total (R$)"),
-                    color=alt.Color("Combustivel:N", scale=alt.Scale(range=["#059669", "#D97706", "#DC2626"]), title="Combustível"),
+                    x=alt.X("Placa:N", sort=placas_ordenadas, title="Placa do Veículo", axis=alt.Axis(labelAngle=0)),
+                    y=alt.Y("Valor (R$):Q", title="Gasto Total (R$)", stack="zero"),
+                    color=alt.Color(
+                        "Combustivel:N",
+                        scale=alt.Scale(
+                            domain=["Alcool", "Gasolina", "Diesel"],
+                            range=["#059669", "#D97706", "#DC2626"]
+                        ),
+                        title="Combustível"
+                    ),
                     tooltip=[
                         alt.Tooltip("Placa:N", title="Placa"),
                         alt.Tooltip("Combustivel:N", title="Combustível"),
-                        alt.Tooltip("rotulo_reais:N", title="Total Gasto")
+                        alt.Tooltip("rotulo_reais:N", title="Valor Gasto")
                     ]
                 )
 
-                st.altair_chart(bars_v.properties(height=300), use_container_width=True)
+                text_v = alt.Chart(placa_totais).mark_text(
+                    align="center", baseline="bottom", dy=-4, fontSize=11, fontWeight=700, color="#0F172A"
+                ).encode(
+                    x=alt.X("Placa:N", sort=placas_ordenadas),
+                    y=alt.Y("Valor (R$):Q"),
+                    text="rotulo_total:N"
+                )
+
+                st.altair_chart((bars_v + text_v).properties(height=300), use_container_width=True)
             else:
-                st.info("Nenhum custo financeiro registrado na aba 'Controle de combustivel' para o período filtrado.")
+                st.info("Nenhum custo financeiro (R$) computado para o período filtrado.")
+
+        st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
+
+        # ---------------------------------------------------------------------
+        # LINHA 2 DE GRÁFICOS: EVOLUÇÃO MENSAL (LITROS E R$)
+        # ---------------------------------------------------------------------
+        st.markdown(f"##### 📈 **Evolução Mensal do Consumo e Gastos ({ano_sel})**")
+
+        df_abast_ano_valido = df_abast_ano[df_abast_ano["Placa"] != ""].copy()
+
+        # Cria estrutura fixa para os 12 meses do ano
+        meses_df = pd.DataFrame({
+            "Mes": list(range(1, 13)),
+            "Mes_Nome": ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        })
+
+        if not df_abast_ano_valido.empty:
+            agregado_mensal = (
+                df_abast_ano_valido.groupby("Mes")
+                .agg(Litros=("Litros", "sum"), Valor=("Valor (R$)", "sum"))
+                .reset_index()
+            )
+            df_mes_completo = pd.merge(meses_df, agregado_mensal, on="Mes", how="left").fillna(0.0)
+        else:
+            df_mes_completo = meses_df.copy()
+            df_mes_completo["Litros"] = 0.0
+            df_mes_completo["Valor"] = 0.0
+
+        # Identifica se é o ano e mês corrente para destaque
+        df_mes_completo["Destaque_Mes"] = df_mes_completo.apply(
+            lambda r: "Mês Atual" if (ano_sel == ano_atual and int(r["Mes"]) == mes_atual) else "Demais Meses",
+            axis=1
+        )
+        df_mes_completo["rotulo_litros_mes"] = df_mes_completo["Litros"].apply(lambda v: f"{v:,.0f} L" if v > 0 else "")
+        df_mes_completo["rotulo_valor_mes"] = df_mes_completo["Valor"].apply(lambda v: f"R$ {v:,.0f}" if v > 0 else "")
+
+        cm1, cm2 = st.columns(2)
+
+        with cm1:
+            st.markdown("###### ◈ **Volume de Combustível Gasto por Mês (Litros)**")
+            if df_mes_completo["Litros"].sum() > 0:
+                bar_mes_l = alt.Chart(df_mes_completo).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("Mes_Nome:N", sort=list(df_mes_completo["Mes_Nome"]), title="Mês"),
+                    y=alt.Y("Litros:Q", title="Volume (Litros)"),
+                    color=alt.Color(
+                        "Destaque_Mes:N",
+                        scale=alt.Scale(
+                            domain=["Mês Atual", "Demais Meses"],
+                            range=["#2563EB", "#94A3B8"]
+                        ),
+                        legend=alt.Legend(title="Período")
+                    ),
+                    tooltip=[
+                        alt.Tooltip("Mes_Nome:N", title="Mês"),
+                        alt.Tooltip("rotulo_litros_mes:N", title="Litros Consumidos")
+                    ]
+                )
+
+                txt_mes_l = alt.Chart(df_mes_completo).mark_text(
+                    align="center", baseline="bottom", dy=-3, fontSize=10, fontWeight=700, color="#1E3A8A"
+                ).encode(
+                    x=alt.X("Mes_Nome:N", sort=list(df_mes_completo["Mes_Nome"])),
+                    y=alt.Y("Litros:Q"),
+                    text="rotulo_litros_mes:N"
+                )
+
+                st.altair_chart((bar_mes_l + txt_mes_l).properties(height=280), use_container_width=True)
+            else:
+                st.info(f"Sem registros de volume em litros no ano de {ano_sel}.")
+
+        with cm2:
+            st.markdown("###### ◈ **Total Investido por Mês (R$)**")
+            if df_mes_completo["Valor"].sum() > 0:
+                bar_mes_v = alt.Chart(df_mes_completo).mark_bar(
+                    cornerRadiusTopLeft=5, cornerRadiusTopRight=5
+                ).encode(
+                    x=alt.X("Mes_Nome:N", sort=list(df_mes_completo["Mes_Nome"]), title="Mês"),
+                    y=alt.Y("Valor:Q", title="Valor Total (R$)"),
+                    color=alt.Color(
+                        "Destaque_Mes:N",
+                        scale=alt.Scale(
+                            domain=["Mês Atual", "Demais Meses"],
+                            range=["#059669", "#CBD5E1"]
+                        ),
+                        legend=alt.Legend(title="Período")
+                    ),
+                    tooltip=[
+                        alt.Tooltip("Mes_Nome:N", title="Mês"),
+                        alt.Tooltip("rotulo_valor_mes:N", title="Gasto Total")
+                    ]
+                )
+
+                txt_mes_v = alt.Chart(df_mes_completo).mark_text(
+                    align="center", baseline="bottom", dy=-3, fontSize=10, fontWeight=700, color="#065F46"
+                ).encode(
+                    x=alt.X("Mes_Nome:N", sort=list(df_mes_completo["Mes_Nome"])),
+                    y=alt.Y("Valor:Q"),
+                    text="rotulo_valor_mes:N"
+                )
+
+                st.altair_chart((bar_mes_v + txt_mes_v).properties(height=280), use_container_width=True)
+            else:
+                st.info(f"Sem registros de custo em R$ no ano de {ano_sel}.")
 
         st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
 
